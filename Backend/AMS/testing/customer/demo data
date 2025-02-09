@@ -1,0 +1,62 @@
+[
+  {
+    "userName": "JohnDoe",
+    "email": "johndoe@example.com",
+    "password": "Password123!",
+    "phoneNumber": "1234567890"
+  },
+  {
+    "userName": "JaneSmith",
+    "email": "janesmith@example.com",
+    "password": "Password456!",
+    "phoneNumber": "0987654321"
+  },
+  {
+    "userName": "AliceJohnson",
+    "email": "alice.johnson@example.com",
+    "password": "Alice@1234",
+    "phoneNumber": "1122334455"
+  },
+  {
+    "userName": "BobBrown",
+    "email": "bobbrown@example.com",
+    "password": "BobBrown#2023",
+    "phoneNumber": "2233445566"
+  },
+  {
+    "userName": "CharlieDavis",
+    "email": "charlie.davis@example.com",
+    "password": "Charlie@7890",
+    "phoneNumber": "3344556677"
+  },
+  {
+    "userName": "DavidMartinez",
+    "email": "david.martinez@example.com",
+    "password": "David@1234",
+    "phoneNumber": "4455667788"
+  },
+  {
+    "userName": "EmmaWhite",
+    "email": "emma.white@example.com",
+    "password": "EmmaWhite@2023",
+    "phoneNumber": "5566778899"
+  },
+  {
+    "userName": "FrankHarris",
+    "email": "frank.harris@example.com",
+    "password": "Frank#Harris123",
+    "phoneNumber": "6677889900"
+  },
+  {
+    "userName": "GraceTaylor",
+    "email": "grace.taylor@example.com",
+    "password": "Grace1234@!",
+    "phoneNumber": "7788990011"
+  },
+  {
+    "userName": "HenryKing",
+    "email": "henry.king@example.com",
+    "password": "HenryKing!2023",
+    "phoneNumber": "8899001122"
+  }
+]
