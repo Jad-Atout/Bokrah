@@ -1,31 +1,40 @@
 import { AppError } from "../../../utils/AppError.js";
-import { sequelize } from "../../../../DB/connection.js";
+import sequelize  from "../../../../DB/connection.js";
 import appointmentModel from "../../../../DB/model/appointment.js";
 import { AppointmentService } from "../../../../DB/model/relations.js";
 import createCalendarEvent from "../../../utils/google/eventCRUD/createEvent.js";
 import { checkGoogleCalendarAvailability } from "../../../utils/google/checkAvailability.js";
 
+
 /**
- * Controller function to create a new appointment and corresponding Google Calendar event.
- * It checks availability of the selected time slot, calculates the end time based on service durations,
- * creates the appointment in the database, and adds the event to the client's Google Calendar.
- * If a transaction is provided, it will be used; otherwise, a new transaction will be created.
+ * Asynchronously creates a new appointment and corresponding Google Calendar event.
+ * Handles the creation of an appointment, associates services with the appointment,
+ * and ensures synchronization with a staff member's Google Calendar.
  *
- * @param {Object} req - The request object, containing appointment details.
- * @param {Object} res - The response object.
- * @param {Function} next - The next middleware function to handle errors.
- * @param {Object} [transaction=null] - Optional transaction object to be used for the appointment creation.
- * @returns {Promise<Object>} - The newly created appointment and event.
+ * @param {Object} req - The request object containing the appointment details.
+ * @param {Object} req.body - The body of the request containing appointment data.
+ * @param {Date} req.body.startTime - The start time of the appointment.
+ * @param {Array<number>} req.body.services - An array of service IDs associated with the appointment.
+ * @param {number} req.body.customerId - The ID of the customer booking the appointment.
+ * @param {number} req.body.staffId - The ID of the staff member for the appointment.
+ * @param {Object} req.oauth2Client - The OAuth2 client for Google Calendar API authentication.
+ * @param {Object} res - The response object to send feedback to the client.
+ * @param {Function} next - The next middleware function in the chain for handling errors.
+ * @param {Object|null} [transaction=null] - An optional transaction instance for database operations.
+ * @param {number} req.params - The ID of the client for the appointment.
+ *
+ * @throws {AppError} Throws an error if Google authentication is missing or if the time slot is unavailable.
+ * @throws {AppError} Throws an error if the appointment or calendar event creation fails.
+ *
+ * @returns {Promise<Object|void>} Returns the created appointment object if `transaction` is provided;
+ * otherwise, sends a JSON response to the client with the created appointment and Google Calendar event.
  */
 export const createAppointment = async (req, res, next, transaction = null) => {
     const { startTime, services, customerId, staffId } = req.body;
-    const clientId = req.params.id;
+    const {clientId} = req.params;
     const status = "Booked";
-
-    if (!services || !Array.isArray(services) || services.length === 0) {
-        return next(new AppError("Services are required to calculate end time", 400));
-    }
     const auth = req.oauth2Client;
+
     if (!auth) {
         return next(new AppError("Google authentication credentials not provided", 401));
     }

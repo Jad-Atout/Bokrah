@@ -1,5 +1,5 @@
 import {AppError} from "../../../utils/AppError.js";
-import {sequelize} from "../../../../DB/connection.js";
+import sequelize from "../../../../DB/connection.js";
 import {deleteAppointment} from "./deleteAppointment.controller.js";
 import {calculateEndTime, createAppointment} from "./createAppointment.controller.js";
 import {checkGoogleCalendarAvailability} from "../../../utils/google/checkAvailability.js";
@@ -7,6 +7,7 @@ import {AppointmentService, staffModel} from "../../../../DB/model/relations.js"
 import createCalendarEvent from "../../../utils/google/eventCRUD/createEvent.js";
 import _ from "lodash";
 import {updateCalendarEvent} from "../../../utils/google/eventCRUD/updateEvent.js";
+import req from "express/lib/request.js";
 
 // export const updateAppointment = async (req, res, next) => {
 //     const appointment = req.appointment;
@@ -57,19 +58,15 @@ import {updateCalendarEvent} from "../../../utils/google/eventCRUD/updateEvent.j
 
 export const updateAppointment = async (req, res, next) => {
     const appointment = req.appointment;
-    const { startTime, services, staffId } = req.body;
+    if (!appointment) {
+        return next(new AppError("Appointment not found", 404));
+    }
+    const { startTime, staffId } = req.body;
+    const { services } = req.services;
     const allowedUserFields = ["startTime", "services", "staffId"];
     let updateData = {}
     updateData  = _.pickBy(_.pick(req.body, allowedUserFields), _.identity);
     updateData.status = 'Booked';
-
-    if (!appointment) {
-        return next(new AppError("Appointment not found", 404));
-    }
-
-    if (services && (!Array.isArray(services) || services.length === 0)) {
-        return next(new AppError("Valid services are required to update the appointment", 400));
-    }
 
     // Start a new Sequelize transaction to ensure atomicity.
     const transaction = await sequelize.transaction();
@@ -100,7 +97,6 @@ export const updateAppointment = async (req, res, next) => {
 
         // Commit the transaction
         await transaction.commit();
-
         return res.status(200).json({
             message: "Appointment updated successfully",
             updatedAppointment,

@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
  const app = express();
 initApp(app,express)
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT||10000, () => {
     console.log("Server running on port: " + process.env.PORT);
 })
 export { app }

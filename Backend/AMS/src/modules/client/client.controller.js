@@ -13,7 +13,7 @@ dotenv.config();
 export const clientRegister = async (req, res,next) => {
     const user_ = req.user;
     if(user_){
-        return next(new AppError("User already exists!"),409);
+        return next(new AppError("User already exists!",409));
     }
     const{userName,email,phoneNumber,password,businessName} = req.body
     const hashedPassword = await bcrypt.hash(password, 8)

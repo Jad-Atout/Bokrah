@@ -1,4 +1,4 @@
-import {sequelize} from "../connection.js";
+import sequelize from "../connection.js";
 import {DataTypes, Sequelize} from "sequelize";
 
 const googleModel = sequelize.define("GoogleCalendar", {

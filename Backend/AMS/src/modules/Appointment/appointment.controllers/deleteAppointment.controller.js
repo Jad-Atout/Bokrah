@@ -1,5 +1,5 @@
 import {AppError} from "../../../utils/AppError.js";
-import {sequelize} from "../../../../DB/connection.js";
+import sequelize from "../../../../DB/connection.js";
 import {Model as appointmentServicesModel} from "sequelize";
 import {staffModel} from "../../../../DB/model/relations.js";
 import deleteEvent from "../../../utils/google/eventCRUD/deleteEvent.js";

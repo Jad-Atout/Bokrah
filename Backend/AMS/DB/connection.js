@@ -1,6 +1,6 @@
 import {Sequelize} from 'sequelize';
 
-export const sequelize = new Sequelize('ams','root','',{
+ const sequelize = new Sequelize('ams','root','',{
     host: 'localhost',
     dialect: 'mysql',
 })
@@ -12,3 +12,4 @@ export async function createDatabaseConnection(){
         console.log(err);
     })
 }
+export default sequelize

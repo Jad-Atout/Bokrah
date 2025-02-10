@@ -4,7 +4,7 @@ export const asyncHandler = (func)=>{
             return await func(req,res,next);
         }catch (e){
             console.log(e)
-            return res.status(500).json({message: e});
+            return res.status(500).json({message: e.message});
         }
     }
 }

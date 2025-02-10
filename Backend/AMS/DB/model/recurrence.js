@@ -1,4 +1,4 @@
-import {sequelize} from "../connection.js";
+import sequelize from "../connection.js";
 import {DataTypes} from "sequelize";
 
 const recurrenceModel = sequelize.define("Recurrence", {
