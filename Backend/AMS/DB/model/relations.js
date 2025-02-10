@@ -6,7 +6,7 @@ import appointmentModel from "./appointment.js";
 import recurrenceModel from "./recurrence.js";
 import googleModel from "./GoogleCalendar.js";
 import {AppointmentService} from "./AppointmentService.js"
-import {StaffService} from "./connectionTables.js";
+import {ServicesStaff} from "./ServicesStaff.js";
 
 
 // User ↔ Client (1:1)
@@ -23,7 +23,8 @@ clientModel.belongsTo(userModel, {
 // User ↔ Staff (1:1)
 userModel.hasOne(staffModel, {
     foreignKey: 'userId',
-    as: 'staff'
+    as: 'staff',
+    onDelete:"cascade"
 });
 
 staffModel.belongsTo(userModel, {
@@ -125,14 +126,14 @@ googleModel.belongsTo(clientModel, {
 
 // Staff ↔ Service (M:N) using StaffService model
 staffModel.belongsToMany(serviceModel, {
-    through: StaffService, // Explicit pivot model
+    through: ServicesStaff, // Explicit pivot model
     foreignKey: 'staffId',
     otherKey: 'serviceId',
     as: 'services'
 });
 
 serviceModel.belongsToMany(staffModel, {
-    through: StaffService, // Explicit pivot model
+    through: ServicesStaff, // Explicit pivot model
     foreignKey: 'serviceId',
     otherKey: 'staffId',
     as: 'staffMembers'

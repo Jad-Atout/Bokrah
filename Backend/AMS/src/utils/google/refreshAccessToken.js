@@ -1,8 +1,6 @@
-import { googleModel } from "../../../DB/model/relations.js";
-import { AppError } from "../AppError.js";
-import { google } from "googleapis";
-
-
+import {googleModel} from "../../../DB/model/relations.js";
+import {AppError} from "../AppError.js";
+import {google} from "googleapis";
 
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -84,26 +82,45 @@ const initializeOAuthClient = (refreshToken) => {
  * @param {Object} oauthClient - The OAuth client used to manage access tokens.
  * @throws {Error} When there is an issue refreshing the access token or updating the calendar record.
  */
+
 const refreshAccessTokenIfNeeded = async (googleCalendar, oauthClient) => {
     const currentTime = Date.now();
-    const tokenExpiryTime = googleCalendar.tokenExpiry ? new Date(googleCalendar.tokenExpiry).getTime() : 0;
 
-    // Refresh if the token expires within 10 minutes
-    if (tokenExpiryTime - currentTime > REFRESH_THRESHOLD_MS) {
-        return; // Token is still valid, no need to refresh
+    // Parse token expiry time safely
+    const tokenExpiryTime = googleCalendar.tokenExpiry
+        ? new Date(googleCalendar.tokenExpiry).getTime()
+        : 0;
+
+    if (isNaN(tokenExpiryTime)) {
+        throw new AppError(`Invalid tokenExpiry date: ${googleCalendar.tokenExpiry}`);
     }
 
-    // Refresh access token
-    const credentials = await oauthClient.refreshAccessToken();
 
-    // Calculate token expiry timestamp using expires_in
-    const accessTokenExpiry = currentTime + credentials.expires_in * 1000; // expires_in is in seconds
+    // Refresh if the token expires within the threshold
+    if (tokenExpiryTime - currentTime > REFRESH_THRESHOLD_MS) {
+        return; // Token is valid, no need to refresh
+    }
 
-    // Update Google calendar record
-    googleCalendar.accessToken = credentials.access_token;
-    googleCalendar.tokenExpiry = new Date(accessTokenExpiry).toISOString(); // Storing expiration as an ISO string
+
+    // Refresh access token using OAuth client
+    let refreshedData;
+    try {
+        refreshedData = await oauthClient.refreshAccessToken();
+    } catch (error) {
+        throw new Error("Failed to refresh access token.");
+    }
+
+    // Extract useful fields from refreshedData.credentials
+    const refreshedCredentials = refreshedData.credentials; // Drill into `credentials`
+    const { expiry_date, access_token } = refreshedCredentials;
+
+    if (!expiry_date || typeof expiry_date !== "number" || expiry_date <= 0) {
+        throw new AppError(`Invalid expiry_date value: ${expiry_date}`);
+    }
+
+    // Update and save googleCalendar token expiry
+    googleCalendar.tokenExpiry = new Date(expiry_date).toISOString();
+    googleCalendar.accessToken = access_token; // Optional: store the new access token if needed
     await googleCalendar.save();
+    console.log("Token expiry updated and saved.");
 };
-
-
-

@@ -62,44 +62,57 @@ export const clientLogin = async (req, res,next) => {
 }
 
 
-export const googleAuthCallback = async (req, res,next)=> {
-    const authService = new GoogleAuthService();
-    const {code} = req.query;
-    if (!code) {
-        return next(new AppError('Authorization code is missing from the callback.', 404))
-    }
-    const tokens = await authService.handleOAuthRedirect(code);
-    const {idToken, access_token, refresh_token} = tokens;
-    const existingUser = await userModel.findOne({where: idToken.email});
-    if (!existingUser) {
-        return next(new AppError('User does not exist'), 404);
-    }
-    const x = googleModel.findByPk(existingUser.id)
-    if(!x){
-        await googleModel.create({
-            clientId:existingUser.id,
-            refreshToken:refresh_token,
-            accessToken:access_token
-        })
-    }
+export const googleAuthCallback = async (req, res, next) => {
+        const authService = new GoogleAuthService();
+        const { code } = req.query;
+        if (!code) {
+            return next(new AppError("Authorization code is missing from the callback.", 400));
+        }
+        const tokens = await authService.handleOAuthRedirect(code);
+        const { idToken, access_token, refresh_token } = tokens;
+        const decodedIdToken = jwt.decode(idToken);
+        // Find matching user
+        const existingUser = await userModel.findOne({ where: { email: decodedIdToken.email } });
+        if (!existingUser) {
+            return next(new AppError("User does not exist.", 404));
+        }
 
-    const token = jwt.sign({
-        id: existingUser.id,
-        userName: existingUser.userName,
-        email: existingUser.email,
-        role: existingUser.role
-    },process.env.JWT_SECRET)
+        // Find or create a record in the googleModel for the user
+        let googleCredentials = await googleModel.findByPk(existingUser.id);
+        if (!googleCredentials) {
+            googleCredentials = await googleModel.create({
+                clientId: existingUser.id,
+                refreshToken: refresh_token,
+                accessToken: access_token,
+            });
+        } else {
+            // If already exists, update the refreshToken/accessToken
+            googleCredentials.refreshToken = refresh_token;
+            googleCredentials.accessToken = access_token;
+            await googleCredentials.save();
+        }
 
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: existingUser.id,
+                userName: existingUser.userName,
+                email: existingUser.email,
+                role: existingUser.role,
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' } // Add a token expiration
+        );
 
-    res.json({
-        message: 'Google authentication successful.',
-        tokens:token ,
-    });
-}
+        return res.status(200).json({
+            message: "Google authentication successful.",
+            token,
+        });
+
+};
 export const gClientLogin = async (req, res) => {
     const authService = new GoogleAuthService();
     const authUrl = authService.generateAuthUrl();
-    console.log("Redirecting to:", authUrl);
     return res.redirect(authUrl);
 }
 

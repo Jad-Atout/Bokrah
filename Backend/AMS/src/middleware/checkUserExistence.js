@@ -1,4 +1,5 @@
 import {userModel} from "../../DB/model/relations.js";
+import {Op} from "sequelize";
 const validateUserExistence = () => {
     // we have a bug where that happens in client controller
     // this model allows for two different phone numbers to exists
@@ -6,13 +7,16 @@ const validateUserExistence = () => {
     return async (req,res,next)=>{
         const {id}= req.params;
         const {email,phoneNumber} = req.body;
-        const whereConditions = {};
-        if (email) whereConditions.email = email;
-        if (phoneNumber) whereConditions.phoneNumber = phoneNumber;
-        if (id) whereConditions.id = id;
-        req.user  = await userModel.findOne({
-            where:whereConditions
-        })
+        const whereConditions = [];
+        if (email) whereConditions.push({ email });
+        if (phoneNumber) whereConditions.push({ phoneNumber });
+        if (id) whereConditions.push({ id });
+
+        if (whereConditions.length > 0) {
+            req.user = await userModel.findOne({
+                where: { [Op.or]: whereConditions },
+            });
+        }
         return next()
     }
 

@@ -1,6 +1,7 @@
 import {serviceModel} from "../../../DB/model/relations.js";
 import {AppError} from "../../utils/AppError.js";
 // we have a bug in updateService the value of duration and price can be both integer and string
+
 export const createService = async (req, res,next) => {
     const {serviceName,serviceDescription,price,duration} = req.body;
     const clientId = req.authUser.id;

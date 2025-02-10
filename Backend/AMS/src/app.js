@@ -5,7 +5,9 @@ import adminRouter from "./modules/Admin/admin.router.js";
 import staffRouter from "./modules/Staff/staff.router.js";
 import serviceRouter from "./modules/Services/service.router.js";
 import appointmentRouter from "./modules/Appointment/appointment.router.js";
+import linksRouter from "./modules/Linking/links.router.js";
 import cors from 'cors'
+
 const initApp = (app,express) => {
     app.use(express.json());
     app.use(cors())
@@ -16,6 +18,7 @@ const initApp = (app,express) => {
     app.use('/staffs', staffRouter)
     app.use('/services', serviceRouter)
     app.use('/appointments', appointmentRouter)
+    app.use('/link',linksRouter)
     app.use('*',(req,res)=>{
         res.status(404).send('Page Not Found');
     })

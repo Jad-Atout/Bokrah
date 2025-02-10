@@ -1,7 +1,7 @@
-import {google} from "googleapis";
+import { google } from "googleapis";
 
 const getOrCreateSubCalendar = async (auth, staffId) => {
-    const calendar = google.calendar({ version: 'v3', auth });
+    const calendar = google.calendar({ version: "v3", auth });
 
     // Check if the calendar already exists
     const { data } = await calendar.calendarList.list();
@@ -15,7 +15,8 @@ const getOrCreateSubCalendar = async (auth, staffId) => {
     const newCalendar = await calendar.calendars.insert({
         requestBody: { summary: `Staff-${staffId}` },
     });
-
     return newCalendar.data.id;
+
 };
-export default getOrCreateSubCalendar
+
+export default getOrCreateSubCalendar;
