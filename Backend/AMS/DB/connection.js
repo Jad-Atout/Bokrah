@@ -3,6 +3,7 @@ import {Sequelize} from 'sequelize';
  const sequelize = new Sequelize('ams','root','',{
     host: 'localhost',
     dialect: 'mysql',
+     logging: false,
 })
 export async function createDatabaseConnection(){
     await sequelize.sync({force:false}).then(()=>{
