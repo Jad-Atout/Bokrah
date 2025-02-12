@@ -1,41 +1,34 @@
 import { google } from 'googleapis';
 import { staffModel } from "../../../DB/model/relations.js";
 import { AppError } from "../AppError.js";
-const calendar = google.calendar('v3');
+
 /**
- * Checks if the staff member's calendar has any events within the specified time slot.
+ * Asynchronously checks the availability of a staff member's Google Calendar for a specified time period.
  *
- * @param {Object} auth - The OAuth2 client used for Google API authentication.
- * @param {number} staffId - The ID of the staff member.
- * @param {Date|string} startTime - The start time of the desired time slot.
- * @param {Date|string} endTime - The end time of the desired time slot.
- * @returns {Promise<boolean>} - Returns true if the time slot is available, throws an error otherwise.
+ * @param {Object} authClient - Authorized Google API client used for calendar communication.
+ * @param {number} staffId - Unique identifier of the staff member whose calendar availability is being checked.
+ * @param {string} startTime - Start time of the period to check, in ISO 8601 format.
+ * @param {string} endTime - End time of the period to check, in ISO 8601 format.
+ * @throws {AppError} Throws an error if the staff member is not found or does not have an associated calendar ID.
+ * @returns {Promise<boolean>} Resolves to a boolean indicating whether the calendar is free (true) or busy (false) during the specified time period.
  */
-export const checkGoogleCalendarAvailability = async (auth, staffId, startTime, endTime) => {
-    try {
-        const staff = await staffModel.findByPk(staffId, { attributes: ['calendarId'] });
-        if (!staff || !staff.calendarId) {
+export const checkGoogleCalendarAvailability = async (authClient, staffId, startTime, endTime) => {
+        const staff = await staffModel.findOne({where:{
+            id: staffId,
+            }});
+        if (!staff || !staff.CalendarId) {
             throw new AppError("Staff member does not have a calendar ID associated", 404);
         }
-        const calendarId = staff.calendarId;
-        const response = await calendar.events.list({
-            calendarId,
-            auth,
-            timeMin: new Date(startTime).toISOString(),  // Ensure correct format for Google API
-            timeMax: new Date(endTime).toISOString(),    // Ensure correct format for Google API
-            singleEvents: true,                          // Return only single events (no recurring events)
-            orderBy: 'startTime',                        // Order events by start time
-        });
-        if (response.data.items.length > 0) {
-            throw new AppError("The selected time slot is unavailable", 400);
-        }
-        return true;
-    } catch (error) {
-        // Handle Google API specific errors
-        if (error.code === 403) {
-            throw new AppError("Access to Google Calendar is forbidden. Please check authentication credentials.", 403);
-        }
-        console.error("Error checking calendar availability:", error);
-        throw new AppError("Failed to check calendar availability. Please try again later.", 500);
-    }
+        const {CalendarId} = staff;
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+        const response = await calendar.freebusy.query({
+            requestBody:{
+                timeMin: startTime,
+                timeMax: endTime,
+                timeZone:'UTC',
+                items: [{ id: CalendarId }]
+            }
+        })
+        const busySlots = response.data.calendars[CalendarId].busy
+        return busySlots.length === 0
 };
