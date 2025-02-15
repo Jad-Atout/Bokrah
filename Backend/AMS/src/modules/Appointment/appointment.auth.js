@@ -1,5 +1,6 @@
 import {appointmentModel, serviceModel} from "../../../DB/model/relations.js";
-import {AppError} from "../../utils/AppError.js"; // Adjust path based on your structure
+import {AppError} from "../../utils/AppError.js";
+import {where} from "sequelize"; // Adjust path based on your structure
 
 export const authServices = ()=>{
  return async (req, res, next) =>{
@@ -19,14 +20,15 @@ export const authServices = ()=>{
         return next();
 };
 }
-export const checkAppointmentExistence = async () => {
+export const checkAppointmentExistence =  ()=> {
     return async (req, res, next) =>{
-    const {appointmentId} = req.params;
-
-    const appointment = await appointmentModel.findByPk(
-          appointmentId,
+    const {appointmentId} = req.body;
+    const appointment = await appointmentModel.findOne({
+        where: {
+            id: appointmentId
+        }
+        }
     );
-
     if (!appointment) {
         return next(new AppError("Appointment not found.", 404));
     }

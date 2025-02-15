@@ -6,7 +6,7 @@ import {asyncHandler} from "../../utils/catchError.js";
 import {createStaff} from "./staff.controller.js";
 import {createStaffSchema} from "./staff.validation.js";
 import {verifyRole} from "./staff.auth.js";
-import prepareToken from "../../utils/google/refreshAccessToken.js";
+import prepareToken from "../../utils/Google/Services/refreshAccessToken.js";
 
 const router = Router();
 

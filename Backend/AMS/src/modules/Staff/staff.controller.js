@@ -2,31 +2,22 @@ import { AppError } from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import userModel from "../../../DB/model/user.js";
 import staffModel from "../../../DB/model/staff.js";
-import getOrCreateSubCalendar from "../../utils/google/sub-calendar.js";
+import getOrCreateSubCalendar from "../../utils/Google/Services/calendarManagement.js";
 import { transaction } from "../../../DB/connection.js";
 
 export const createStaff = async (req, res, next) => {
     try {
-        // Check for existing user (Conflict case)
         if (req.user) {
             return next(
                 new AppError("Staff with this email or phone number already exists", 409)
             );
         }
-
-        // Extract request body
         const { userName, email, password, phoneNumber, roleDescription, availability } = req.body;
-
-        // Hash the user's password
         const hashedPassword = await bcrypt.hash(password, 8);
-
-        // Logged-in user info and OAuth client
         const authUserId = req.authUser.id;
         const oauth2Client = req.oauth2Client;
 
-        // Start Sequelize transaction
         const result = await transaction(async (t) => {
-            // Step 1: Create the user (basic info)
             const user = await userModel.create(
                 { userName, email, password: hashedPassword, phoneNumber, role: "Staff" },
                 { transaction: t }

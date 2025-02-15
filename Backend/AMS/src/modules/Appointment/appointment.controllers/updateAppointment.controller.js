@@ -2,11 +2,11 @@ import {AppError} from "../../../utils/AppError.js";
 import sequelize from "../../../../DB/connection.js";
 import {deleteAppointment} from "./deleteAppointment.controller.js";
 import {calculateEndTime, createAppointment} from "./createAppointment.controller.js";
-import {checkGoogleCalendarAvailability} from "../../../utils/google/checkAvailability.js";
+import {checkGoogleCalendarAvailability} from "../../../utils/Google/Services/checkAvailability.js";
 import {AppointmentService, staffModel} from "../../../../DB/model/relations.js";
-import createCalendarEvent from "../../../utils/google/eventCRUD/createEvent.js";
+import createCalendarEvent from "../../../utils/Google/Events.Controller/createEvent.js";
 import _ from "lodash";
-import {updateCalendarEvent} from "../../../utils/google/eventCRUD/updateEvent.js";
+import {updateCalendarEvent} from "../../../utils/Google/Events.Controller/updateEvent.js";
 import req from "express/lib/request.js";
 
 // export const updateAppointment = async (req, res, next) => {

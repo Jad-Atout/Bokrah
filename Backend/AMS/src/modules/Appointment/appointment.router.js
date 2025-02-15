@@ -1,9 +1,14 @@
 import {Router} from 'express';
 import auth from "../../middleware/auth.js";
 import {validationHandler} from "../../middleware/validation.js";
-import {appointmentIDValidationSchema, createAppointmentSchema, IDValidationSchema} from "./appointment.validation.js";
+import {
+    appointmentDeleteSchema,
+    appointmentIDValidationSchema,
+    createAppointmentSchema,
+    IDValidationSchema
+} from "./appointment.validation.js";
 import {asyncHandler} from "../../utils/catchError.js";
-import prepareToken from "../../utils/google/refreshAccessToken.js";
+import prepareToken from "../../utils/Google/Services/refreshAccessToken.js";
 import {
     getCustomerAppointment,
     getUserAppointments
@@ -36,9 +41,9 @@ router.post('/:clientId',
     asyncHandler(createAppointment)
 )
 // for updating and deleting we need to see if staff or client are auth to change appointment
-router.delete('/:appointmentId',
+router.delete('/:clientId',
     auth(),
-    asyncHandler(appointmentIDValidationSchema),
+    asyncHandler(validationHandler(appointmentDeleteSchema)),
     asyncHandler(checkAppointmentExistence()),
     asyncHandler(prepareToken()),
     asyncHandler(deleteAppointment)

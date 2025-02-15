@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
-import { staffModel } from "../../../DB/model/relations.js";
-import { AppError } from "../AppError.js";
+import { staffModel } from "../../../../DB/model/relations.js";
+import { AppError } from "../../AppError.js";
 
 /**
  * Asynchronously checks the availability of a staff member's Google Calendar for a specified time period.

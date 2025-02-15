@@ -81,5 +81,22 @@
     /config
       googleAuth.js
   ```
+## 4. Adding Slug
+- **A slug is a URL-friendly string used to identify a resource on a website.**
+  - SEO Optimization
+  - Readability
+  - Uniqueness
+## 4.  Appointments
+- **Adding a field contains the one who created the appointment**
+
+## 6. Services
+- **Adding status of active and note active**
+## 7. Database
+- **making the ID Object.ID**
+
+## 8. eslintrc
+- **adding a eslintrc file**
+
+
 
 ---

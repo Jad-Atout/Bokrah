@@ -1,5 +1,5 @@
-import {googleModel} from "../../../DB/model/relations.js";
-import {AppError} from "../AppError.js";
+import {googleModel} from "../../../../DB/model/relations.js";
+import {AppError} from "../../AppError.js";
 import {google} from "googleapis";
 
 
@@ -51,15 +51,13 @@ export default prepareToken;
 
 
 
+
 /**
- * Initializes and configures a Google OAuth2 client with the provided refresh token.
+ * Initializes and configures an OAuth2 client using the provided refresh token.
  *
- * This function creates an instance of Google OAuth2 client using the application-specific
- * client ID, client secret, and callback URL. It then sets the client credentials using
- * the provided refresh token, allowing the client to make authorized requests.
- *
- * @param {string} refreshToken - The refresh token used to authenticate the client and obtain new access tokens.
- * @returns {google.auth.OAuth2} An instance of Google OAuth2 client configured with the provided refresh token.
+ * @function
+ * @param {string} refreshToken - The refresh token used to set credentials for the Google OAuth2 client.
+ * @returns {google.auth.OAuth2} A configured instance of the Google OAuth2 client.
  */
 const initializeOAuthClient = (refreshToken) => {
     const googleOAuthClient = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CALLBACK_URL);
@@ -87,22 +85,17 @@ const refreshAccessTokenIfNeeded = async (googleCalendar, oauthClient) => {
     const currentTime = Date.now();
 
     // Parse token expiry time safely
+    console.log(googleCalendar.tokenExpiry)
     const tokenExpiryTime = googleCalendar.tokenExpiry
         ? new Date(googleCalendar.tokenExpiry).getTime()
         : 0;
-
     if (isNaN(tokenExpiryTime)) {
         throw new AppError(`Invalid tokenExpiry date: ${googleCalendar.tokenExpiry}`);
     }
-
-
-    // Refresh if the token expires within the threshold
     if (tokenExpiryTime - currentTime > REFRESH_THRESHOLD_MS) {
         return; // Token is valid, no need to refresh
     }
-
-
-    // Refresh access token using OAuth client
+    
     let refreshedData;
     try {
         refreshedData = await oauthClient.refreshAccessToken();

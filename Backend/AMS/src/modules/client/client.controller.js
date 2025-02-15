@@ -4,7 +4,7 @@ import clientModel from "../../../DB/model/client.js";
 import {AppError} from "../../utils/AppError.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import GoogleAuthService from "../../utils/google/googleAuth.js";
+import GoogleAuthService from "../../utils/Google/Services/googleAuth.js";
 import {googleModel} from "../../../DB/model/relations.js";
 import _ from "lodash"
 dotenv.config();

@@ -2,8 +2,8 @@ import { AppError } from "../../../utils/AppError.js";
 import sequelize  from "../../../../DB/connection.js";
 import appointmentModel from "../../../../DB/model/appointment.js";
 import {AppointmentService, staffModel} from "../../../../DB/model/relations.js";
-import createCalendarEvent from "../../../utils/google/eventCRUD/createEvent.js";
-import { checkGoogleCalendarAvailability } from "../../../utils/google/checkAvailability.js";
+import createCalendarEvent from "../../../utils/Google/Events.Controller/createEvent.js";
+import { checkGoogleCalendarAvailability } from "../../../utils/Google/Services/checkAvailability.js";
 
 
 

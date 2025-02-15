@@ -77,3 +77,25 @@ export const createAppointmentSchema = joi.object({
             "any.required": "staffId is required."
         })
 });
+export const appointmentDeleteSchema = joi.object({
+    clientId: joi.number()
+        .integer()
+        .positive()
+        .required()
+        .messages({
+            "number.base": "staffId must be a number.",
+            "number.integer": "staffId must be an integer.",
+            "number.positive": "staffId must be a positive number.",
+            "any.required": "staffId is required."
+        }),
+    appointmentId:joi.number()
+        .integer()
+        .positive()
+        .required()
+        .messages({
+            "number.base": "appointmentId must be a number.",
+            "number.integer": "appointmentId must be an integer.",
+            "number.positive": "appointmentId must be a positive number.",
+            "any.required": "appointmentId is required."
+        })
+})
