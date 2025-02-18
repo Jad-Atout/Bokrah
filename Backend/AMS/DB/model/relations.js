@@ -7,6 +7,7 @@ import recurrenceModel from "./recurrence.js";
 import googleModel from "./GoogleCalendar.js";
 import {AppointmentService} from "./AppointmentService.js"
 import {ServicesStaff} from "./ServicesStaff.js";
+import roleModel from "./roleModel.js";
 
 
 // User ↔ Client (1:1)
@@ -138,4 +139,8 @@ serviceModel.belongsToMany(staffModel, {
     otherKey: 'staffId',
     as: 'staffMembers'
 });
+userModel.hasOne(roleModel)
+roleModel.hasOne(userModel, {
+    foreignKey: 'userId',
+})
 export { userModel, clientModel, staffModel, serviceModel,googleModel,recurrenceModel,appointmentModel,AppointmentService};
