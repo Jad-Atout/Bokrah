@@ -77,8 +77,6 @@ export const createAppointment = async (req, res, next) => {
             appointmentId: appointment.id,
             serviceId: service.id,
         }));
-        await AppointmentService.bulkCreate(appointmentServicesData, { transaction });
-
 
         const {CalendarId} = await staffModel.findOne({where:{
             id:staffId

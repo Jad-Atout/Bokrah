@@ -14,7 +14,8 @@ const userModel = sequelize.define('User', {
     },
     email:{
         type:DataTypes.STRING,
-        defaultValue: null
+        defaultValue: null,
+        unique:true,
     },
     phoneNumber:{
         type:DataTypes.STRING,
@@ -28,10 +29,8 @@ const userModel = sequelize.define('User', {
         type:DataTypes.STRING,
         allowNull: false,
     },
-    role:{
-        type:DataTypes.ENUM("Admin","Client","Customer","Staff"),
-        allowNull:false,
-        defaultValue:"Customer"
+    roleId:{
+        type:DataTypes.INTEGER,
     },
     confirmed:{
         type:DataTypes.BOOLEAN,
