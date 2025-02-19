@@ -27,5 +27,10 @@ const UserSchema = new mongoose.Schema({
 
     }
 }, { timestamps: true });
+UserSchema.virtual("clients", {
+    ref: "UserClient", // The model to use for the relation
+    localField: "_id", // Field in the User model
+    foreignField: "userId" // Field in the UserClient model
+});
 
 export default mongoose.model("User", UserSchema);

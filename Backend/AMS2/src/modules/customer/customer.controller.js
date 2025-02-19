@@ -1,7 +1,8 @@
 import {AppError} from "../../ults/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
-
+import UserClient from "../../../DB/models/ClientCustomer.js";
+// when creating an Appointment assign customer to client
 export const createCustomer = async (req, res, next) => {
     try {
         if (req.user) {
@@ -23,12 +24,16 @@ export const createCustomer = async (req, res, next) => {
         return next(new AppError(error.message, 500));
     }
 };
-export const getAllCustomers = async (req, res, next) => {
-    try {
-        const customers = await userModel.find().populate("roleId"); // Fix: Mongoose uses `find()`
+export const getClientCustomers = async (req, res, next) => {
+        const {clientId} = req.params
+        const userClients = await UserClient.find({ clientId: clientId });
+        if (!userClients || userClients.length === 0) {
 
+            return res.status(404).json({ message: "No customers found for this client" });
+
+        }
+        const userIds = userClients.map(userClient => userClient.userId);
+        const customers = await userModel.find({ _id: { $in: userIds } }).populate("roleId");
         return res.status(200).json({ message: "success", customers });
-    } catch (error) {
-        return next(new AppError(error.message, 500));
-    }
+
 };

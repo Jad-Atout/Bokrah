@@ -2,13 +2,14 @@ import {connectDB} from "../DB/connection.js";
 
 import cors from 'cors'
 import customerRouter from '../src/modules/customer/customer.router.js';
+import clientRouter from "./modules/client/client.router.js";
 
 
 const initApp = (app,express) => {
     app.use(express.json());
     app.use(cors())
     connectDB()
-
+app.use('/client',clientRouter)
 app.use('/customer', customerRouter)
 
     app.use('*',(req,res)=>{

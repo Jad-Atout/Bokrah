@@ -1,9 +1,9 @@
 import express from "express";
-import {createCustomer, getAllCustomers} from "./customer.controller.js";
+import {createCustomer, getClientCustomers} from "./customer.controller.js";
 
-const router = express.Router();
+const router = express.Router({mergeParams: true});
 
 router.post('/register',createCustomer);
 
-router.get('/',getAllCustomers)
+router.get('/',getClientCustomers)
 export default router
