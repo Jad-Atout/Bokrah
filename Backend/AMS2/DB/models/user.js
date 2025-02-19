@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const UserSchema = new mongoose.Schema({
+const userModel = new mongoose.Schema({
     userName: {
         type: String,
         required: true
@@ -27,10 +27,10 @@ const UserSchema = new mongoose.Schema({
 
     }
 }, { timestamps: true });
-UserSchema.virtual("clients", {
+userModel.virtual("clients", {
     ref: "UserClient", // The model to use for the relation
     localField: "_id", // Field in the User model
     foreignField: "userId" // Field in the UserClient model
 });
 
-export default mongoose.model("User", UserSchema);
+export default mongoose.model("User", userModel);

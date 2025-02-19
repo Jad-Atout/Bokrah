@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const GoogleCalendarSchema = new mongoose.Schema({
+const googleModel = new mongoose.Schema({
     clientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Client",
@@ -16,4 +16,4 @@ const GoogleCalendarSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-export default mongoose.model("GoogleCalendar", GoogleCalendarSchema);
+export default mongoose.model("GoogleCalendar", googleModel);
