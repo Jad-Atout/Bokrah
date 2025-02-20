@@ -5,95 +5,93 @@ import userModel from "../../../DB/models/user.js"
 import googleModel from "../../../DB/models/GoogleCalendar.js"
 import roleModel from "../../../DB/models/role.js"
 import clientModel from "../../../DB/models/client.js"
+import {createRole} from "../../../DB/Controller/role.controller.js";
+import {creatUser} from "../../../DB/Controller/user.controller.js";
 
+
+import mongoose from "mongoose";
 
 export const googleAuthCallback = async (req, res, next) => {
-    const {businessName,industry} = req.body;
-    const authService = new GoogleAuthService();
-    const { code } = req.query;
-    if (!code) {
-        return next(new AppError("Authorization code is missing from the callback.", 400));
-    }
-    const tokens = await authService.handleOAuthRedirect(code);
-    const { idToken, access_token, refresh_token } = tokens;
-    const decodedIdToken = jwt.decode(idToken);
-    if (!decodedIdToken || !decodedIdToken.email) {
-        return next(new AppError("Failed to retrieve user information from Google.", 400));
-    }
-    // Find existing user in the
-    // database
-    let role = null
-    let existingUser = await userModel.findOne({ email: decodedIdToken.email });
-    if(!existingUser){
-            role = await roleModel.create({
-            admin: false,
-            client: true,
-            staff: false,
-            customer: false
-        })
-        existingUser = new userModel({
-            userName:decodedIdToken.name,
-            email: decodedIdToken.email,
-            password: null, // No password for Google-authenticated users
-            authProvider: "google",
-            confirmed:decodedIdToken.email_verified,
-            roleId:role._id
-        })
-        await existingUser.save()
-        const client = await clientModel.create({
-            userId:existingUser._id,
-         //   businessName:businessName,
-           // industry:industry
-        })
+    const session = await mongoose.startSession(); // Start a session
+    session.startTransaction();
 
+    try {
+        const authService = new GoogleAuthService();
+        const { code, state } = req.query;
+        const formData = state ? JSON.parse(decodeURIComponent(state)) : {};
+        const { businessName, industry } = formData;
 
-    }
-    // Find or create a record in googleModel for the user
-    let googleCredentials = await googleModel.findOne({ clientId: existingUser._id });
-    if (!googleCredentials) {
-        googleCredentials = new googleModel({
-            clientId: existingUser._id,
-            refreshToken: refresh_token,
-            accessToken: access_token,
+        if (!code) {
+            return next( new AppError("Authorization code is missing from the callback.", 400));
+        }
+
+        const { idToken, access_token, refresh_token } = await authService.handleOAuthRedirect(code);
+        const decodedIdToken = jwt.decode(idToken);
+
+        let user = await userModel.findOne({ email: decodedIdToken.email }).session(session);
+
+        if (!user) {
+            const role = await createRole({ client: true, session });
+            user = await creatUser({
+                userName: decodedIdToken.name,
+                email: decodedIdToken.email,
+                password: null, // No password for Google-authenticated users
+                authProvider: "google",
+                confirmed: decodedIdToken.email_verified,
+                roleId: role._id
+            }, session);
+            await clientModel.create([{ userId: user._id, industry, businessName }], { session });
+        }
+
+        const client = await clientModel.findOne({ userId: user._id }).session(session);
+        await googleModel.findOneAndUpdate(
+            { clientId: client._id },
+            { refreshToken: refresh_token, accessToken: access_token },
+            { new: true, upsert: true, session }
+        );
+        const role = await roleModel.findOne({ _id: user.roleId }).session(session);
+        console.log(role)
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user._id,
+                userName: user.userName,
+                email: user.email,
+                role: role?.toObject() ?? null,
+                businessName,
+                industry,
+                clientId:client._id,
+            },
+            process.env.JWT_SECRET,
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+            message: "Google authentication successful.",
+            token,
+            decoded: jwt.decode(token),
         });
-        await googleCredentials.save();
-    } else {
-        // If already exists, update the refreshToken/accessToken
-        googleCredentials.refreshToken = refresh_token;
-        googleCredentials.accessToken = access_token;
-        await googleCredentials.save();
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        next(new AppError(error,500));
     }
-         role = await  roleModel.findById(existingUser.roleId)
-    // Generate JWT token for user authentication
-    const token = jwt.sign(
-        {
-            id: existingUser._id,
-            userName: existingUser.userName,
-            email: existingUser.email,
-            role: role ? role.toObject() : null
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" } // Set token expiration
-    );
-
-    const decoded = jwt.decode(token);
-
-
-
-    return res.status(200).json({
-        message: "Google authentication successful.",
-        token,
-        decoded,
-        googleCredentials
-    });
-
 };
+
+
 export const gClientLogin = async (req, res) => {
+    const { businessName, industry } = req.query;  // Get params from the request
+    if (!businessName || !industry) {
+        return res.status(400).json({ error: "Missing businessName or industry" });
+    }
     const authService = new GoogleAuthService();
     const authUrl = authService.generateAuthUrl();
+    const modifiedAuthUrl = `${authUrl}&state=${encodeURIComponent(JSON.stringify({ businessName, industry }))}`;
+    return res.redirect(modifiedAuthUrl);
+};
 
-    return res.redirect(authUrl);
-}
 
 
 export const clientLogin = async (req, res,next) => {
@@ -104,7 +102,7 @@ export const clientLogin = async (req, res,next) => {
     const {password} = req.body
 
     if(user_.role!='Client'){
-        return next(new AppError("You're not a service Provider",401))
+        return next(new AppError("You're not a Service Provider",401))
     }
     const validPassword = await bcrypt.compare(password, user_.password);
     if(!validPassword){

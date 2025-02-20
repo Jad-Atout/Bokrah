@@ -4,7 +4,8 @@ const googleModel = new mongoose.Schema({
     clientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Client",
-        required: true
+        required: true,
+        onDelete: "cascade"
     },
     accessToken: {
         type: String,

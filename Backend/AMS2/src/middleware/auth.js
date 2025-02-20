@@ -13,10 +13,11 @@ export const roles = {
     Client:'client'
 }
 
-const auth = (requiredRole = null) => {
+export const auth = (requiredRole = null) => {
     return async (req, res, next) => {
         try {
             const authHeader = req.headers.authorization;
+
             if (!authHeader || !authHeader.startsWith(process.env.BEARERTOKEN)) {
                 return next(new AppError("No token provided", 400));
             }
@@ -26,13 +27,12 @@ const auth = (requiredRole = null) => {
             if (!token) {
                 return next(new AppError("Invalid token format", 400));
             }
-
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             if (!decoded) {
                 return next(new AppError("Invalid token", 401));
             }
-
+            console.log(decoded);
             // Attach user data to request
             req.authUser = decoded;
 
@@ -61,4 +61,3 @@ const auth = (requiredRole = null) => {
     };
 };
 
-export default auth;

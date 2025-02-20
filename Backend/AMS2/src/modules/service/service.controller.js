@@ -1,58 +1,41 @@
 import Service from '../../../DB/models/service.js';
 import ServicesStaff from '../../../DB/models/ServiceStaff.js';
-import {AppError} from '../../../src/ults/AppError.js';
+import {AppError} from '../../ults/AppError.js';
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 
 export const createService = async (req, res, next) => {
     try {
-        console.log(req.headers);
 
-        // Extract the token from the Authorization header
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith(process.env.BEARERTOKEN)) {
             return next(new AppError("Unauthorized: No token provided", 401));
         }
-
+        console.log(authHeader)
         const token = authHeader.split("__")[1];
 
-        // Verify and decode the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         console.log("Decoded Token:", decoded);
 
-        // Ensure the user has a role and is a client
         if (!decoded.role || typeof decoded.role.client === "undefined" || !decoded.role.client) {
             return next(new AppError("Unauthorized: Only clients can create services", 403));
         }
 
-        // Extract required fields
         const { serviceName, serviceDescription, price, duration, staffIds } = req.body;
 
-        // Validate input
-        if (!serviceName || !serviceDescription || !price || !duration) {
-            return next(new AppError("All fields are required", 400));
-        }
 
-        // Create new service with authenticated client's ID
         const service = new Service({
             serviceName,
             serviceDescription,
             price,
             duration,
-            clientId: decoded.id, // Assign the authenticated client's ID
+            clientId: decoded.clientId,
         });
 
         await service.save();
 
-        // Assign staff to service if provided
-        if (staffIds && Array.isArray(staffIds) && staffIds.length > 0) {
-            const staffServices = staffIds.map(staffId => ({
-                staffId,
-                serviceId: service._id
-            }));
 
-            await ServicesStaff.insertMany(staffServices);
-        }
 
         res.status(201).json({ message: "Service created successfully", service });
     } catch (error) {
@@ -60,19 +43,63 @@ export const createService = async (req, res, next) => {
         next(new AppError("Internal Server Error", 500));
     }
 };
-export const getBusinessServices = async (req, res) => {
+export const getClientServices = async (req, res) => {
     try {
         const { clientId } = req.params;
 
-        const services = await Service.find({ clientId })
-            .populate({
-                path: 'staffId',
-                select: 'userId',
-                populate: {
-                    path: 'userId',
-                    select: 'userName'
+        const services = await Service.aggregate([
+            {
+                $match: { clientId: new mongoose.Types.ObjectId(clientId) } // Find services for this client
+            },
+            {
+                $lookup: {
+                    from: "users", // Assuming clients are stored in the User collection
+                    localField: "clientId",
+                    foreignField: "_id",
+                    as: "client"
                 }
-            });
+            },
+            {
+                $unwind: { path: "$client", preserveNullAndEmptyArrays: true }
+            },
+            {
+                $lookup: {
+                    from: "servicesstaffs", // Join with ServicesStaff
+                    localField: "_id",
+                    foreignField: "serviceId",
+                    as: "staffServices"
+                }
+            },
+            {
+                $lookup: {
+                    from: "staffs", // Get staff details
+                    localField: "staffServices.staffId",
+                    foreignField: "_id",
+                    as: "staff"
+                }
+            },
+            {
+                $lookup: {
+                    from: "users", // Get staff names
+                    localField: "staff.userId",
+                    foreignField: "_id",
+                    as: "staffUsers"
+                }
+            },
+            {
+                $project: {
+                    serviceName: 1,
+                    serviceDescription: 1,
+                    price: 1,
+                    duration: 1,
+                    clientName: "$client.userName", // Extract client name
+                    staffNames: "$staffUsers.userName" // Extract staff names
+                }
+            }
+        ]);
+
+        console.log(services);
+
 
         res.json(services);
     } catch (error) {
