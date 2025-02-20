@@ -9,10 +9,17 @@ const userModel = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
-    },
-    password: {
+    },    password: {
         type: String,
-        required: true
+        required: function() {
+            return this.authProvider === "local"; // Require password only for non-Google users
+        }
+    },
+    authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        required: true,
+        default: "local"
     },
     phoneNumber: {
 

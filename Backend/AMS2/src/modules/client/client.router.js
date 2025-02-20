@@ -7,6 +7,7 @@ import {asyncHandler} from "../../ults/catchError.js";
 const router = express.Router();
 
 router.use('/:clientId/customer',customerRouter);
+
 router.get('/oauth2callback',
     asyncHandler(googleAuthCallback)
 )

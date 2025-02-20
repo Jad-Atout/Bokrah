@@ -5,6 +5,10 @@ const ClientSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
+    industry: {
+        type: String,
+        required: true,
+    },
     businessName: {
         type: String,
         required: true
