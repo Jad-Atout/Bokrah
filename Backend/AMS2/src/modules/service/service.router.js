@@ -6,6 +6,9 @@ import {
     getClientServices
 } from './service.controller.js';
 import {auth,roles} from '../../middleware/auth.js'
+import {asyncHandler} from "../../utils/catchError.js";
+import {validationHandler} from "../../middleware/validation.js";
+import {createServiceSchema} from "./services.validation.js";
 
 const router = express.Router();
 
@@ -13,7 +16,11 @@ const router = express.Router();
 router.get('/:clientId', getClientServices);
 
 
-router.post('/',auth(roles.Client), createService);
+router.post('/',
+    auth(roles.Client),
+    asyncHandler(validationHandler(createServiceSchema))
+    , asyncHandler(createService)
+);
 router.put('/:id',auth(roles.Client), updateService);
 router.delete('/:id',auth(roles.Client), deleteService);
 

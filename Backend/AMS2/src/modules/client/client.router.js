@@ -1,7 +1,7 @@
 import express from "express";
 import customerRouter from"../customer/customer.router.js"
 import {gClientLogin, googleAuthCallback} from "./client.controller.js";
-import {asyncHandler} from "../../ults/catchError.js";
+import {asyncHandler} from "../../utils/catchError.js";
 
 
 const router = express.Router();

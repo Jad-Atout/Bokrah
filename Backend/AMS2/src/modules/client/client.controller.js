@@ -1,6 +1,6 @@
-import GoogleAuthService from "../../ults/Google/Services/googleAuth.js";
+import GoogleAuthService from "../../utils/Google/googleAuth.js";
 import jwt from "jsonwebtoken";
-import {AppError} from "../../ults/AppError.js";
+import {AppError} from "../../utils/AppError.js";
 import userModel from "../../../DB/models/user.js"
 import googleModel from "../../../DB/models/GoogleCalendar.js"
 import roleModel from "../../../DB/models/role.js"
@@ -22,7 +22,7 @@ export const googleAuthCallback = async (req, res, next) => {
         const { businessName, industry } = formData;
 
         if (!code) {
-            return next( new AppError("Authorization code is missing from the callback.", 400));
+            return next(new AppError("Authorization code is missing from the callback.", 400));
         }
 
         const { idToken, access_token, refresh_token } = await authService.handleOAuthRedirect(code);
@@ -31,7 +31,8 @@ export const googleAuthCallback = async (req, res, next) => {
         let user = await userModel.findOne({ email: decodedIdToken.email }).session(session);
 
         if (!user) {
-            const role = await createRole({ client: true, session });
+            const role = await createRole({ client: true }, session); // Creating the role
+
             user = await creatUser({
                 userName: decodedIdToken.name,
                 email: decodedIdToken.email,
@@ -40,33 +41,29 @@ export const googleAuthCallback = async (req, res, next) => {
                 confirmed: decodedIdToken.email_verified,
                 roleId: role._id
             }, session);
-            await clientModel.create([{ userId: user._id, industry, businessName }], { session });
-        }
 
-        const client = await clientModel.findOne({ userId: user._id }).session(session);
-        await googleModel.findOneAndUpdate(
-            { clientId: client._id },
-            { refreshToken: refresh_token, accessToken: access_token },
-            { new: true, upsert: true, session }
-        );
+            await clientModel.create([{ userId: user._id, industry, businessName }], { session });
+
+        }
         const role = await roleModel.findOne({ _id: user.roleId }).session(session);
-        console.log(role)
-        // Generate JWT token
+        const client = await clientModel.findOne({userId:user._id}).session(session);
+        await googleModel.findOneAndUpdate({ clientId: client._id }, { refreshToken: refresh_token, accessToken: access_token }, { new: true, upsert: true, session }).session(session);
+
+        await session.commitTransaction();
+        session.endSession();
+
         const token = jwt.sign(
             {
                 id: user._id,
                 userName: user.userName,
                 email: user.email,
-                role: role?.toObject() ?? null,
+                role: role ? role.toObject() : null, // Ensure role is assigned here
                 businessName,
                 industry,
-                clientId:client._id,
+                clientId: client._id,
             },
             process.env.JWT_SECRET,
         );
-
-        await session.commitTransaction();
-        session.endSession();
 
         return res.status(200).json({
             message: "Google authentication successful.",
@@ -76,10 +73,9 @@ export const googleAuthCallback = async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        next(new AppError(error,500));
+        next(new AppError(error, 500));
     }
 };
-
 
 export const gClientLogin = async (req, res) => {
     const { businessName, industry } = req.query;  // Get params from the request

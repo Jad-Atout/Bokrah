@@ -1,24 +1,15 @@
 import Service from '../../../DB/models/service.js';
 import ServicesStaff from '../../../DB/models/ServiceStaff.js';
-import {AppError} from '../../ults/AppError.js';
+import {AppError} from '../../utils/AppError.js';
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
 
 export const createService = async (req, res, next) => {
     try {
-
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith(process.env.BEARERTOKEN)) {
-            return next(new AppError("Unauthorized: No token provided", 401));
-        }
-        console.log(authHeader)
-        const token = authHeader.split("__")[1];
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("Decoded Token:", decoded);
-
-        if (!decoded.role || typeof decoded.role.client === "undefined" || !decoded.role.client) {
+        const user = req.authUser
+        console.log(user)
+        if (!user.role['client']) {
             return next(new AppError("Unauthorized: Only clients can create services", 403));
         }
 
@@ -30,7 +21,7 @@ export const createService = async (req, res, next) => {
             serviceDescription,
             price,
             duration,
-            clientId: decoded.clientId,
+            clientId: user.clientId,
         });
 
         await service.save();
@@ -46,7 +37,7 @@ export const createService = async (req, res, next) => {
 export const getClientServices = async (req, res) => {
     try {
         const { clientId } = req.params;
-
+        console.log(clientId)
         const services = await Service.aggregate([
             {
                 $match: { clientId: new mongoose.Types.ObjectId(clientId) } // Find services for this client

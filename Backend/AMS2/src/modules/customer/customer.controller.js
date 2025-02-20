@@ -1,4 +1,4 @@
-import {AppError} from "../../ults/AppError.js";
+import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
