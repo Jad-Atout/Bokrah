@@ -30,9 +30,9 @@ export const assignServicesToStaffSchema = {
             .min(1) // Ensure the array has at least 1 service ID
             .required()
             .messages({
-                "array.base": "Service IDs must be an array",
+                "array.base": "service IDs must be an array",
                 "array.min": "The array of service IDs must contain at least one ID",
-                "any.required": "Service IDs are required"
+                "any.required": "service IDs are required"
             }),
     }),
 };

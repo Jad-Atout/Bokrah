@@ -3,17 +3,17 @@ import joi from 'joi';
 export const creatServiceSchema = joi.object({
     serviceName: joi.string().min(3).max(100).required()
         .messages({
-            'string.base': 'Service name must be a string.',
-            'string.min': 'Service name must be at least 3 characters long.',
-            'string.max': 'Service name must not exceed 100 characters.',
-            'any.required': 'Service name is required.'
+            'string.base': 'service name must be a string.',
+            'string.min': 'service name must be at least 3 characters long.',
+            'string.max': 'service name must not exceed 100 characters.',
+            'any.required': 'service name is required.'
         }),
 
     serviceDescription: joi.string().min(10).max(500)
         .messages({
-            'string.base': 'Service description must be a string.',
-            'string.min': 'Service description must be at least 10 characters long.',
-            'string.max': 'Service description must not exceed 500 characters.',
+            'string.base': 'service description must be a string.',
+            'string.min': 'service description must be at least 10 characters long.',
+            'string.max': 'service description must not exceed 500 characters.',
         }),
 
     price: joi.number().min(0).precision(2).default(0)
@@ -41,16 +41,16 @@ export const updateServiceSchema = joi.object({
         }),
     serviceName: joi.string().min(3).max(100)
         .messages({
-            'string.base': 'Service name must be a string.',
-            'string.min': 'Service name must be at least 3 characters long.',
-            'string.max': 'Service name must not exceed 100 characters.'
+            'string.base': 'service name must be a string.',
+            'string.min': 'service name must be at least 3 characters long.',
+            'string.max': 'service name must not exceed 100 characters.'
         }),
 
     serviceDescription: joi.string().min(10).max(500)
         .messages({
-            'string.base': 'Service description must be a string.',
-            'string.min': 'Service description must be at least 10 characters long.',
-            'string.max': 'Service description must not exceed 500 characters.'
+            'string.base': 'service description must be a string.',
+            'string.min': 'service description must be at least 10 characters long.',
+            'string.max': 'service description must not exceed 500 characters.'
         }),
 
     price: joi.number().min(0).precision(2)

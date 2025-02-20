@@ -9,14 +9,14 @@ export const createService = async (req, res,next) => {
     if(price) serviceData.price = price;
     if(serviceDescription) serviceData.serviceDescription = serviceDescription;
     const service = await serviceModel.create(serviceData)
-    return res.status(201).json({"message": "Service created successfully.",service});
+    return res.status(201).json({"message": "service created successfully.",service});
 }
 export const deleteService = async (req, res,next) => {
     const serviceId = req.params.id;
     const service = await serviceModel.findByPk(serviceId)
-    if(!service) return  next( new AppError("Service not found!",401));
+    if(!service) return  next( new AppError("service not found!",401));
     await service.destroy()
-    return res.status(200).json({"message": "Service deleted successfully.",service});
+    return res.status(200).json({"message": "service deleted successfully.",service});
 }
 export const getClientServices = async (req,res,next) => {
     const id = req.params.id;
@@ -37,7 +37,7 @@ export const updateService = async (req,res,next) => {
     );
     if(!Object.keys(serviceData).length) return next(new AppError("Failed to update service no data's provided.",401));
     const service = await serviceModel.findByPk(id)
-    if(!service) return  next(new AppError("Service not found!",401));
+    if(!service) return  next(new AppError("service not found!",401));
     const updatedService = await service.update(serviceData)
     return res.status(200).json({"message": "Successfully updated",updatedService});
 

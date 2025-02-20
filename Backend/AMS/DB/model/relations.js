@@ -44,7 +44,7 @@ staffModel.belongsTo(clientModel, {
     as: 'client'
 });
 
-// Client ↔ Service (1:M)
+// Client ↔ service (1:M)
 clientModel.hasMany(serviceModel, {
     foreignKey: 'clientId',
     as: 'services'
@@ -77,7 +77,7 @@ appointmentModel.belongsTo(userModel, {
     as: 'customer'
 });
 
-// Appointment ↔ Service (M:N) using AppointmentService model
+// Appointment ↔ service (M:N) using AppointmentService model
 appointmentModel.belongsToMany(serviceModel, {
     through: AppointmentService, // Explicit pivot model
     foreignKey: 'appointmentId',
@@ -125,7 +125,7 @@ googleModel.belongsTo(clientModel, {
     as: 'client'
 });
 
-// Staff ↔ Service (M:N) using StaffService model
+// Staff ↔ service (M:N) using StaffService model
 staffModel.belongsToMany(serviceModel, {
     through: ServicesStaff, // Explicit pivot model
     foreignKey: 'staffId',

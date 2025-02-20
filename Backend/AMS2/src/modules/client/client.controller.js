@@ -42,8 +42,8 @@ export const googleAuthCallback = async (req, res, next) => {
         await existingUser.save()
         const client = await clientModel.create({
             userId:existingUser._id,
-            businessName:businessName,
-            industry:industry
+         //   businessName:businessName,
+           // industry:industry
         })
 
 
@@ -84,7 +84,7 @@ export const googleAuthCallback = async (req, res, next) => {
         message: "Google authentication successful.",
         token,
         decoded,
-        client
+        googleCredentials
     });
 
 };
@@ -104,7 +104,7 @@ export const clientLogin = async (req, res,next) => {
     const {password} = req.body
 
     if(user_.role!='Client'){
-        return next(new AppError("You're not a Service Provider",401))
+        return next(new AppError("You're not a service Provider",401))
     }
     const validPassword = await bcrypt.compare(password, user_.password);
     if(!validPassword){
