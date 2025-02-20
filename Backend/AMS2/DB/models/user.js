@@ -26,7 +26,8 @@ const userModel = new mongoose.Schema({
     },
     roleId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Role"
+        ref: "Role",
+        onDelete: "cascade"
     },
     confirmed:{
         type:Boolean,
@@ -37,7 +38,8 @@ const userModel = new mongoose.Schema({
 userModel.virtual("clients", {
     ref: "UserClient", // The model to use for the relation
     localField: "_id", // Field in the User model
-    foreignField: "userId" // Field in the UserClient model
+    foreignField: "userId", // Field in the UserClient model
+    onDelete: "cascade"
 });
 
 export default mongoose.model("User", userModel);
