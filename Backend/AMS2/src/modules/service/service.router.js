@@ -13,7 +13,9 @@ import {createServiceSchema} from "./services.validation.js";
 const router = express.Router();
 
 // Public routes
-router.get('/:clientId', getClientServices);
+router.get('/:clientId',
+    asyncHandler(getClientServices)
+);
 
 
 router.post('/',
@@ -21,8 +23,16 @@ router.post('/',
     asyncHandler(validationHandler(createServiceSchema))
     , asyncHandler(createService)
 );
-router.put('/:id',auth(roles.Client), updateService);
-router.delete('/:id',auth(roles.Client), deleteService);
+
+router.put('/:id',
+    auth(roles.Client),
+    asyncHandler(updateService)
+);
+
+router.delete('/:id'
+    ,auth(roles.Client),
+    asyncHandler(deleteService)
+);
 
 
 export default router;
