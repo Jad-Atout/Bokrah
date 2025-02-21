@@ -17,7 +17,7 @@ const userModel = new mongoose.Schema({
     },
     authProvider: {
         type: String,
-        enum: ["local", "google"],
+        enum: ["local", "google","actor"],
         required: true,
         default: "local"
     },
