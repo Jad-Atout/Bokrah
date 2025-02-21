@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { AppError } from "../utils/AppError.js";
 import userModel from "../../DB/models/user.js";
+import { customAlphabet } from "nanoid";
 
 dotenv.config();
 
@@ -46,3 +47,18 @@ export const auth = (requiredRole = null) => {
     };
 };
 
+export const sendCode = async(req,res) => {
+    const {email} = req.body;
+
+    const code = customAlphabet('1234567890abcdef', 6)();
+    const user = await userModel.findOneAndUpdate({email},{sendCode:code}, {new:true});
+
+    if (!user){
+        return res.status(404).json({message:"Email not found"});
+    }
+
+    await sendEmail(email, 'Password Reset Code', sendCodeTemplate,  {userName:user.userName, code});
+
+    return res.status(200).json({message:"success"});
+
+}
