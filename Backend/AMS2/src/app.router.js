@@ -4,6 +4,7 @@ import cors from 'cors'
 import customerRouter from '../src/modules/customer/customer.router.js';
 import clientRouter from "./modules/client/client.router.js";
 import serviceRouter from "./modules/service/service.router.js";
+import staffRouter from "./modules/staff/staff.router.js";
 
 
 
@@ -11,9 +12,10 @@ const initApp = (app,express) => {
     app.use(express.json());
     app.use(cors())
     connectDB()
-app.use('/client',clientRouter)
-app.use('/customer', customerRouter)
+    app.use('/client',clientRouter)
+    app.use('/customer', customerRouter)
     app.use('/service', serviceRouter)
+    app.use('/staff', staffRouter)
 
 
     app.use('*',(req,res)=>{
