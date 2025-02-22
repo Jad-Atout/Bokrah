@@ -5,6 +5,7 @@ import customerRouter from '../src/modules/customer/customer.router.js';
 import clientRouter from "./modules/client/client.router.js";
 import serviceRouter from "./modules/service/service.router.js";
 import staffRouter from "./modules/staff/staff.router.js";
+import linkingRouter from "./modules/linking/linking.router.js";
 
 
 
@@ -16,6 +17,7 @@ const initApp = (app,express) => {
     app.use('/customer', customerRouter)
     app.use('/service', serviceRouter)
     app.use('/staff', staffRouter)
+    app.use('/link', linkingRouter)
 
 
     app.use('*',(req,res)=>{

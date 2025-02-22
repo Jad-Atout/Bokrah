@@ -20,7 +20,9 @@ const ServiceSchema = new mongoose.Schema({
     clientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Client"
-    }
+    },
+    staff: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Staff' }] // Array of staff
+
 }, { timestamps: true });
 
 export default mongoose.model("Service", ServiceSchema);

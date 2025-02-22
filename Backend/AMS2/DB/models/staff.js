@@ -17,7 +17,9 @@ const StaffSchema = new mongoose.Schema({
     },
     calendarId: {
         type: String
-    }
+    },
+    services: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Service' }] // Array of services
+
 }, { timestamps: true });
 
 export default mongoose.model("Staff", StaffSchema);

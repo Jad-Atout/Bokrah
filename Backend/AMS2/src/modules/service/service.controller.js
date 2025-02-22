@@ -24,62 +24,73 @@ export const createService = async (req, res, next) => {
 };
 
 export const getClientServices = async (req, res) => {
-// TODO: still need to check the staff returning functionality
-        const { clientId } = req.params;
-        const services = await Service.aggregate([
-            {
-                $match: { clientId: new mongoose.Types.ObjectId(clientId) } // Find services for this client
-            },
-            {
-                $lookup: {
-                    from: "users", // Assuming clients are stored in the User collection
-                    localField: "clientId",
-                    foreignField: "_id",
-                    as: "client"
-                }
-            },
-            {
-                $unwind: { path: "$client", preserveNullAndEmptyArrays: true }
-            },
-            {
-                $lookup: {
-                    from: "servicesstaffs", // Join with ServicesStaff
-                    localField: "_id",
-                    foreignField: "serviceId",
-                    as: "staffServices"
-                }
-            },
-            {
-                $lookup: {
-                    from: "staffs", // Get staff details
-                    localField: "staffServices.staffId",
-                    foreignField: "_id",
-                    as: "staff"
-                }
-            },
-            {
-                $lookup: {
-                    from: "users", // Get staff names
-                    localField: "staff.userId",
-                    foreignField: "_id",
-                    as: "staffUsers"
-                }
-            },
-            {
-                $project: {
-                    serviceName: 1,
-                    serviceDescription: 1,
-                    price: 1,
-                    duration: 1,
-                    clientName: "$client.userName", // Extract client name
-                    staffNames: "$staffUsers.userName" // Extract staff names
+//TODO: fixing the return staff
+        const {clientId} = req.params;
+
+    const services = await Service.aggregate([
+        {
+            $match: { clientId: new mongoose.Types.ObjectId(clientId) }
+        },
+        {
+            $lookup: {
+                from: "clients",
+                localField: "clientId",
+                foreignField: "_id",
+                as: "client"
+            }
+        },
+        { $unwind: { path: "$client", preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: "users",
+                localField: "client.userId",
+                foreignField: "_id",
+                as: "clientUser"
+            }
+        },
+        { $unwind: { path: "$clientUser", preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: "staffs",
+                localField: "staff", // This is an array, so we must match multiple staff members
+                foreignField: "_id",
+                as: "staffDetails"
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "staffDetails.userId",
+                foreignField: "_id",
+                as: "staffUsers"
+            }
+        },
+        {
+            $project: {
+                serviceName: 1,
+                serviceDescription: 1,
+                price: 1,
+                duration: 1,
+                clientBusinessName: "$client.businessName",
+                clientIndustry: "$client.industry",
+                clientName: "$clientUser.userName",
+                staff: {
+                    $map: {
+                        input: "$staffUsers",
+                        as: "staff",
+                        in: {
+                            name: "$$staff.userName",
+                            email: "$$staff.email",
+                            phoneNumber: "$$staff.phoneNumber"
+                        }
+                    }
                 }
             }
-        ]);
+        }
+    ]);
 
-        res.json({message:"success",services});
-};
-
+        return res.json({message: "success", services});
+    }
 export const updateService = async (req, res) => {
         const { id } = req.params;
         const {...serviceData } = req.body;
@@ -98,3 +109,4 @@ export const deleteService = async (req, res) => {
         await Service.findByIdAndDelete(id);
         res.json({ message: "Service deleted successfully." });
 };
+
