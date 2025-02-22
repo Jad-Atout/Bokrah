@@ -13,8 +13,8 @@ export const roles = {
     Customer:'customer',
     Client:'client'
 }
-
-export const auth = (requiredRole = null) => {
+//TODO:fixing multiple role sending
+export const auth = (...requiredRole) => {
     return async (req, res, next) => {
         try {
             const authHeader = req.headers.authorization;
@@ -34,9 +34,10 @@ export const auth = (requiredRole = null) => {
                 return next(new AppError("User does not exist", 401));
             }
             req.authUser = decoded;
+            console.log(decoded.role)
 
             // If a requiredRole is specified, check the user's role dynamically
-            if (requiredRole && (!decoded.role || !decoded.role[requiredRole])) {
+            if (decoded.role in requiredRole) {
                 return next(new AppError(`Unauthorized: Only ${requiredRole}s can access this resource`, 403));
             }
             next();

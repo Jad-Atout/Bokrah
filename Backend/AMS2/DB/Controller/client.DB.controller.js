@@ -29,7 +29,6 @@ export const transCreateClient = async (clientData,userData,googleData) => {
 
             await session.commitTransaction();
             session.endSession();
-
             return {role, user:newUser, client, google}
         }else{
             const role = await  roleModel.findById(user.roleID)
