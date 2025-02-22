@@ -4,6 +4,7 @@ import staffModel from "../../../DB/models/staff.js"
 import roleModel from "../../../DB/models/role.js"
 import {createRole} from "../../../DB/Controller/role.controller.js";
 import mongoose from 'mongoose';
+import staff from "../../../DB/models/staff.js";
 
 
 const transCreateStaff = async (userData,staffData)=>{
@@ -12,9 +13,11 @@ const transCreateStaff = async (userData,staffData)=>{
     try {
         const role = await createRole({ staff: true }, session);
         userData.roleId = role._id;
-        const user = await userModel.create(userData, { session });
+        const user = new userModel(userData)
+        await user.save({ session });
         staffData.userId = user._id
-        const staff=await staffModel.create(staffData,{session});
+        const staff= new staffModel(staffData);
+        await staff.save({session})
         await session.commitTransaction();
         session.endSession();
         return staff
@@ -35,11 +38,11 @@ export const createStaff = async (req, res, next) => {
         if (checkUserExistence) {
             throw new AppError('User already exists', 409);
         }
-   await transCreateStaff(
-        [{ userName, email, phoneNumber, authProvider: "actor" }],
-        [{ clientId, roleDescription }],
+   const staff = await transCreateStaff(
+        { userName, email, phoneNumber, authProvider: "actor" },
+        { clientId, roleDescription },
     )
-    return res.json({ message: "Staff successfully created"});
+    return res.json({ message: "Staff successfully created",staff});
 };
 
 export const getClientStaff = async (req, res, next) => {

@@ -29,6 +29,6 @@ export const assignServiceStaff = async (req, res,next) => {
         { _id: { $in: serviceIds } },
         { $addToSet: { staff: { $each: staffIds } } }
     );
-    return res.status(200).send('success');
+    return res.status(200).json({message: "success"});
 
 }

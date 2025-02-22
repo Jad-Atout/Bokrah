@@ -7,12 +7,15 @@ const userModel = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
         unique: true
     },    password: {
         type: String,
         required: function() {
-            return this.authProvider === "local"; // Require password only for non-Google users
+            let req= false
+            if(this.authProvider==="local"){
+                req=true;
+            }
+            return req;
         }
     },
     authProvider: {
