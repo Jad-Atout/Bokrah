@@ -41,6 +41,7 @@ const formatService = (data) => {
 }
 
 export const getClientServices = async (req, res) => {
+    //TODO fixing returning one staff..
     const {clientId} = req.params;
     const services = await Service.find({clientId: clientId})
         .populate({

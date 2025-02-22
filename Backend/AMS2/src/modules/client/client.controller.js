@@ -6,7 +6,7 @@ import googleModel from "../../../DB/models/GoogleCalendar.js"
 import roleModel from "../../../DB/models/role.js"
 import clientModel from "../../../DB/models/client.js"
 import {createRole} from "../../../DB/Controller/role.controller.js";
-import {creatUser} from "../../../DB/Controller/user.controller.js";
+import {transCreateCustomer} from "../../../DB/Controller/customer.DB.controller.js";
 
 
 import mongoose from "mongoose";
@@ -33,7 +33,7 @@ export const googleAuthCallback = async (req, res, next) => {
         if (!user) {
             const role = await createRole({ client: true }, session); // Creating the role
 
-            user = await creatUser({
+            user = await transCreateCustomer({
                 userName: decodedIdToken.name,
                 email: decodedIdToken.email,
                 password: null, // No password for Google-authenticated users

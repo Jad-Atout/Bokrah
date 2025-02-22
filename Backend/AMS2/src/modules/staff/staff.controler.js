@@ -4,7 +4,6 @@ import staffModel from "../../../DB/models/staff.js"
 import roleModel from "../../../DB/models/role.js"
 import {createRole} from "../../../DB/Controller/role.controller.js";
 import mongoose from 'mongoose';
-import staff from "../../../DB/models/staff.js";
 
 
 const transCreateStaff = async (userData,staffData)=>{
@@ -31,6 +30,7 @@ const transCreateStaff = async (userData,staffData)=>{
 
 export const createStaff = async (req, res, next) => {
     //TODO: check also the phone number if exists , also the return of the staff
+    //TODO:need to check if the return value in transFuncs is an AppError or not
     const { userName, email, phoneNumber, roleDescription } = req.body;
     const { clientId } = req.authUser;
         // Check if the user already exists
@@ -101,7 +101,7 @@ const transUpdateStaff = async (staffId, userData, staffData) => {
     try {
         const staff = await staffModel.findById(staffId).session(session);
         if (!staff) {
-            throw new AppError('Staff not found', 404);
+            return  new AppError('Staff not found', 404);
         }
 
         await userModel.findByIdAndUpdate(staff.userId, userData, { session, new: true });
