@@ -1,4 +1,4 @@
-export function emailTemplate(email, userName, token) {
+export default async function welcomeEmailTemplate(email, userName, token) {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
             <h2 style="color: #4CAF50;">Welcome to Bokrah, ${userName}! 🎉</h2>

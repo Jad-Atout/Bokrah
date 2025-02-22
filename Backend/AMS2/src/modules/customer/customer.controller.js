@@ -2,6 +2,9 @@ import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
+
+import mongoose from 'mongoose';
+
 // when creating an Appointment assign customer to client
 export const createCustomer = async (req, res, next) => {
     try {
@@ -18,6 +21,10 @@ export const createCustomer = async (req, res, next) => {
             password: hashedPassword,
             phoneNumber
         });
+
+     //   const customer = await CustomerModel.create({
+     //       userId: user._id
+     //   });
 
         return res.status(201).json({ message: "Successfully created", user });
     } catch (error) {
@@ -37,3 +44,5 @@ export const getClientCustomers = async (req, res, next) => {
         return res.status(200).json({ message: "success", customers });
 
 };
+
+

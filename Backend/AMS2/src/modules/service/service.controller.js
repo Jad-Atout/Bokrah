@@ -24,8 +24,7 @@ export const createService = async (req, res, next) => {
 };
 
 export const getClientServices = async (req, res) => {
-//TODO: fixing the return staff
-        const {clientId} = req.params;
+    const { clientId } = req.params;
 
     const services = await Service.aggregate([
         {
@@ -49,24 +48,45 @@ export const getClientServices = async (req, res) => {
             }
         },
         { $unwind: { path: "$clientUser", preserveNullAndEmptyArrays: true } },
+
+        // Lookup staff details from "staffs" collection
         {
             $lookup: {
                 from: "staffs",
-                localField: "staff", // This is an array, so we must match multiple staff members
-                foreignField: "_id",
-                as: "staffDetails"
+                let: { serviceId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $in: ["$$serviceId", { $ifNull: ["$services", []] }]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "userId",
+                            foreignField: "_id",
+                            as: "staffUser"
+                        }
+                    },
+                    { $unwind: { path: "$staffUser", preserveNullAndEmptyArrays: true } },
+                    {
+                        $project: {
+                            _id: 1, // Keep staff ID
+                            name: "$staffUser.userName",
+                            email: "$staffUser.email",
+                            phoneNumber: "$staffUser.phoneNumber"
+                        }
+                    }
+                ],
+                as: "staff"
             }
         },
-        {
-            $lookup: {
-                from: "users",
-                localField: "staffDetails.userId",
-                foreignField: "_id",
-                as: "staffUsers"
-            }
-        },
+
         {
             $project: {
+                _id: 1,
                 serviceName: 1,
                 serviceDescription: 1,
                 price: 1,
@@ -74,23 +94,16 @@ export const getClientServices = async (req, res) => {
                 clientBusinessName: "$client.businessName",
                 clientIndustry: "$client.industry",
                 clientName: "$clientUser.userName",
-                staff: {
-                    $map: {
-                        input: "$staffUsers",
-                        as: "staff",
-                        in: {
-                            name: "$$staff.userName",
-                            email: "$$staff.email",
-                            phoneNumber: "$$staff.phoneNumber"
-                        }
-                    }
-                }
+                staff: 1 // Ensure full staff details are included
             }
         }
     ]);
 
-        return res.json({message: "success", services});
-    }
+    return res.json({ message: "success", services });
+};
+
+
+
 export const updateService = async (req, res) => {
         const { id } = req.params;
         const {...serviceData } = req.body;

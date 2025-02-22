@@ -42,6 +42,7 @@ export const createStaff = async (req, res, next) => {
     return res.json({ message: "Staff successfully created"});
 };
 
+
 export const getClientStaff = async (req, res, next) => {
     const { clientId } = req.params
     const staffs = await staffModel.find({clientId: clientId})
