@@ -9,11 +9,13 @@ import staffModel from "../../DB/models/staff.js";
 
 export const generalLogin = async (req, res,next) => {
     const { email, password,phoneNumber } = req.body;
-    const user = await userModel.find({email,phoneNumber});
+    const filter = {}
+    if(email) filter.email = email;
+    if(phoneNumber) filter.phoneNumber = phoneNumber;
+    const user = await userModel.findOne(filter);
+    console.log(user.confirmed)
     if (!user) {
         return next(new AppError("User doesn't exist"),401);
-    }else if(user.length>1){
-        return next(new AppError("Wrong User Data"),403);
     }else if(!user.confirmed){
         return next(new AppError("User isn't confirmed"),404);
     }else if(user.authProvider!=="local"){
@@ -24,11 +26,12 @@ export const generalLogin = async (req, res,next) => {
         return next(new AppError("Wrong Password",403));
     }
     const role = await roleModel.findById(user.roleId)
+    console.log(role)
     let tokenData = {
         id: user.id,
         userName: user.userName,
         email: user.email,
-        role: role.toObject(),
+        role: role,
     }
     if(role.client){
         const client = await clientModel.findOne({userId: user._id});
@@ -41,12 +44,11 @@ export const generalLogin = async (req, res,next) => {
         tokenData.customerId = customer._id
     }else if(role.staff){
         const staff = await staffModel.findOne({userId:user._id})
+        tokenData.roleDescription=staff.roleDescription
+        tokenData.availability=staff.availability
 
     }
-    const token = jwt.sign({
-
-        businessName: client.businessName,
-        role: user_.role
-    },process.env.JWT_SECRET)
+    const token = jwt.sign(tokenData,process.env.JWT_SECRET)
+    return res.status(200).json({message:"Login Successfully",token,tokenData})
 
 }

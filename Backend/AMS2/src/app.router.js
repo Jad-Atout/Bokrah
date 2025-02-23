@@ -6,6 +6,7 @@ import clientRouter from "./modules/client/client.router.js";
 import serviceRouter from "./modules/service/service.router.js";
 import staffRouter from "./modules/staff/staff.router.js";
 import linkingRouter from "./modules/linking/linking.router.js";
+import authRouter from "./Authentication/auth.router.js";
 
 
 
@@ -18,6 +19,7 @@ const initApp = (app,express) => {
     app.use('/service', serviceRouter)
     app.use('/staff', staffRouter)
     app.use('/link', linkingRouter)
+    app.use('/auth',authRouter)
 
 
     app.use('*',(req,res)=>{

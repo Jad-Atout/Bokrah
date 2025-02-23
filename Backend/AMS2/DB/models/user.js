@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+//TODO make the phone number unique
 const userModel = new mongoose.Schema({
     userName: {
         type: String,

@@ -23,5 +23,5 @@ router.delete('/:customerID',
     asyncHandler(deleteCustomer)
 )
 
-router.get('/',getClientCustomers)
+router.get('/',auth(roles.Client,roles.Staff),asyncHandler(getClientCustomers))
 export default router

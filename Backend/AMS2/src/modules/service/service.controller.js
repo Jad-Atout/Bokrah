@@ -41,9 +41,8 @@ const formatService = (data) => {
 }
 
 export const getClientServices = async (req, res) => {
-    //TODO fixing returning one staff..
     const {clientId} = req.params;
-    const services = await Service.find({clientId: clientId})
+    const services = await Service.find({ clientId: clientId })
         .populate({
             path: "staff",
             select: "roleDescription",
@@ -63,6 +62,7 @@ export const getClientServices = async (req, res) => {
             }
         })
         .exec();
+
     const formattedServices = formatService(services)
     return res.json({message: "success", formattedServices});
 }

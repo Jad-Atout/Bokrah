@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { AppError } from "../utils/AppError.js";
 import userModel from "../../DB/models/user.js";
 import { customAlphabet } from "nanoid";
+import user from "../../DB/models/user.js";
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ export const roles = {
     Client:'client'
 }
 
-export const auth = (requiredRole = null) => {
+export const auth = (...requiredRole) => {
     return async (req, res, next) => {
         try {
             const authHeader = req.headers.authorization;
@@ -34,10 +35,10 @@ export const auth = (requiredRole = null) => {
                 return next(new AppError("User does not exist", 401));
             }
             req.authUser = decoded;
-
-            // If a requiredRole is specified, check the user's role dynamically
-            if (requiredRole && (!decoded.role || !decoded.role[requiredRole])) {
-                return next(new AppError(`Unauthorized: Only ${requiredRole}s can access this resource`, 403));
+            const userRoles =decoded.role
+            const hasRole = requiredRole.some(role=>userRoles[role]===true)
+            if(!hasRole){
+                return next(new AppError("User is not authorized", 401));
             }
             next();
         } catch (err) {

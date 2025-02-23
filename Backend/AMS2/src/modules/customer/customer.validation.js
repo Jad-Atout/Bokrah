@@ -1,7 +1,7 @@
 import Joi from "joi";
 
-export const createLocalCustomerSchema = (data) => {
-    const schema = Joi.object({
+
+    export const createLocalCustomerSchema = Joi.object({
         userName: Joi.string()
             .min(3)
             .required()
@@ -21,7 +21,7 @@ export const createLocalCustomerSchema = (data) => {
                 'any.required': 'Email is required.',
             }),
         password: Joi.string()
-            .min(8)
+            .min(6)
             .required()
             .messages({
                 'string.base': 'Password must be a string.',
@@ -39,6 +39,3 @@ export const createLocalCustomerSchema = (data) => {
                 'any.required': 'Phone number is required.',
             }),
     });
-
-    return schema.validate(data);
-};
