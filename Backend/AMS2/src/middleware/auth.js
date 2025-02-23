@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { AppError } from "../utils/AppError.js";
 import userModel from "../../DB/models/user.js";
 import { customAlphabet } from "nanoid";
-import user from "../../DB/models/user.js";
+import {sendEmail} from "../utils/email.js";
 
 dotenv.config();
 
@@ -35,11 +35,10 @@ export const auth = (...requiredRole) => {
                 return next(new AppError("User does not exist", 401));
             }
             req.authUser = decoded;
+
             const userRoles =decoded.role
             const hasRole = requiredRole.some(role=>userRoles[role]===true)
-            if(!hasRole){
-                return next(new AppError("User is not authorized", 401));
-            }
+            if(!hasRole) return next(new AppError("User is not authorized", 401));
             next();
         } catch (err) {
             console.error("Auth Middleware Error:", err);
@@ -58,7 +57,7 @@ export const sendCode = async(req,res) => {
         return res.status(404).json({message:"Email not found"});
     }
 
-    await sendEmail(email, 'Password Reset Code', sendCodeTemplate,  {userName:user.userName, code});
+    await sendEmail(email, 'Password Reset Code', {userName: user.userName}, code);
 
     return res.status(200).json({message:"success"});
 

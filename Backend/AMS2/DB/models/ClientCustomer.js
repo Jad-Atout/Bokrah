@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const UserClient = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Customer",
+        ref: "User",
         required: true
     },
     clientId: {

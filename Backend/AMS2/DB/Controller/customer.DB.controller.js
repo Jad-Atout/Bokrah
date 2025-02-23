@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import userModel from '../models/user.js';
 import mongoose from "mongoose";
 import roleModel from "../models/role.js";
@@ -54,3 +55,5 @@ export const transDeleteCustomer = async (customerId) => {
     return new AppError(err.message || 'Internal server error', 500);
 }
 }
+=======
+>>>>>>> 59aa4d9dea3a06ad168c6944b425a9f3e13b509d

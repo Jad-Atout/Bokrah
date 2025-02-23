@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import mongoose from "mongoose";
 
 const customerSchema = new mongoose.Schema({
@@ -12,3 +13,5 @@ const customerSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export default mongoose.models.Customer || mongoose.model("Customer", customerSchema);
+=======
+>>>>>>> 59aa4d9dea3a06ad168c6944b425a9f3e13b509d
