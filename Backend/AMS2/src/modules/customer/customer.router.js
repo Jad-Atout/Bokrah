@@ -1,18 +1,28 @@
 import express from "express";
-import {createCustomer, getClientCustomers} from "./customer.controller.js";
-import {auth,roles} from '../../middleware/auth.js'
+import {customerLocalRegister, deleteCustomer, getClientCustomers, updateCustomer} from "./customer.controller.js";
+import {asyncHandler} from "../../utils/catchError.js";
+import {validationHandler} from "../../middleware/validation.js";
+import {createLocalCustomerSchema} from "./customer.validation.js";
+import {auth, roles} from "../../middleware/auth.js";
 
 const router = express.Router({mergeParams: true});
 
-router.post('/register',createCustomer);
+router.post('/register',
+    validationHandler(createLocalCustomerSchema)
+    ,asyncHandler(customerLocalRegister)
+);
+router.post('/login',)
 
-router.get('/',auth(roles.Staff,roles.Customer),getClientCustomers)
-// TODO search patch put
-//router.patch('/:id',auth(roles.Client),updateCustomer)
-//router.delete('/:id',auth(roles.Client),deleteCustomer)
+router.put('/:customerID',
+    auth(roles.Client),
+    validationHandler(createLocalCustomerSchema),
+    asyncHandler(updateCustomer)
+)
+router.delete('/:customerID',
+    auth(roles.Customer),
+    asyncHandler(deleteCustomer)
+)
 
-<<<<<<< HEAD
 router.get('/',auth(roles.Client,roles.Staff),asyncHandler(getClientCustomers))
-=======
->>>>>>> 59aa4d9dea3a06ad168c6944b425a9f3e13b509d
+
 export default router

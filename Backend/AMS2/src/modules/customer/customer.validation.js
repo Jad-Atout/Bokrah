@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import Joi from "joi";
 
 
@@ -40,5 +39,4 @@ import Joi from "joi";
                 'any.required': 'Phone number is required.',
             }),
     });
-=======
->>>>>>> 59aa4d9dea3a06ad168c6944b425a9f3e13b509d
+

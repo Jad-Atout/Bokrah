@@ -1,22 +1,19 @@
-<<<<<<< HEAD
 import userModel from '../models/user.js';
 import mongoose from "mongoose";
 import roleModel from "../models/role.js";
 import customerModel from "../models/customer.js";
 
 import {AppError} from "../../src/utils/AppError.js";
-import {createRole} from "./role.controller.js";
 
 export const transCreateCustomer = async(customerData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const role = await createRole({customer:true})
+        const role = await roleModel({customer:true})
         await role.save({session})
         customerData.roleId = role._id;
         const user = new userModel(customerData)
         await user.save({ session });
-        console.log(user._id)
         const customer = new customerModel({userId:user._id})
         await customer.save({session})
         await session.commitTransaction();
@@ -32,8 +29,8 @@ export const transUpdateCustomer =async (userData,customerData=null) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-    const user = await userModel.findByIdAndUpdate(userData._id, userData);
-    if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData)
+        const user = await userModel.findByIdAndUpdate(userData._id, userData);
+        if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData)
         return user
     }catch (err){
         await session.abortTransaction();
@@ -50,10 +47,8 @@ export const transDeleteCustomer = async (customerId) => {
         const user =await userModel.findByIdAndDelete(customer.userId)
         await roleModel.findByIdAndDelete(user.roleId)
     }catch (err){
-    await session.abortTransaction();
-    session.endSession();
-    return new AppError(err.message || 'Internal server error', 500);
+        await session.abortTransaction();
+        session.endSession();
+        return new AppError(err.message || 'Internal server error', 500);
+    }
 }
-}
-=======
->>>>>>> 59aa4d9dea3a06ad168c6944b425a9f3e13b509d
