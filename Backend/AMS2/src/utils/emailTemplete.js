@@ -1,3 +1,4 @@
+//TODO redfine the email structure so it can't be a spam email
 export default async function welcomeEmailTemplate(email, userName, token) {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">

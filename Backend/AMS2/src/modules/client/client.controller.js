@@ -36,7 +36,7 @@ export const googleAuthCallback = async (req, res, next) => {
             userId: user._id,
             userName: user.userName,
             email: user.email,
-            role: role.toObject(),
+            role: role,
             businessName:client.businessName,
             industry:client.industry,
             clientId: client._id,
@@ -44,7 +44,7 @@ export const googleAuthCallback = async (req, res, next) => {
         process.env.JWT_SECRET,
     );
 
-    // await sendEmail(user.email, "Welcome", user.userName, token);
+     await sendEmail(user.email, "Welcome", user.userName, token);
     
 
     return res.status(200).json({

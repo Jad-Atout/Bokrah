@@ -11,11 +11,29 @@ const websiteSchema = new mongoose.Schema({
         required: true
     },
     logo: {
-        type: String
+        type: Object,
     },
-    backgroundPic: {
-        type: String
+    secondaryImage: {
+        type: Object,
+    },
+    mainImage: {
+        type: Object,
+    },
+    headerText:{
+        type: String,
+    },
+    headerDescription: {
+        type: String,
+    },
+    aboutHeaderText: {
+        type: String,
+    },
+    aboutDescription: {
+        type: String,
+    },
+    teamDescription: {
+        type: String,
     }
-}, { timestamps: true });
+});
 
 export default mongoose.model("Website", websiteSchema);

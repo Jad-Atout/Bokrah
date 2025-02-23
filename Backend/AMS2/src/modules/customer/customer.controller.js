@@ -9,6 +9,7 @@ import {
     transDeleteCustomer,
     transUpdateCustomer
 } from "../../../DB/Controller/customer.DB.controller.js";
+import {sendEmail} from "../../utils/email.js";
 
 // when creating an Appointment assign customer to client
 export const customerLocalRegister = async (req, res, next) => {
@@ -23,6 +24,7 @@ export const customerLocalRegister = async (req, res, next) => {
 
     user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(user instanceof AppError) return next(user);
+    await sendEmail(user.email, "Welcome", user.userName, token);
     return res.status(201).json({ message: "Successfully created", user });
 
 };

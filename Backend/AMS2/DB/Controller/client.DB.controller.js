@@ -11,7 +11,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const user = await userModel.findOne({email: clientData.email}).session(session);
+        const user = await userModel.findOne({email: userData.email}).session(session);
         if (!user) {
             const role = new roleModel({client: true})
             await role.save({session})
