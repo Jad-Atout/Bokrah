@@ -34,8 +34,10 @@ const userModel = new mongoose.Schema({
     confirmed:{
         type:Boolean,
         default:false
-
-    }
+    } , sendCode:{
+        type:String,
+        default:null,
+    },
 }, { timestamps: true });
 userModel.virtual("clients", {
     ref: "UserClient", // The model to use for the relation
