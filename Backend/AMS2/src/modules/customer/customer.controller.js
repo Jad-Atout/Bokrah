@@ -24,9 +24,10 @@ export const customerLocalRegister = async (req, res, next) => {
         return next(new AppError('User already exists', 401));
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(user instanceof AppError) return next(user);
-    await sendEmail(user.email, "Welcome", user.userName, token);
+
     return res.status(201).json({ message: "Successfully created", user });
 
 };
