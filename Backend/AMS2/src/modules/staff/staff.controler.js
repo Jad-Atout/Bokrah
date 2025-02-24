@@ -27,10 +27,28 @@ export const createStaff = async (req, res, next) => {
 
 
 export const getClientStaff = async (req, res) => {
-    //TODO format the return statement
-    //TODO validate ID
     const { clientId } = req.params
-    const staffs = await staffModel.find({clientId: clientId})
+    const staffs = await staffModel.find({clientId: clientId}).populate([
+        {
+            path:"userId",
+            ref:"user",
+            select:"userName email phoneNumber ",
+        },
+        {
+            path: "clientId",
+            ref: "client",
+            populate:{
+                path:"userId",
+                ref:"user",
+                select:"userName email phoneNumber"
+            }
+        },
+        {
+            path:"services",
+            ref:"service",
+            select: "serviceName"
+        }
+    ])
     return res.json({message:"success",staffs},200)
 }
 

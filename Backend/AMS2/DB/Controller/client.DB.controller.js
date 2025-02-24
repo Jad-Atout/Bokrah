@@ -31,8 +31,8 @@ export const transCreateClient = async (clientData,userData,googleData) => {
             session.endSession();
             return {role, user:newUser, client, google}
         }else{
-            const role = await  roleModel.findById(user.roleID)
-            const client = await  clientModel({userId:user._id})
+            const role = await  roleModel.findById(user.roleId)
+            const client = await  clientModel.findOne({userId:user._id})
             return {role, user, client}
         }
 
