@@ -8,6 +8,7 @@ import staffRouter from "./modules/staff/staff.router.js";
 import linkingRouter from "./modules/linking/linking.router.js";
 import authRouter from "./Authentication/auth.router.js";
 import websiteRouter from "./modules/website/website.router.js";
+import 'dotenv/config'
 
 
 
