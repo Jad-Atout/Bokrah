@@ -18,7 +18,7 @@ export const transCreateCustomer = async(customerData) => {
         await customer.save({session})
         await session.commitTransaction();
         session.endSession();
-        return true
+        return user
     }catch (err){
         await session.abortTransaction();
         session.endSession();

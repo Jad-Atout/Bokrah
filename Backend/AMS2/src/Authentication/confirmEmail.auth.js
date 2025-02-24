@@ -12,7 +12,7 @@ import userModel from "../../DB/models/user.js";
 
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            decoded = jwt.verify(token, process.env.JWT_CONFIRME_SECRET);
         } catch (error) {
             return next(new AppError("Invalid or expired token", 401));
         }

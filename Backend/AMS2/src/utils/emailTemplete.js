@@ -1,7 +1,7 @@
 import {confirmEmail} from "../Authentication/confirmEmail.auth.js"
 
 //TODO redfine the email structure so it can't be a spam email
-export async function welcomeEmailTemplate(email, userName, token) {
+export async function welcomeEmailTemplate( userName, token) {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
             <h2 style="color: rgb(37, 99, 235);">Welcome to Bokrah, ${userName}! 🎉</h2>

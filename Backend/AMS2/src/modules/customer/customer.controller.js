@@ -12,9 +12,10 @@ import {
     transUpdateCustomer
 } from "../../../DB/Controller/customer.DB.controller.js";
 import {sendEmail} from "../../utils/email.js";
+import {setPasswordEmailTemplate, welcomeEmailTemplate} from "../../utils/emailTemplete.js";
+import jwt from "jsonwebtoken";
 //TODO end point to create a customer
 // when creating an Appointment assign customer to client
-// create token to send email
 // login directry after confirmation
 export const customerLocalRegister = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
@@ -26,10 +27,16 @@ export const customerLocalRegister = async (req, res, next) => {
         return next(new AppError('User already exists', 401));
     }
 
-    const hashedPassword = await bcrypt.hash(password, process.env.SALT_ROUND);
+    const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
     user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(user instanceof AppError) return next(user);
+    const tokenData={id:user._id, email:user.email,}
+    const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
+    console.log(user);
+    await sendEmail(user.email,  "Welcome",
+        await welcomeEmailTemplate( user.userName, token)
+    );
     return res.status(201).json({ message: "Successfully created", user });
 
 };
