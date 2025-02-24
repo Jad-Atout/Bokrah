@@ -27,13 +27,13 @@ router.post('/',
 
 router.put('/:serviceId',
     auth(roles.Client),
-    asyncHandler(verifyOwnership),
+    asyncHandler(verifyOwnership()),
     asyncHandler(updateService)
 );
 
 router.delete('/:serviceId'
     ,auth(roles.Client),
-    asyncHandler(verifyOwnership),
+    asyncHandler(verifyOwnership()),
     asyncHandler(deleteService)
 );
 

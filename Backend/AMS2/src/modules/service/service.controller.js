@@ -1,7 +1,8 @@
 import Service from '../../../DB/models/service.js';
 import {AppError} from '../../utils/AppError.js';
+import {transDeleteService, transUpdateService} from "../../../DB/Controller/service.DB.controller.js";
 
-//Todo create service controller
+//Todo revision the return value of delete and update if it needs to contain staff data
 export const createService = async (req, res, next) => {
         const user = req.authUser
         const { serviceName, serviceDescription, price, duration,} = req.body;
@@ -18,7 +19,7 @@ export const createService = async (req, res, next) => {
             clientId: user.clientId,
         });
         await service.save();
-        res.status(201).json({ message: "Service created successfully", service });
+       return res.status(201).json({ message: "Service created successfully", service });
 };
 
 
@@ -74,22 +75,18 @@ export const getClientServices = async (req, res) => {
 }
 
 
-export const updateService = async (req, res) => {
-        const {serviceId} = req.params;
+export const updateService = async (req, res,next) => {
+        const service = req.service
         const {...serviceData } = req.body;
-
-        const service = await Service.findByIdAndUpdate(
-            serviceId,
-            serviceData,
-            { new: true }
-        );
-        res.json({  message: "Service updated successfully.", service });
+        const {updatedService,appError} = await transUpdateService(service,serviceData);
+        if(appError)return next(appError)
+        return res.json({  message: "Service updated successfully.", updatedService });
 };
 
-export const deleteService = async (req, res) => {
-        const { serviceId } = req.params;
-        await ServicesStaff.deleteMany({ serviceId: serviceId });
-        await Service.findByIdAndDelete(serviceId);
-        res.json({ message: "Service deleted successfully." });
+export const deleteService = async (req, res, next) => {
+        const service = req.service
+        const {deletedService,appError} = await transDeleteService(service);
+        if(appError) return next(appError);
+        return res.json({ message: "Service deleted successfully.",deletedService });
 };
 
