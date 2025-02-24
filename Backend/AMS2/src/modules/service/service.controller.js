@@ -1,7 +1,5 @@
 import Service from '../../../DB/models/service.js';
-import ServicesStaff from '../../../DB/models/ServiceStaff.js';
 import {AppError} from '../../utils/AppError.js';
-import mongoose from "mongoose";
 
 //Todo create service controller
 export const createService = async (req, res, next) => {
@@ -77,11 +75,11 @@ export const getClientServices = async (req, res) => {
 
 
 export const updateService = async (req, res) => {
-        const { id } = req.params;
+        const {serviceId} = req.params;
         const {...serviceData } = req.body;
 
         const service = await Service.findByIdAndUpdate(
-            id,
+            serviceId,
             serviceData,
             { new: true }
         );
@@ -89,9 +87,9 @@ export const updateService = async (req, res) => {
 };
 
 export const deleteService = async (req, res) => {
-        const { id } = req.params;
-        await ServicesStaff.deleteMany({ serviceId: id });
-        await Service.findByIdAndDelete(id);
+        const { serviceId } = req.params;
+        await ServicesStaff.deleteMany({ serviceId: serviceId });
+        await Service.findByIdAndDelete(serviceId);
         res.json({ message: "Service deleted successfully." });
 };
 

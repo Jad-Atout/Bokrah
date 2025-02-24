@@ -10,8 +10,10 @@ import {
     transUpdateCustomer
 } from "../../../DB/Controller/customer.DB.controller.js";
 import {sendEmail} from "../../utils/email.js";
-
+//TODO end point to create a customer
 // when creating an Appointment assign customer to client
+// create token to send email
+// login directry after confirmation
 export const customerLocalRegister = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
     const filter = {}

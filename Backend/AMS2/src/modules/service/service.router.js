@@ -9,6 +9,7 @@ import {auth,roles} from '../../middleware/auth.js'
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createServiceSchema} from "./services.validation.js";
+import {verifyOwnership} from "./service.auth.js";
 
 const router = express.Router();
 
@@ -24,13 +25,15 @@ router.post('/',
     , asyncHandler(createService)
 );
 
-router.put('/:id',
+router.put('/:serviceId',
     auth(roles.Client),
+    asyncHandler(verifyOwnership),
     asyncHandler(updateService)
 );
 
-router.delete('/:id'
+router.delete('/:serviceId'
     ,auth(roles.Client),
+    asyncHandler(verifyOwnership),
     asyncHandler(deleteService)
 );
 

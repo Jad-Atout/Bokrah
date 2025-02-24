@@ -46,6 +46,7 @@ export const generalLogin = async (req, res,next) => {
         const staff = await staffModel.findOne({userId:user._id})
         tokenData.roleDescription=staff.roleDescription
         tokenData.availability=staff.availability
+        tokenData.staffId = staff._id
 
     }
     const token = jwt.sign(tokenData,process.env.JWT_SECRET)
