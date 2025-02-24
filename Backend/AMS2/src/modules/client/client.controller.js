@@ -1,8 +1,6 @@
 import GoogleAuthService from "../../utils/Google/googleAuth.js";
 import jwt from "jsonwebtoken";
 import {AppError} from "../../utils/AppError.js";
-import clientModel from "../../../DB/models/client.js"
-import {sendEmail} from "../../utils/email.js";
 import {transCreateClient} from "../../../DB/Controller/client.DB.controller.js";
 
 export const googleAuthCallback = async (req, res, next) => {
@@ -43,9 +41,6 @@ export const googleAuthCallback = async (req, res, next) => {
         },
         process.env.JWT_SECRET,
     );
-
-     await sendEmail(user.email, "Welcome", user.userName, token);
-    
 
     return res.status(200).json({
         message: "Google authentication successful.",

@@ -9,13 +9,19 @@ export const transCreateStaff = async (userData,staffData)=>{
     const session = await mongoose.startSession(); // Start a session
     session.startTransaction();
     try {
-        const checkUserExistence = await userModel.find({ email: userData.email,phoneNumber:userData.phoneNumber}).session(session);
-        if (checkUserExistence)  new AppError('User already exists', 409);
+        const checkUserExistence = await userModel.find({
+            email: userData.email,
+            phoneNumber: userData.phoneNumber
+        }).session(session);
+        if (checkUserExistence.length !==0) {
+            return {staff:null,user:null,appError:new AppError('User already exists', 409)}
+        }
 
         const role = await createRole({ staff: true }, session);
         userData.roleId = role._id;
 
         const user = new userModel(userData)
+
         await user.save({ session });
         staffData.userId = user._id
 
@@ -24,7 +30,7 @@ export const transCreateStaff = async (userData,staffData)=>{
 
         await session.commitTransaction();
         session.endSession();
-        return {staff, user}
+        return {staff:staff, user:user,appError:null}
 
     }catch (err){
         await session.abortTransaction();
@@ -53,7 +59,8 @@ export const transDeleteStaff = async (staffId) => {
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
+         return  new AppError(err.message || 'Internal server error', 500);
+
     }
 };
 
@@ -73,6 +80,7 @@ export const transUpdateStaff = async (staffId, userData, staffData) => {
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
+
         return new AppError(err.message || 'Internal server error', 500);
     }
 };

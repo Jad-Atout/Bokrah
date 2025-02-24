@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
-import {welcomeEmailTemplate} from "../utils/emailTemplete.js"
 
-export async function sendEmail(to, subject, userName, token = "") {
+export async function sendEmail(to, subject, func) {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -14,12 +13,11 @@ export async function sendEmail(to, subject, userName, token = "") {
     });
 
     // Generate the email content
-    const html =await welcomeEmailTemplate(to, userName, token);
-
+    const html = await func
     return await transporter.sendMail({
         from: `Bokrah <${process.env.EMAILSENDER}>`,
         to,
         subject,
-        html,
+        html
     });
 }

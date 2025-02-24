@@ -2,6 +2,8 @@ import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
+import dotenv from "dotenv";
+dotenv.config()
 
 import mongoose from 'mongoose';
 import {
@@ -24,7 +26,7 @@ export const customerLocalRegister = async (req, res, next) => {
         return next(new AppError('User already exists', 401));
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, process.env.SALT_ROUND);
     user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(user instanceof AppError) return next(user);
 
