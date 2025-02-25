@@ -5,15 +5,20 @@ import staffModel from "../models/staff.js";
 import {AppError} from "../../src/utils/AppError.js";
 import roleModel from "../models/role.js";
 //TODO fixing returs for appERRor in delete and update
+//TODO if a user exists make it staff ?
 export const transCreateStaff = async (userData,staffData)=>{
 
     const session = await mongoose.startSession(); // Start a session
     session.startTransaction();
     try {
+        console.log(userData)
         const checkUserExistence = await userModel.find({
-            email: userData.email,
-            phoneNumber: userData.phoneNumber
+            $or: [
+                { email: userData.email },
+                { phoneNumber: userData.phoneNumber }
+            ]
         }).session(session);
+        console.log(checkUserExistence)
         if (checkUserExistence.length !==0) {
             return {staff:null,user:null,appError:new AppError('User already exists', 409)}
         }
