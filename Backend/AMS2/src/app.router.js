@@ -8,6 +8,8 @@ import staffRouter from "./modules/staff/staff.router.js";
 import linkingRouter from "./modules/linking/linking.router.js";
 import authRouter from "./Authentication/auth.router.js";
 import websiteRouter from "./modules/website/website.router.js";
+import availabilityRouter from "./modules/availability/availability.router.js";
+
 import 'dotenv/config'
 
 
@@ -23,6 +25,7 @@ const initApp = (app,express) => {
     app.use('/link', linkingRouter)
     app.use('/auth',authRouter)
     app.use('/website', websiteRouter)
+    app.use('/availability',availabilityRouter )
 
 
     app.use('*',(req,res)=>{

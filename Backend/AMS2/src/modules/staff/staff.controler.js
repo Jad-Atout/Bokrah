@@ -47,6 +47,9 @@ export const getClientStaff = async (req, res) => {
             path:"services",
             ref:"service",
             select: "serviceName"
+        },{
+        path:"availability",
+            ref: "Availability",
         }
     ])
     return res.json({message:"success",staffs},200)

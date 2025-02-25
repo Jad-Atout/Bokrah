@@ -13,7 +13,8 @@ const StaffSchema = new mongoose.Schema({
         type: String
     },
     availability: {
-        type: String
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Availability"
     },
     calendarId: {
         type: String
