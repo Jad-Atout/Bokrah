@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Bokrah</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .pricing-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-blue-600">Bokrah</div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="#" class="text-gray-700 hover:text-blue-600">Home</a>
+                <a href="#" class="text-gray-700 hover:text-blue-600">About</a>
+                <a href="#" class="text-gray-700 hover:text-blue-600">Features</a>
+                <a href="#" class="text-blue-600 font-semibold">Pricing</a>
+                <a href="#" class="text-gray-700 hover:text-blue-600">Contact</a>
+            </nav>
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-gray-700 hover:text-blue-600">Log In</a>
+                <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign Up</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Pricing Plans Section -->
+    <section class="container mx-auto px-6 py-12">
+        <h2 class="text-3xl font-bold text-center mb-8">Pricing Plans</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Free Plan -->
+            <div class="pricing-card bg-white p-8 rounded-lg shadow-md text-center">
+                <h3 class="text-2xl font-bold mb-4">Free</h3>
+                <p class="text-gray-600 mb-6">Perfect for individuals getting started.</p>
+                <div class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-500">/month</span></div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Limited Appointments</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Basic AI Support</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-times text-red-500 mr-2"></i>
+                        <span class="text-gray-400">Google Calendar Sync</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-times text-red-500 mr-2"></i>
+                        <span class="text-gray-400">Dedicated Support</span>
+                    </li>
+                </ul>
+                <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign Up</button>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="pricing-card bg-white p-8 rounded-lg shadow-md text-center border-2 border-blue-600">
+                <h3 class="text-2xl font-bold mb-4">Pro</h3>
+                <p class="text-gray-600 mb-6">For professionals and small teams.</p>
+                <div class="text-4xl font-bold mb-6">$29<span class="text-lg text-gray-500">/month</span></div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Unlimited Appointments</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Priority AI Support</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Google Calendar Sync</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-times text-red-500 mr-2"></i>
+                        <span class="text-gray-400">Dedicated Support</span>
+                    </li>
+                </ul>
+                <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign Up</button>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="pricing-card bg-white p-8 rounded-lg shadow-md text-center">
+                <h3 class="text-2xl font-bold mb-4">Enterprise</h3>
+                <p class="text-gray-600 mb-6">For large teams and custom needs.</p>
+                <div class="text-4xl font-bold mb-6">Custom</div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Unlimited Appointments</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Priority AI Support</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Google Calendar Sync</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        <span>Dedicated Support</span>
+                    </li>
+                </ul>
+                <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Contact Us</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="container mx-auto px-6 py-12">
+        <h2 class="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+        <div class="max-w-3xl mx-auto">
+            <div class="faq-item bg-white p-6 rounded-lg shadow-md mb-4">
+                <h3 class="font-semibold mb-2">What payment methods do you accept?</h3>
+                <p class="text-gray-600">We accept all major credit cards (Visa, MasterCard, American Express) and PayPal.</p>
+            </div>
+            <div class="faq-item bg-white p-6 rounded-lg shadow-md mb-4">
+                <h3 class="font-semibold mb-2">Can I switch plans later?</h3>
+                <p class="text-gray-600">Yes, you can upgrade or downgrade your plan at any time from your account settings.</p>
+            </div>
+            <div class="faq-item bg-white p-6 rounded-lg shadow-md mb-4">
+                <h3 class="font-semibold mb-2">Is there a free trial?</h3>
+                <p class="text-gray-600">Yes, the Free plan is available indefinitely with no trial period required.</p>
+            </div>
+            <div class="faq-item bg-white p-6 rounded-lg shadow-md mb-4">
+                <h3 class="font-semibold mb-2">How do I cancel my subscription?</h3>
+                <p class="text-gray-600">You can cancel your subscription at any time from your account settings. No hidden fees.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-md mt-12">
+        <div class="container mx-auto px-6 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Bokrah</h3>
+                    <p class="text-gray-600">Streamline your appointments with AI-driven efficiency.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-blue-600">Home</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-600">About</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-600">Features</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-600">Pricing</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-blue-600">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Contact Us</h3>
+                    <p class="text-gray-600">Email: support@bokrah.com</p>
+                    <p class="text-gray-600">Phone: +1 (123) 456-7890</p>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t mt-8 pt-8 text-center text-gray-600">
+                <p>&copy; 2023 Bokrah. All rights reserved.</p>
+                <p class="mt-2">
+                    <a href="#" class="hover:text-blue-600">Privacy Policy</a> | 
+                    <a href="#" class="hover:text-blue-600">Terms of Service</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

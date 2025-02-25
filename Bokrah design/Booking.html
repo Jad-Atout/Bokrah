@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Step Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
+        <div class="mb-4">
+            <div class="w-full bg-gray-200 h-2 rounded-full">
+                <div id="progress-bar" class="h-2 bg-blue-500 rounded-full" style="width: 20%;"></div>
+            </div>
+        </div>
+        <div id="step-1" class="step">
+            <h2 class="text-lg font-bold mb-4">Step 1: Select Service</h2>
+            <select class="w-full p-2 border rounded" id="service">
+                <option value="Haircut">Haircut</option>
+                <option value="Shave">Shave</option>
+                <option value="Facial">Facial</option>
+            </select>
+        </div>
+        <div id="step-2" class="step hidden">
+            <h2 class="text-lg font-bold mb-4">Step 2: Select Provider</h2>
+            <select class="w-full p-2 border rounded" id="provider">
+                <option value="John Doe">John Doe</option>
+                <option value="Jane Smith">Jane Smith</option>
+            </select>
+        </div>
+        <div id="step-3" class="step hidden">
+            <h2 class="text-lg font-bold mb-4">Step 3: Select Date</h2>
+            <input type="date" class="w-full p-2 border rounded" id="date">
+        </div>
+        <div id="step-4" class="step hidden">
+            <h2 class="text-lg font-bold mb-4">Step 4: Select Time</h2>
+            <input type="time" class="w-full p-2 border rounded" id="time">
+        </div>
+        <div id="step-5" class="step hidden">
+            <h2 class="text-lg font-bold mb-4">Step 5: Your Information</h2>
+            <input type="text" class="w-full p-2 border rounded mb-2" placeholder="Your Name" id="name">
+            <input type="email" class="w-full p-2 border rounded mb-2" placeholder="Your Email" id="email">
+            <input type="tel" class="w-full p-2 border rounded" placeholder="Your Phone" id="phone">
+        </div>
+        <div class="flex justify-between mt-4">
+            <button id="prev" class="bg-gray-400 text-white px-4 py-2 rounded hidden">Previous</button>
+            <button id="next" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+
+        document.getElementById('next').addEventListener('click', function() {
+            if (currentStep < totalSteps) {
+                document.getElementById(`step-${currentStep}`).classList.add('hidden');
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+                updateProgress();
+            }
+            toggleButtons();
+        });
+
+        document.getElementById('prev').addEventListener('click', function() {
+            if (currentStep > 1) {
+                document.getElementById(`step-${currentStep}`).classList.add('hidden');
+                currentStep--;
+                document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+                updateProgress();
+            }
+            toggleButtons();
+        });
+
+        function updateProgress() {
+            document.getElementById('progress-bar').style.width = `${(currentStep / totalSteps) * 100}%`;
+        }
+
+        function toggleButtons() {
+            document.getElementById('prev').classList.toggle('hidden', currentStep === 1);
+            document.getElementById('next').textContent = currentStep === totalSteps ? 'Finish' : 'Next';
+        }
+    </script>
+</body>
+</html>

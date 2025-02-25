@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Test Book Your Appointment</title>
+  <!-- Tailwind CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet"/>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    /* Basic Layout & Colors */
+    body {
+      background: #f9fafb;
+    }
+    /* Navbar */
+    nav {
+      background: #3b82f6;
+    }
+    nav .brand {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: white;
+    }
+    /* Progress Bar */
+    .progress-bar {
+      position: relative;
+      z-index: 1;
+    }
+    .progress-line {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: #e5e7eb;
+      z-index: -1;
+    }
+    .progress-line-active {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      height: 3px;
+      background: #3b82f6;
+      z-index: -1;
+      transition: width 0.3s ease;
+    }
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 3px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    .step-circle.active {
+      border-color: #3b82f6;
+      background: #3b82f6;
+      color: white;
+    }
+    .step-circle.completed {
+      border-color: #3b82f6;
+      background: #3b82f6;
+      color: white;
+    }
+    /* Steps */
+    .step {
+      display: none;
+    }
+    .step.active {
+      display: block;
+    }
+    /* Hover/Disabled Effects */
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .time-slot {
+      transition: all 0.3s ease;
+    }
+    .time-slot:hover:not(.disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .time-slot.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .calendar-day {
+      transition: all 0.3s ease;
+      cursor: pointer;
+      padding: 8px;
+      text-align: center;
+      border-radius: 8px;
+    }
+    .calendar-day:hover:not(.disabled) {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+    }
+    .calendar-day.selected {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .calendar-day.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    /* Chatbot */
+    .chatbot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    #chatToggle {
+      width: 3rem;
+      height: 3rem;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #chatToggle:hover {
+      background: #2563eb;
+    }
+    .chat-window {
+      width: 320px;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 10px;
+      display: none;
+      flex-direction: column;
+    }
+    .chat-window.active {
+      display: flex;
+    }
+    .chat-window header {
+      background: #3b82f6;
+      color: #fff;
+      padding: 1rem;
+      border-top-left-radius: 1rem;
+      border-top-right-radius: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .chat-window header .avatar {
+      width: 2rem;
+      height: 2rem;
+      background: #fff;
+      color: #3b82f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 0.75rem;
+    }
+    .chat-window .chat-messages {
+      padding: 1rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chat-window .chat-message.ai p {
+      background: #f3f4f6;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+    .chat-window footer {
+      padding: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+    .chat-window footer input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      outline: none;
+      border: 1px solid #d1d5db;
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="bg-blue-600 shadow-md p-4 flex items-center justify-between px-6 py-3">
+    <div class="brand"> <i class="fas fa-calendar-check mr-2"></i></div>
+    <button id="authBtn" class="px-4 py-2 bg-white text-blue-600 rounded hover:bg-gray-100">
+      Login
+    </button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="container mx-auto p-6 md:p-10">
+    <!-- Title -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800">Book Your Appointment</h1>
+    </div>
+    
+    <!-- Progress Bar ABOVE both columns -->
+    <div class="mb-6">
+      <div class="progress-bar relative">
+        <div class="progress-line"></div>
+        <div class="progress-line-active" id="activeLine"></div>
+        <div class="flex justify-between relative">
+          <div class="flex flex-col items-center">
+            <div id="step1-circle" class="step-circle active">1</div>
+            <span class="mt-2 text-sm font-medium">Service</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div id="step2-circle" class="step-circle">2</div>
+            <span class="mt-2 text-sm font-medium">Staff</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div id="step3-circle" class="step-circle">3</div>
+            <span class="mt-2 text-sm font-medium">Schedule</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div id="step4-circle" class="step-circle">4</div>
+            <span class="mt-2 text-sm font-medium">Your Info</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div id="step5-circle" class="step-circle">5</div>
+            <span class="mt-2 text-sm font-medium">Confirm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two-Column Grid: Steps on the LEFT (larger) + Summary on the RIGHT (smaller) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- LEFT: Steps (span 2 columns) -->
+      <div class="col-span-2">
+        <!-- Steps Container -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+          <!-- Step 1: Select Service -->
+          <div id="step1" class="step active">
+            <h2 class="text-2xl font-bold mb-8">Select a Service</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="p-6 border rounded-xl cursor-pointer hover:border-blue-500 card-hover service-card" data-service="dental-checkup">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-tooth text-blue-600 text-2xl mr-4"></i>
+                  <h3 class="font-semibold text-lg">Dental Checkup</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Comprehensive dental examination and cleaning</p>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="flex items-center"><i class="far fa-clock mr-2"></i>60 min</span>
+                  <span class="font-medium text-lg">$120</span>
+                </div>
+              </div>
+              <div class="p-6 border rounded-xl cursor-pointer hover:border-blue-500 card-hover service-card" data-service="teeth-whitening">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-magic text-blue-600 text-2xl mr-4"></i>
+                  <h3 class="font-semibold text-lg">Teeth Whitening</h3>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Professional teeth whitening treatment</p>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="flex items-center"><i class="far fa-clock mr-2"></i>90 min</span>
+                  <span class="font-medium text-lg">$200</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end mt-8">
+              <button class="btn-next px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Next <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+  
+          <!-- Step 2: Select Staff -->
+          <div id="step2" class="step">
+            <h2 class="text-2xl font-bold mb-8">Select a Staff Member</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="p-6 border rounded-xl cursor-pointer hover:border-blue-500 card-hover staff-card" data-staff="dr-smith">
+                <div class="flex items-center">
+                  <img src="/api/placeholder/80/80" alt="Dr. Smith" class="w-16 h-16 rounded-full mr-4 object-cover"/>
+                  <div>
+                    <h3 class="font-semibold text-lg mb-1">Dr. Smith</h3>
+                    <p class="text-gray-600 text-sm mb-2">Senior Dentist</p>
+                    <div class="flex items-center text-yellow-400">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-6 border rounded-xl cursor-pointer hover:border-blue-500 card-hover staff-card" data-staff="dr-johnson">
+                <div class="flex items-center">
+                  <img src="/api/placeholder/80/80" alt="Dr. Johnson" class="w-16 h-16 rounded-full mr-4 object-cover"/>
+                  <div>
+                    <h3 class="font-semibold text-lg mb-1">Dr. Johnson</h3>
+                    <p class="text-gray-600 text-sm mb-2">Dental Surgeon</p>
+                    <div class="flex items-center text-yellow-400">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between mt-8">
+              <button class="btn-back px-6 py-2 text-gray-600 border rounded hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>Back
+              </button>
+              <button class="btn-next px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Next <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+  
+          <!-- Step 3: Select Date & Time -->
+          <div id="step3" class="step">
+            <h2 class="text-2xl font-bold mb-6">Select Date & Time</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Calendar -->
+              <div>
+                <div class="flex justify-between items-center mb-4">
+                  <button id="prevMonthBtn" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <span id="currentMonthYear" class="font-medium">January 2025</span>
+                  <button id="nextMonthBtn" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+                <div class="grid grid-cols-7 gap-2 text-center text-sm text-gray-600">
+                  <div>Sun</div>
+                  <div>Mon</div>
+                  <div>Tue</div>
+                  <div>Wed</div>
+                  <div>Thu</div>
+                  <div>Fri</div>
+                  <div>Sat</div>
+                </div>
+                <div id="calendar-days" class="grid grid-cols-7 gap-2 mt-2"></div>
+              </div>
+              <!-- Time Slots -->
+              <div>
+                <h3 class="font-medium mb-4">Available Times</h3>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500">
+                    9:00 AM
+                  </div>
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500">
+                    10:00 AM
+                  </div>
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500">
+                    11:00 AM
+                  </div>
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500 disabled">
+                    12:00 PM
+                  </div>
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500">
+                    2:00 PM
+                  </div>
+                  <div class="time-slot p-2 text-center border rounded cursor-pointer hover:border-blue-500">
+                    3:00 PM
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between mt-8">
+              <button class="btn-back px-6 py-2 text-gray-600 border rounded hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>Back
+              </button>
+              <button class="btn-next px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Next <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+  
+          <!-- Step 4: Your Information (with Login/Create Profile Options) -->
+          <div id="step4" class="step">
+            <h2 class="text-2xl font-bold mb-8">Your Information</h2>
+            <div id="authSection">
+              <!-- Login Options: Shown when not logged in -->
+              <div id="loginOptions">
+                <button id="googleLoginBtn" class="w-full py-2 bg-red-500 text-white rounded hover:bg-red-600 mb-2">
+                  Sign in with Google
+                </button>
+                <div class="text-center text-sm text-gray-600">
+                  <span>Or </span>
+                  <a href="#" id="createProfileLink" class="text-blue-600 hover:underline">Create Profile</a>
+                  <span> | Already have an account? </span>
+                  <a href="#" id="loginLink" class="text-blue-600 hover:underline">Login</a>
+                  
+                </div>
+              </div>
+              <!-- Profile Summary: Shown when logged in -->
+              <div id="profileSummary" class="hidden">
+                <p><strong>Name:</strong> <span id="profileName"></span></p>
+                <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+                <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
+                <p><strong>Notes:</strong> <span id="profileNotes"></span></p>
+                <button id="editProfileBtn" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Edit</button>
+              </div>
+            </div>
+            <!-- Information Form: Shown only when creating/editing profile -->
+            <div id="infoForm" class="mt-6 hidden">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="customerName" class="block text-gray-600 mb-2">Full Name *</label>
+                  <input type="text" id="customerName" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your full name"/>
+                </div>
+                <div>
+                  <label for="customerEmail" class="block text-gray-600 mb-2">Email Address *</label>
+                  <input type="email" id="customerEmail" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your email address"/>
+                </div>
+              </div>
+              <div class="mt-4">
+                <label for="customerPhone" class="block text-gray-600 mb-2">Phone Number *</label>
+                <input type="tel" id="customerPhone" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your phone number"/>
+              </div>
+              <div class="mt-4">
+                <label for="customerNotes" class="block text-gray-600 mb-2">Additional Notes (Optional)</label>
+                <textarea id="customerNotes" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder="Any special requests or medical conditions we should know about?"></textarea>
+              </div>
+            </div>
+            <div class="flex justify-between mt-8">
+              <button class="btn-back px-6 py-2 text-gray-600 border rounded hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>Back
+              </button>
+              <button class="btn-next px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Confirm <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+  
+          <!-- Step 5: Confirm Booking -->
+          <div id="step5" class="step">
+            <h2 class="text-2xl font-bold mb-8">Confirm Your Booking</h2>
+            <div class="bg-gray-50 p-8 rounded-xl mb-8">
+              <h3 class="font-medium text-lg mb-6">Booking Summary</h3>
+              <div class="space-y-4">
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Service:</span>
+                  <span id="summary-service" class="font-medium">Service Name</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Staff:</span>
+                  <span id="summary-staff" class="font-medium">Staff Name</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Date:</span>
+                  <span id="summary-date" class="font-medium">Selected Date</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Time:</span>
+                  <span id="summary-time" class="font-medium">Selected Time</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Name:</span>
+                  <span id="summary-name" class="font-medium">Your Name</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Email:</span>
+                  <span id="summary-email" class="font-medium">Your Email</span>
+                </div>
+                <div class="flex justify-between items-center pb-4 border-b">
+                  <span class="text-gray-600">Phone:</span>
+                  <span id="summary-phone" class="font-medium">Your Phone</span>
+                </div>
+                <div class="flex justify-between items-center pt-4">
+                  <span class="text-gray-600">Total:</span>
+                  <span id="summary-price" class="font-medium text-lg">$0</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between mt-8">
+              <button id="rescheduleBtn" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Reschedule</button>
+              <button id="viewHistoryBtn" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">View History</button>
+              <button id="cancelBtn" class="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700">Cancel Booking</button>
+            </div>
+            <div class="mt-9 bg-blue-600 text-white p-6 rounded-xl">
+              <div class="text-center mb-6">
+                <h3 class="text-xl font-semibold">Want your own Booking Page?</h3>
+                <p class="text-gray-300">Automate bookings, payments and reminders to save countless hours.</p>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <input type="email" placeholder="example@example.com" class="px-4 py-2.5 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 border border-transparent focus:outline-none focus:border-blue-500 w-full sm:w-auto"/>
+                <button class="px-5 py-2.5 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors">Get your Booking Page</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- RIGHT: Summary (smaller) -->
+      <div class="col-span-1">
+        <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
+          <h2 class="text-xl font-semibold mb-4">BRAND NAME</h2>
+          <div class="space-y-2 text-gray-700">
+            <p><span class="font-semibold">Service:</span> <span id="summary-service-value">Not selected</span></p>
+            <p><span class="font-semibold">Staff:</span> <span id="summary-staff-value">Not selected</span></p>
+            <p><span class="font-semibold">Date:</span> <span id="summary-date-value">Not selected</span></p>
+            <p><span class="font-semibold">Time:</span> <span id="summary-time-value">Not selected</span></p>
+            <p><span class="font-semibold">Price:</span> <span id="summary-price-value">$0</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Chatbot (Fixed Bottom-Right) -->
+  <div class="chatbot">
+    <div id="chatWindow" class="chat-window">
+      <header>
+        <div class="avatar"><i class="fas fa-robot"></i></div>
+        <div>
+          <h3 class="font-medium text-sm">AI Assistant</h3>
+          <p class="text-xs">Online</p>
+        </div>
+      </header>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-message ai">
+          <p>Hello! I'm here to help you book your appointment. What would you like to know?</p>
+        </div>
+      </div>
+      <footer>
+        <input type="text" id="chatInput" placeholder="Type your message..."/>
+      </footer>
+    </div>
+    <button id="chatToggle"><i class="fas fa-robot text-xl"></i></button>
+  </div>
+  <!-- Add this modal template at the bottom of body (before scripts) -->
+<div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+      <h3 class="text-2xl font-bold mb-6">Login to Your Account</h3>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-600 mb-2">Email or Phone Number *</label>
+          <input type="text" id="loginIdentifier" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Enter email or phone number">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Password *</label>
+          <input type="password" id="loginPassword" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Enter password">
+        </div>
+        <div class="flex justify-between items-center">
+          <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Login
+          </button>
+          <p class="mt-4 text-center text-sm text-gray-600">
+            <a href="#forgot" class="text-blue-600 hover:underline">Forgot Password?</a>
+          </p>
+          <button type="button" id="closeLoginModal" class="px-6 py-2 text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+        </div>
+      </form>
+      <p class="mt-4 text-center text-sm text-gray-600">
+        Don't have an account? 
+        <a href="#" id="showSignupLink" class="text-blue-600 hover:underline">Sign up here</a>
+      </p>
+    </div>
+  </div>
+  
+  <!-- Add this signup modal template -->
+  <div id="signupModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+      <h3 class="text-2xl font-bold mb-6">Create New Account</h3>
+      <form id="signupForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-600 mb-2">Full Name *</label>
+          <input type="text" id="signupName" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Enter your full name">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Email *</label>
+          <input type="email" id="signupEmail" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Enter email address">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Phone Number *</label>
+          <input type="tel" id="signupPhone" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Enter phone number">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Password *</label>
+          <input type="password" id="signupPassword" required 
+                 class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 placeholder="Create password">
+        </div>
+        <div class="flex justify-between items-center">
+          <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Create Account
+          </button>
+          <button type="button" id="closeSignupModal" class="px-6 py-2 text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Add these modals after signup modal -->
+<div id="forgotPasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+      <h3 class="text-2xl font-bold mb-6">Forgot Password</h3>
+      <form id="forgotPasswordForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-600 mb-2">Email Address *</label>
+          <input type="email" id="forgotEmail" required 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your email address">
+        </div>
+        <div class="flex justify-between items-center">
+          <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Send Reset Link
+          </button>
+          <button type="button" id="closeForgotModal" class="px-6 py-2 text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div id="resetPasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md">
+      <h3 class="text-2xl font-bold mb-6">Reset Password</h3>
+      <form id="resetPasswordForm" class="space-y-4">
+        <div>
+          <label class="block text-gray-600 mb-2">Reset Token *</label>
+          <input type="text" id="resetToken" required 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter reset token">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">New Password *</label>
+          <input type="password" id="newPassword" required 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter new password">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Confirm Password *</label>
+          <input type="password" id="confirmPassword" required 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Confirm new password">
+        </div>
+        <div class="flex justify-between items-center">
+          <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Reset Password
+          </button>
+          <button type="button" id="closeResetModal" class="px-6 py-2 text-gray-600 hover:text-gray-800">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Update the infoForm section -->
+  <div id="infoForm" class="mt-6 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Existing fields... -->
+    </div>
+  
+    <!-- Add password change section -->
+    <div class="mt-6">
+      <label class="flex items-center space-x-2">
+        <input type="checkbox" id="changePasswordCheckbox" class="form-checkbox">
+        <span class="text-gray-600">Change Password</span>
+      </label>
+      
+      <div id="passwordFields" class="hidden space-y-4 mt-4">
+        <div>
+          <label class="block text-gray-600 mb-2">Current Password *</label>
+          <input type="password" id="currentPassword" 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter current password">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">New Password *</label>
+          <input type="password" id="newProfilePassword" 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter new password">
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-2">Confirm New Password *</label>
+          <input type="password" id="confirmNewPassword" 
+                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Confirm new password">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dummy login simulation and user profile
+    let isLoggedIn = false;
+    let userProfile = {
+      fullName: "John Doe",
+      email: "john@example.com",
+      phone: "+1234567890",
+      notes: "No known allergies"
+    };
+    const authBtn = document.getElementById('authBtn');
+    function updateAuthBtn() {
+      authBtn.textContent = isLoggedIn ? "Logout" : "Login";
+    }
+    authBtn.addEventListener('click', () => {
+      isLoggedIn = !isLoggedIn;
+      updateAuthBtn();
+      // In Step 4, update view based on login status
+      if(isLoggedIn) {
+        // Hide login options and show profile summary
+        document.getElementById('loginOptions').classList.add('hidden');
+        document.getElementById('profileSummary').classList.remove('hidden');
+        document.getElementById('infoForm').classList.add('hidden');
+        // Update summary fields in Step 4
+        document.getElementById('profileName').textContent = userProfile.fullName;
+        document.getElementById('profileEmail').textContent = userProfile.email;
+        document.getElementById('profilePhone').textContent = userProfile.phone;
+        document.getElementById('profileNotes').textContent = userProfile.notes;
+      } else {
+        document.getElementById('loginOptions').classList.remove('hidden');
+        document.getElementById('profileSummary').classList.add('hidden');
+        document.getElementById('infoForm').classList.add('hidden');
+      }
+    });
+    updateAuthBtn();
+    
+    // Booking Steps Logic
+    document.addEventListener('DOMContentLoaded', () => {
+      let currentStep = 1;
+      const totalSteps = 5;
+  
+      // Selections
+      let selectedService = {};
+      let selectedStaff = {};
+      let selectedDate = '';
+      let selectedTime = '';
+  
+      // Data objects
+      const services = {
+        "dental-checkup": { name: "Dental Checkup", price: 120 },
+        "teeth-whitening": { name: "Teeth Whitening", price: 200 }
+      };
+      const staffs = {
+        "dr-smith": { name: "Dr. Smith" },
+        "dr-johnson": { name: "Dr. Johnson" }
+      };
+  
+      // Calendar
+      let currentDateObj = new Date();
+      let currentMonth = currentDateObj.getMonth();
+      let currentYear = currentDateObj.getFullYear();
+  
+      // DOM Elements
+      const steps = [...document.querySelectorAll('.step')];
+      const progressLineActive = document.getElementById('activeLine');
+      const currentMonthYearEl = document.getElementById('currentMonthYear');
+      const calendarDaysEl = document.getElementById('calendar-days');
+  
+      // Right-side summary elements (Step 5 and side summary)
+      const summaryServiceValueEl = document.getElementById('summary-service-value');
+      const summaryStaffValueEl = document.getElementById('summary-staff-value');
+      const summaryDateValueEl = document.getElementById('summary-date-value');
+      const summaryTimeValueEl = document.getElementById('summary-time-value');
+      const summaryPriceValueEl = document.getElementById('summary-price-value');
+  
+      const summaryServiceEl = document.getElementById('summary-service');
+      const summaryStaffEl = document.getElementById('summary-staff');
+      const summaryDateEl = document.getElementById('summary-date');
+      const summaryTimeEl = document.getElementById('summary-time');
+      const summaryNameEl = document.getElementById('summary-name');
+      const summaryEmailEl = document.getElementById('summary-email');
+      const summaryPhoneEl = document.getElementById('summary-phone');
+      const summaryPriceEl = document.getElementById('summary-price');
+  
+      // Chatbot
+      const chatToggle = document.getElementById('chatToggle');
+      const chatWindow = document.getElementById('chatWindow');
+  
+      // Step 4 auth elements
+      const loginOptions = document.getElementById('loginOptions');
+      const profileSummary = document.getElementById('profileSummary');
+      const infoForm = document.getElementById('infoForm');
+      const googleLoginBtn = document.getElementById('googleLoginBtn');
+      const createProfileLink = document.getElementById('createProfileLink');
+      const loginLink = document.getElementById('loginLink');
+      const editProfileBtn = document.getElementById('editProfileBtn');
+  
+      // Update progress bar and step circles
+      const updateProgressBar = () => {
+        const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+        progressLineActive.style.width = `${progressPercentage}%`;
+  
+        for (let i = 1; i <= totalSteps; i++) {
+          const stepCircle = document.getElementById(`step${i}-circle`);
+          if (i < currentStep) {
+            stepCircle.classList.add('completed');
+            stepCircle.classList.remove('active');
+          } else if (i === currentStep) {
+            stepCircle.classList.add('active');
+            stepCircle.classList.remove('completed');
+          } else {
+            stepCircle.classList.remove('active', 'completed');
+          }
+        }
+      };
+  
+      const showStep = (step) => {
+        steps.forEach(s => s.classList.remove('active'));
+        document.getElementById(`step${step}`).classList.add('active');
+        updateProgressBar();
+      };
+  
+      const nextStep = () => {
+        if (currentStep < totalSteps) {
+          currentStep++;
+          showStep(currentStep);
+        }
+      };
+      const prevStep = () => {
+        if (currentStep > 1) {
+          currentStep--;
+          showStep(currentStep);
+        }
+      };
+  
+      // Handle service selection
+      document.querySelectorAll('.service-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const serviceKey = card.getAttribute('data-service');
+          selectedService = services[serviceKey];
+          summaryServiceValueEl.textContent = selectedService.name;
+          summaryPriceValueEl.textContent = `$${selectedService.price}`;
+          nextStep();
+        });
+      });
+  
+      // Handle staff selection
+      document.querySelectorAll('.staff-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const staffKey = card.getAttribute('data-staff');
+          selectedStaff = staffs[staffKey];
+          summaryStaffValueEl.textContent = selectedStaff.name;
+          nextStep();
+        });
+      });
+  
+      // Handle time slot selection
+      document.querySelectorAll('.time-slot:not(.disabled)').forEach(slot => {
+        slot.addEventListener('click', () => {
+          selectedTime = slot.innerText;
+          summaryTimeValueEl.textContent = selectedTime;
+          nextStep();
+        });
+      });
+  
+      // Next and Back buttons
+      document.querySelectorAll('.btn-next').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (currentStep === 4) {
+            confirmBooking();
+          } else {
+            nextStep();
+          }
+        });
+      });
+      document.querySelectorAll('.btn-back').forEach(btn => {
+        btn.addEventListener('click', prevStep);
+      });
+  
+      // Confirm Booking
+      const confirmBooking = () => {
+        // If the info form is visible, use its values; otherwise, use profile summary
+        let customerName, customerEmail, customerPhone, customerNotes;
+        if (!infoForm.classList.contains('hidden')) {
+          customerName = document.getElementById('customerName').value.trim();
+          customerEmail = document.getElementById('customerEmail').value.trim();
+          customerPhone = document.getElementById('customerPhone').value.trim();
+          customerNotes = document.getElementById('customerNotes').value.trim();
+        } else {
+          // Use the profile summary from userProfile
+          customerName = userProfile.fullName;
+          customerEmail = userProfile.email;
+          customerPhone = userProfile.phone;
+          customerNotes = userProfile.notes;
+        }
+        if (!customerName || !customerEmail || !customerPhone) {
+          alert('Please fill in all required fields');
+          return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerEmail)) {
+          alert('Please enter a valid email address');
+          return;
+        }
+        const phoneRegex = /^\+?[\d\s-]{10,}$/;
+        if (!phoneRegex.test(customerPhone)) {
+          alert('Please enter a valid phone number');
+          return;
+        }
+  
+        summaryServiceEl.textContent = selectedService.name || 'Not selected';
+        summaryStaffEl.textContent = selectedStaff.name || 'Not selected';
+        summaryDateEl.textContent = selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not selected';
+        summaryTimeEl.textContent = selectedTime || 'Not selected';
+        summaryNameEl.textContent = customerName;
+        summaryEmailEl.textContent = customerEmail;
+        summaryPhoneEl.textContent = customerPhone;
+        summaryPriceEl.textContent = `$${selectedService.price || 0}`;
+  
+        currentStep = 5;
+        showStep(currentStep);
+  
+        const bookingData = {
+          customer: { name: customerName, email: customerEmail, phone: customerPhone, notes: customerNotes },
+          appointment: { service: selectedService, staff: selectedStaff, date: selectedDate, time: selectedTime }
+        };
+        console.log('Booking Data:', bookingData);
+      };
+  
+      // Reschedule / Cancel / History buttons
+      document.getElementById('rescheduleBtn').addEventListener('click', () => {
+        currentStep = 3;
+        showStep(currentStep);
+      });
+      document.getElementById('cancelBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to cancel this booking?')) {
+          currentStep = 1;
+          showStep(currentStep);
+          selectedService = {};
+          selectedStaff = {};
+          selectedDate = '';
+          selectedTime = '';
+          document.getElementById('customerName').value = '';
+          document.getElementById('customerEmail').value = '';
+          document.getElementById('customerPhone').value = '';
+          document.getElementById('customerNotes').value = '';
+          summaryServiceValueEl.textContent = 'Not selected';
+          summaryStaffValueEl.textContent = 'Not selected';
+          summaryDateValueEl.textContent = 'Not selected';
+          summaryTimeValueEl.textContent = 'Not selected';
+          summaryPriceValueEl.textContent = '$0';
+          alert('Your booking has been canceled.');
+        }
+      });
+      document.getElementById('viewHistoryBtn').addEventListener('click', () => {
+        window.location.href = 'appointment-history.html';
+      });
+  
+      // Calendar Rendering
+      const renderCalendar = () => {
+        calendarDaysEl.innerHTML = '';
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+        const daysInMonth = lastDayOfMonth.getDate();
+        const startingDay = firstDayOfMonth.getDay();
+  
+        currentMonthYearEl.textContent = `${new Intl.DateTimeFormat('en-US', { month: 'long' }).format(firstDayOfMonth)} ${currentYear}`;
+  
+        for (let i = 0; i < startingDay; i++) {
+          const emptyDiv = document.createElement('div');
+          emptyDiv.classList.add('calendar-day', 'disabled');
+          calendarDaysEl.appendChild(emptyDiv);
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+          const day = new Date(currentYear, currentMonth, i);
+          const dayDiv = document.createElement('div');
+          dayDiv.classList.add('calendar-day');
+          if (selectedDate && new Date(selectedDate).toDateString() === day.toDateString()) {
+            dayDiv.classList.add('selected');
+          }
+          dayDiv.innerText = i;
+          dayDiv.addEventListener('click', () => {
+            selectedDate = day.toISOString();
+            summaryDateValueEl.textContent = day.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            renderCalendar();
+          });
+          calendarDaysEl.appendChild(dayDiv);
+        }
+      };
+      document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+        renderCalendar();
+      });
+      document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+        renderCalendar();
+      });
+      renderCalendar();
+  
+      // Chatbot Toggle
+      chatToggle.addEventListener('click', () => {
+        chatWindow.classList.toggle('active');
+      });
+  
+      // Step 4: Login / Create Profile Options
+      // Initially, if not logged in, show loginOptions and hide profileSummary and infoForm.
+      if (!isLoggedIn) {
+        loginOptions.classList.remove('hidden');
+        profileSummary.classList.add('hidden');
+        infoForm.classList.add('hidden');
+      }
+      googleLoginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Simulate Google login
+        isLoggedIn = true;
+        updateAuthBtn();
+        loginOptions.classList.add('hidden');
+        profileSummary.classList.remove('hidden');
+        infoForm.classList.add('hidden');
+        // Pre-fill profile summary
+        document.getElementById('profileName').textContent = userProfile.fullName;
+        document.getElementById('profileEmail').textContent = userProfile.email;
+        document.getElementById('profilePhone').textContent = userProfile.phone;
+        document.getElementById('profileNotes').textContent = userProfile.notes;
+      });
+      createProfileLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Show the form to create a profile
+        loginOptions.classList.add('hidden');
+        profileSummary.classList.add('hidden');
+        infoForm.classList.remove('hidden');
+      });
+      loginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Simulate login process
+        isLoggedIn = true;
+        updateAuthBtn();
+        loginOptions.classList.add('hidden');
+        profileSummary.classList.remove('hidden');
+        infoForm.classList.add('hidden');
+        document.getElementById('profileName').textContent = userProfile.fullName;
+        document.getElementById('profileEmail').textContent = userProfile.email;
+        document.getElementById('profilePhone').textContent = userProfile.phone;
+        document.getElementById('profileNotes').textContent = userProfile.notes;
+      });
+      editProfileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Allow editing the profile: show the form with current profile info pre-filled
+        infoForm.classList.remove('hidden');
+        profileSummary.classList.add('hidden');
+        document.getElementById('customerName').value = userProfile.fullName;
+        document.getElementById('customerEmail').value = userProfile.email;
+        document.getElementById('customerPhone').value = userProfile.phone;
+        document.getElementById('customerNotes').value = userProfile.notes;
+      });
+    });
+    // User database simulation (replace with real database in production)
+let users = [
+  {
+    id: 1,
+    fullName: "John Doe",
+    email: "john@example.com",
+    phone: "+1234567890",
+    password: "password123",
+    notes: "No known allergies"
+  }
+];
+
+// Login Modal Handling
+const loginModal = document.getElementById('loginModal');
+const signupModal = document.getElementById('signupModal');
+const showSignupLink = document.getElementById('showSignupLink');
+const closeLoginModal = document.getElementById('closeLoginModal');
+const closeSignupModal = document.getElementById('closeSignupModal');
+
+// Show login modal
+document.getElementById('loginLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  loginModal.classList.remove('hidden');
+});
+
+// Show signup modal
+showSignupLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  loginModal.classList.add('hidden');
+  signupModal.classList.remove('hidden');
+});
+
+// Close modals
+closeLoginModal.addEventListener('click', () => loginModal.classList.add('hidden'));
+closeSignupModal.addEventListener('click', () => signupModal.classList.add('hidden'));
+
+// Handle login form submission
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const identifier = document.getElementById('loginIdentifier').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  // Find user by email or phone
+  const user = users.find(u => 
+    (u.email === identifier || u.phone === identifier) && 
+    u.password === password
+  );
+  
+  if(user) {
+    isLoggedIn = true;
+    userProfile = user;
+    updateAuthBtn();
+    loginModal.classList.add('hidden');
+    refreshProfileDisplay();
+    alert('Login successful!');
+  } else {
+    alert('Invalid credentials. Please try again.');
+  }
+});
+
+// Handle signup form submission
+document.getElementById('signupForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const newUser = {
+    id: users.length + 1,
+    fullName: document.getElementById('signupName').value,
+    email: document.getElementById('signupEmail').value,
+    phone: document.getElementById('signupPhone').value,
+    password: document.getElementById('signupPassword').value,
+    notes: ""
+  };
+  
+  users.push(newUser);
+  signupModal.classList.add('hidden');
+  alert('Account created successfully! You can now login.');
+});
+
+// Update profile display function
+function refreshProfileDisplay() {
+  if(isLoggedIn) {
+    document.getElementById('loginOptions').classList.add('hidden');
+    document.getElementById('profileSummary').classList.remove('hidden');
+    document.getElementById('profileName').textContent = userProfile.fullName;
+    document.getElementById('profileEmail').textContent = userProfile.email;
+    document.getElementById('profilePhone').textContent = userProfile.phone;
+    document.getElementById('profileNotes').textContent = userProfile.notes;
+    document.getElementById('infoForm').classList.add('hidden');
+  }
+}
+
+// Update confirmBooking function to use logged-in user info
+const confirmBooking = () => {
+  let customerName, customerEmail, customerPhone, customerNotes;
+  
+  if(isLoggedIn) {
+    // Use logged-in user info
+    customerName = userProfile.fullName;
+    customerEmail = userProfile.email;
+    customerPhone = userProfile.phone;
+    customerNotes = userProfile.notes;
+  } else {
+    // Use form inputs
+    customerName = document.getElementById('customerName').value.trim();
+    customerEmail = document.getElementById('customerEmail').value.trim();
+    customerPhone = document.getElementById('customerPhone').value.trim();
+    customerNotes = document.getElementById('customerNotes').value.trim();
+  }
+
+  // Rest of the existing validation and confirmation logic...
+};
+// Password Management
+const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+const resetPasswordModal = document.getElementById('resetPasswordModal');
+const closeForgotModal = document.getElementById('closeForgotModal');
+const closeResetModal = document.getElementById('closeResetModal');
+
+// Show Forgot Password Modal
+document.querySelector('#loginForm a[href="#forgot"]').addEventListener('click', (e) => {
+  e.preventDefault();
+  loginModal.classList.add('hidden');
+  forgotPasswordModal.classList.remove('hidden');
+});
+
+// Handle Forgot Password Form
+document.getElementById('forgotPasswordForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const email = document.getElementById('forgotEmail').value;
+  // Simulate sending reset email
+  alert(`Reset instructions sent to ${email}`);
+  forgotPasswordModal.classList.add('hidden');
+  resetPasswordModal.classList.remove('hidden');
+});
+
+// Handle Reset Password Form
+document.getElementById('resetPasswordForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  
+  if(newPassword !== confirmPassword) {
+    alert('Passwords do not match!');
+    return;
+  }
+  
+  if(!validatePassword(newPassword)) {
+    alert('Password must be at least 8 characters with uppercase, lowercase, number and symbol');
+    return;
+  }
+  
+  // Update password logic here
+  alert('Password reset successfully!');
+  resetPasswordModal.classList.add('hidden');
+});
+
+// Password validation helper
+function validatePassword(password) {
+  const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}$/;
+  return regex.test(password);
+}
+
+// Toggle password fields in profile edit
+document.getElementById('changePasswordCheckbox').addEventListener('change', (e) => {
+  document.getElementById('passwordFields').classList.toggle('hidden', !e.target.checked);
+  document.querySelectorAll('#passwordFields input').forEach(input => {
+    input.required = e.target.checked;
+  });
+});
+
+// Update profile saving logic
+document.getElementById('infoForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  if(document.getElementById('changePasswordCheckbox').checked) {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newProfilePassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
+    
+    if(newPassword !== confirmPassword) {
+      alert('New passwords do not match!');
+      return;
+    }
+    
+    if(!validatePassword(newPassword)) {
+      alert('New password must be at least 8 characters with uppercase, lowercase, number and symbol');
+      return;
+    }
+    
+    // Verify current password
+    if(currentPassword !== userProfile.password) {
+      alert('Current password is incorrect');
+      return;
+    }
+    
+    userProfile.password = newPassword;
+  }
+  
+  // Update other profile fields...
+});
+  </script>
+</body>
+</html>
