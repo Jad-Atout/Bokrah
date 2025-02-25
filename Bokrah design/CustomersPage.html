@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers Page - Bokra</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+  <style>
+    .sidebar {
+      width: 250px;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+    }
+
+    .sidebar.collapsed .nav-text {
+      display: none;
+    }
+
+    .main-content {
+      margin-left: 250px;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed + .main-content {
+      margin-left: 80px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      max-width: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-white min-h-screen">
+
+<!-- Main Container -->
+<div class="flex min-h-screen">
+
+  <!-- Sidebar Navigation -->
+  <div class="sidebar bg-white h-screen fixed shadow-lg">
+    <div class="p-6 border-b">
+      <h2 class="text-xl font-bold text-blue-600">Bokra</h2>
+    </div>
+    <nav class="mt-4">
+      <ul>
+        <li class="mb-2">
+          <a href="dashboard.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <i class="fas fa-home mr-3"></i>
+            <span class="nav-text">Dashboard</span>
+          </a>
+        </li>
+        <li class="mb-2">
+          <a href="appointments.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <i class="fas fa-calendar-alt mr-3"></i>
+            <span class="nav-text">Appointments</span>
+          </a>
+        </li>
+        <li class="mb-2">
+          <a href="services.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <i class="fas fa-concierge-bell mr-3"></i>
+            <span class="nav-text">Services</span>
+          </a>
+        </li>
+        <li class="mb-2">
+          <a href="customers.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+            <i class="fas fa-users mr-3"></i>
+            <span class="nav-text">Customers</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <button onclick="toggleSidebar()" class="absolute bottom-4 left-4 p-2 bg-blue-100 rounded-lg">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+
+  <!-- Content Area -->
+  <div class="main-content p-8 ml-64">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-semibold text-gray-800">Customer Management</h1>
+      <p class="text-gray-600 mt-2">Manage your customers and their details in one place.</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="mb-8 flex items-center gap-4">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by name, email, or phone"
+        class="w-full p-3 border border-gray-300 rounded-lg"
+        oninput="filterCustomers()"
+      >
+      <select
+        id="appointmentFilter"
+        class="p-3 border border-gray-300 rounded-lg"
+        onchange="filterCustomers()"
+      >
+        <option value="all">All Customers</option>
+        <option value="withAppointments">With Appointments</option>
+        <option value="withoutAppointments">Without Appointments</option>
+      </select>
+      <button
+        onclick="exportCustomers()"
+        class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-300"
+      >
+        Export Customers
+      </button>
+    </div>
+
+    <!-- Add Customer Form -->
+    <div class="bg-white shadow-lg rounded-lg p-6 mb-8">
+      <h2 class="text-2xl font-medium text-gray-800 mb-4">Add New Customer</h2>
+      <form id="addCustomerForm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="customerName" class="block text-gray-700">Name</label>
+            <input type="text" id="customerName" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Customer Name" required>
+          </div>
+          <div>
+            <label for="customerEmail" class="block text-gray-700">Email</label>
+            <input type="email" id="customerEmail" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Customer Email" required>
+          </div>
+          <div>
+            <label for="customerPhone" class="block text-gray-700">Phone Number</label>
+            <input type="tel" id="customerPhone" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Customer Phone Number" pattern="[0-9]{10}" required>
+            <small class="text-gray-500">Enter a 10-digit phone number.</small>
+          </div>
+          <div>
+            <label for="customerAddress" class="block text-gray-700">Address</label>
+            <input type="text" id="customerAddress" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Customer Address">
+          </div>
+          <div class="col-span-2">
+            <label for="customerNotes" class="block text-gray-700">Notes</label>
+            <textarea id="customerNotes" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Additional Notes"></textarea>
+          </div>
+        </div>
+        <div class="mt-6">
+          <button type="submit" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300">Add Customer</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="overflow-x-auto bg-white shadow-lg rounded-lg mb-8">
+      <table class="w-full text-left table-auto">
+        <thead class="bg-blue-100">
+        <tr>
+          <th class="p-4 border-b text-blue-600">Customer ID</th>
+          <th class="p-4 border-b text-blue-600">Name</th>
+          <th class="p-4 border-b text-blue-600">Email</th>
+          <th class="p-4 border-b text-blue-600">Phone</th>
+          <th class="p-4 border-b text-blue-600">Address</th>
+          <th class="p-4 border-b text-blue-600">Notes</th>
+          <th class="p-4 border-b text-blue-600">Appointments</th>
+          <th class="p-4 border-b text-blue-600">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="customerTableBody">
+        <!-- Dynamic rows will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Details Modal -->
+<div id="appointmentModal" class="modal">
+  <div class="modal-content">
+    <h2 class="text-2xl font-bold mb-4">Appointment Details</h2>
+    <div id="modalContent"></div>
+    <button
+      onclick="closeModal()"
+      class="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+    >
+      Close
+    </button>
+  </div>
+</div>
+
+<script>
+  // Toggle sidebar collapse
+  function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('collapsed');
+  }
+
+  // Load customers and appointments from localStorage
+  let customers = JSON.parse(localStorage.getItem('customers')) || [];
+  let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+  // Function to render customers in the table
+  function renderCustomers(filteredCustomers = customers) {
+    const tableBody = document.getElementById('customerTableBody');
+    tableBody.innerHTML = '';
+
+    filteredCustomers.forEach((customer, index) => {
+      const customerAppointments = appointments.filter(app => app.customerId === index + 1);
+      const row = document.createElement('tr');
+      row.innerHTML = `
+                <td class="p-4 border-b">${index + 1}</td>
+                <td class="p-4 border-b cursor-pointer text-blue-500 hover:underline" onclick="viewCustomerProfile(${index})">${customer.name}</td>
+                <td class="p-4 border-b">${customer.email}</td>
+                <td class="p-4 border-b">${customer.phone}</td>
+                <td class="p-4 border-b">${customer.address}</td>
+                <td class="p-4 border-b">${customer.notes}</td>
+                <td class="p-4 border-b">
+                    ${customerAppointments.length > 0 ? customerAppointments.map(app => `
+                        <div class="mb-2 cursor-pointer text-blue-500 hover:underline" onclick="viewAppointmentDetails(${index}, '${app.date}', '${app.service}')">
+                            <span class="font-medium">${app.date}</span>: ${app.service}
+                        </div>
+                    `).join('') : 'No appointments'}
+                </td>
+                <td class="p-4 border-b">
+                    <button onclick="editCustomer(${index})" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">Edit</button>
+                    <button onclick="deleteCustomer(${index})" class="bg-red-500 text-white px-4 py-2 rounded-lg ml-2 hover:bg-red-600 transition duration-300">Delete</button>
+                </td>
+            `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Function to filter customers
+  function filterCustomers() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    const filterType = document.getElementById('appointmentFilter').value;
+
+    let filteredCustomers = customers.filter(customer => {
+      const matchesSearch = customer.name.toLowerCase().includes(searchQuery) ||
+        customer.email.toLowerCase().includes(searchQuery) ||
+        customer.phone.includes(searchQuery);
+
+      const hasAppointments = appointments.some(app => app.customerId === customers.indexOf(customer) + 1);
+
+      if (filterType === 'withAppointments') {
+        return matchesSearch && hasAppointments;
+      } else if (filterType === 'withoutAppointments') {
+        return matchesSearch && !hasAppointments;
+      } else {
+        return matchesSearch;
+      }
+    });
+
+    renderCustomers(filteredCustomers);
+  }
+
+  // Function to view appointment details in a modal
+  function viewAppointmentDetails(customerIndex, date, service) {
+    const modal = document.getElementById('appointmentModal');
+    const modalContent = document.getElementById('modalContent');
+    const customer = customers[customerIndex];
+
+    modalContent.innerHTML = `
+            <p><strong>Customer:</strong> ${customer.name}</p>
+            <p><strong>Date:</strong> ${date}</p>
+            <p><strong>Service:</strong> ${service}</p>
+        `;
+    modal.classList.add('open');
+  }
+
+  // Function to close the modal
+  function closeModal() {
+    const modal = document.getElementById('appointmentModal');
+    modal.classList.remove('open');
+  }
+
+  // Function to view customer profile (redirect to a new page or show in a modal)
+  function viewCustomerProfile(index) {
+    alert(`Redirect to customer profile page for customer ID: ${index + 1}`);
+    // You can implement a full profile page or modal here.
+  }
+
+  // Function to export customers (simulated)
+  function exportCustomers() {
+    alert('Exporting customer data...');
+    // Implement CSV/PDF export logic here.
+  }
+
+  // Function to add a new customer
+  document.getElementById('addCustomerForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('customerName').value;
+    const email = document.getElementById('customerEmail').value;
+    const phone = document.getElementById('customerPhone').value;
+    const address = document.getElementById('customerAddress').value;
+    const notes = document.getElementById('customerNotes').value;
+
+    const newCustomer = { name, email, phone, address, notes };
+    customers.push(newCustomer);
+    localStorage.setItem('customers', JSON.stringify(customers));
+
+    renderCustomers();
+    document.getElementById('addCustomerForm').reset();
+  });
+
+  // Function to delete a customer
+  function deleteCustomer(index) {
+    customers.splice(index, 1);
+    localStorage.setItem('customers', JSON.stringify(customers));
+    renderCustomers();
+  }
+
+  // Function to edit a customer
+  function editCustomer(index) {
+    const customer = customers[index];
+    document.getElementById('customerName').value = customer.name;
+    document.getElementById('customerEmail').value = customer.email;
+    document.getElementById('customerPhone').value = customer.phone;
+    document.getElementById('customerAddress').value = customer.address;
+    document.getElementById('customerNotes').value = customer.notes;
+
+    deleteCustomer(index); // Remove the old entry
+  }
+
+  // Render customers on page load
+  renderCustomers();
+</script>
+
+</body>
+</html>

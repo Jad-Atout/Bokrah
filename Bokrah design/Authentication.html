@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bokrah - AI-Driven Appointment Management System">
+    <title>Bokrah - AI-Driven Appointment Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #f6f9fc 0%, #eef2f7 100%);
+            min-height: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, rgba(37,99,235,0) 70%);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #e5e7eb;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .auth-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 999;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+        }
+
+        .input-group input {
+            padding-left: 40px;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .password-strength {
+            height: 4px;
+            transition: all 0.3s ease;
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Header -->
+    <header class="bg-white shadow-sm fixed w-full top-0 z-50">
+        <nav class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="text-2xl font-bold text-blue-600">
+                        <i class="fas fa-calendar-check mr-2"></i>Bokrah
+                    </div>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+                    <a href="#about" class="text-gray-600 hover:text-blue-600 transition-colors">About</a>
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-blue-600 transition-colors">Pricing</a>
+                    <a href="#contact" class="text-gray-600 hover:text-blue-600 transition-colors">Contact</a>
+                </div>
+                <div class="flex space-x-4 items-center">
+                    <button onclick="showAuthModal('login')" class="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Log In
+                    </button>
+                    <button onclick="showAuthModal('signup')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>Sign Up
+                    </button>
+                    <button class="md:hidden" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars text-gray-600 text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu md:hidden">
+        <div class="p-4">
+            <div class="flex justify-between items-center mb-8">
+                <div class="text-2xl font-bold text-blue-600">Bokrah</div>
+                <button onclick="toggleMobileMenu()">
+                    <i class="fas fa-times text-gray-600 text-xl"></i>
+                </button>
+            </div>
+            <div class="flex flex-col space-y-4">
+                <a href="#" class="text-gray-600 py-2">Home</a>
+                <a href="#about" class="text-gray-600 py-2">About</a>
+                <a href="#features" class="text-gray-600 py-2">Features</a>
+                <a href="#pricing" class="text-gray-600 py-2">Pricing</a>
+                <a href="#contact" class="text-gray-600 py-2">Contact</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-section pt-20">
+        <div class="container mx-auto px-6 py-20">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6 leading-tight">
+                        Transform Your Business with 
+                        <span class="text-blue-600">AI-Powered</span> 
+                        Scheduling
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                        Experience the future of appointment management with our intelligent scheduling system. 
+                        Save time, reduce no-shows, and grow your business effortlessly.
+                    </p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <button onclick="showAuthModal('signup')" class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Get Started Free
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    Everything you need to manage appointments efficiently and grow your business
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="feature-card p-6 bg-white rounded-lg">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-robot text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">AI Assistant</h3>
+                    <p class="text-gray-600">Smart scheduling suggestions and automated customer support available 24/7.</p>
+                    <ul class="mt-4 space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Intelligent time suggestions
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Smart appointment scheduling
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            24/7 chatbot support
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-card p-6 bg-white rounded-lg">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-calendar text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Calendar Integration</h3>
+                    <p class="text-gray-600">Seamless sync with popular calendar apps for efficient scheduling.</p>
+                    <ul class="mt-4 space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Google Calendar sync
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Real-time availability
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Multiple calendar support
+                        </li>
+                    </ul>
+                </div>
+                <div class="feature-card p-6 bg-white rounded-lg">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-bell text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Smart Notifications</h3>
+                    <p class="text-gray-600">Customizable alerts and reminders to reduce no-shows.</p>
+                    <ul class="mt-4 space-y-2">
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Email notifications
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            SMS reminders
+                        </li>
+                        <li class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Custom schedules
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="auth-modal">
+        <div class="modal-content bg-white w-full max-w-md mx-auto mt-20 rounded-lg shadow-lg p-8 relative">
+            <button onclick="closeAuthModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="hidden">
+                <h2 class="text-2xl font-bold mb-4"> Login</h2>
+                <form>
+                    <div class="mb-4">
+                        <label class="block text-gray-700">Email</label>
+                        <input type="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700">Password</label>
+                        <input type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        Log In
+                    </button>
+                    <div class="text-center my-4 text-gray-500">OR</div>
+                    <button type="button" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 flex items-center justify-center">
+                        <i class="fab fa-google mr-2"></i>
+                        Login with Google
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to handle the modal
+        function showAuthModal(type) {
+            const modal = document.getElementById('authModal');
+            const loginForm = document.getElementById('loginForm');
+            modal.classList.add('active');
+            loginForm.classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.classList.remove('active');
+        }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.querySelector('.mobile-menu');
+            mobileMenu.classList.toggle('active');
+        }
+        function showAuthModal(type) {
+        const modal = document.getElementById('authModal');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        
+        modal.classList.add('active');
+        
+        if (type === 'login') {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+        } else {
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+        }
+    }
+
+    function nextStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        // Show current step
+        document.getElementById(`step${step}`).classList.add('active');
+        // Update indicators
+        updateStepIndicators(step);
+    }
+
+    function prevStep(step) {
+        nextStep(step);
+    }
+
+    function updateStepIndicators(currentStep) {
+        for (let i = 1; i <= 3; i++) {
+            const indicator = document.getElementById(`step${i}-indicator`);
+            if (i < currentStep) {
+                indicator.classList.add('completed');
+                indicator.classList.remove('active');
+            } else if (i === currentStep) {
+                indicator.classList.add('active');
+                indicator.classList.remove('completed');
+            } else {
+                indicator.classList.remove('active', 'completed');
+            }
+        }
+    }
+
+    function selectBusinessType(type) {
+        // Remove selected class from all cards
+        document.querySelectorAll('.brand-card').forEach(card => card.classList.remove('selected'));
+        // Add selected class to clicked card
+        event.currentTarget.classList.add('selected');
+    }
+
+    function signupWithGoogle() {
+        // Implement Google Sign-up logic here
+        console.log('Signing up with Google...');
+    }
+
+    function completeSignup() {
+        // Implement signup completion logic here
+        console.log('Completing signup...');
+        // You would typically submit the form data to your backend here
+        closeAuthModal();
+        // Show success message or redirect
+        alert('Account created successfully!');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('authModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAuthModal();
+        }
+    });
+    </script>
+   
+</div>
+</div>
+
+</body>
+</html>

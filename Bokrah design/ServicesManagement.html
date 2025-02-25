@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Services Management</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .btn-primary {
+      background-color: #1f6feb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #3a8bfd;
+    }
+
+    .card {
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+      background-color: #f7fafc;
+      padding: 1rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #2d3748;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .sidebar {
+      width: 250px;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+    }
+
+    .sidebar.collapsed .nav-text {
+      display: none;
+    }
+
+    .main-content {
+      margin-left: 250px;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed + .main-content {
+      margin-left: 80px;
+    }
+
+    .modal {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .modal-header {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .modal-body {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-white min-h-screen">
+
+<!-- Sidebar Navigation -->
+<div class="sidebar bg-white h-screen fixed shadow-lg">
+  <div class="p-6 border-b">
+    <h2 class="text-xl font-bold text-blue-600">Bokrah</h2>
+  </div>
+  <nav class="mt-4">
+    <ul>
+      <li class="mb-2">
+        <a href="services.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <i class="fas fa-home mr-3"></i>
+          <span class="nav-text">Home</span>
+        </a>
+      </li>
+      <li class="mb-2">
+        <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <i class="fas fa-calendar-alt mr-3"></i>
+          <span class="nav-text">Appointments</span>
+        </a>
+      </li>
+      <li class="mb-2">
+        <a href="services.html" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <i class="fas fa-concierge-bell mr-3"></i>
+          <span class="nav-text">Services</span>
+        </a>
+      </li>
+      <li class="mb-2">
+        <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+          <i class="fas fa-users mr-3"></i>
+          <span class="nav-text">Customers</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>
+
+<!-- Main Content Area -->
+<div class="main-content p-8 ml-64">
+  <header class="flex justify-between items-center mb-8">
+    <h1 class="text-2xl font-bold">Manage Services</h1>
+    <a href="#addServiceModal"
+       class="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg inline-block">Add New Service</a>
+  </header>
+
+  <!-- Services List -->
+  <div class="space-y-8">
+
+    <!-- Service Card 1 -->
+    <div class="card">
+      <div class="card-header">Spa Treatment</div>
+      <div class="card-body">
+        <p class="text-sm text-gray-700">Relaxing full-body massage with essential oils.</p>
+        <p class="mt-2 text-sm text-gray-600"><strong>Duration:</strong> 1 hour</p>
+        <p class="mt-2 text-sm text-gray-600"><strong>Price:</strong> $50</p>
+        <div class="mt-4">
+          <button class="btn-primary text-sm py-2 px-4 rounded-md">Edit</button>
+          <button class="text-red-600 text-sm py-2 px-4 rounded-md hover:text-red-800 ml-4">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Card 2 -->
+    <div class="card">
+      <div class="card-header">Haircut</div>
+      <div class="card-body">
+        <p class="text-sm text-gray-700">Professional haircut tailored to your style.</p>
+        <p class="mt-2 text-sm text-gray-600"><strong>Duration:</strong> 45 minutes</p>
+        <p class="mt-2 text-sm text-gray-600"><strong>Price:</strong> $30</p>
+        <div class="mt-4">
+          <button class="btn-primary text-sm py-2 px-4 rounded-md">Edit</button>
+          <button class="text-red-600 text-sm py-2 px-4 rounded-md hover:text-red-800 ml-4">Delete</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Add Service Modal -->
+<div id="addServiceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="modal">
+    <div class="modal-header">Add New Service</div>
+    <div class="modal-body">
+      <form>
+        <div class="mb-4">
+          <label for="serviceName" class="block text-sm font-medium text-gray-700">Service Name</label>
+          <input type="text" id="serviceName" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                 placeholder="Enter service name" required>
+        </div>
+        <div class="mb-4">
+          <label for="serviceDescription" class="block text-sm font-medium text-gray-700">Service Description</label>
+          <textarea id="serviceDescription" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                    placeholder="Enter service description" required></textarea>
+        </div>
+        <div class="mb-4">
+          <label for="serviceDuration" class="block text-sm font-medium text-gray-700">Service Duration</label>
+          <select id="serviceDuration" class="w-full p-2 mt-1 border border-gray-300 rounded-md" required>
+            <option value="30 minutes">30 minutes</option>
+            <option value="1 hour">1 hour</option>
+            <option value="1.5 hours">1.5 hours</option>
+            <option value="2 hours">2 hours</option>
+            <option value="Custom">Custom...</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label for="servicePrice" class="block text-sm font-medium text-gray-700">Price ($)</label>
+          <input type="number" id="servicePrice" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                 placeholder="Enter service price" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn-primary text-white text-sm px-4 py-2 rounded-md">Save</button>
+          <button type="button"
+                  class="ml-2 bg-gray-300 px-4 py-2 text-sm rounded-md hover:bg-gray-400"
+                  onclick="document.getElementById('addServiceModal').classList.add('hidden')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Service Modal -->
+<div id="editServiceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="modal">
+    <div class="modal-header">Edit Service</div>
+    <div class="modal-body">
+      <form>
+        <div class="mb-4">
+          <label for="editServiceName" class="block text-sm font-medium text-gray-700">Service Name</label>
+          <input type="text" id="editServiceName" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                 placeholder="Enter service name" required>
+        </div>
+        <div class="mb-4">
+          <label for="editServiceDescription" class="block text-sm font-medium text-gray-700">Service Description</label>
+          <textarea id="editServiceDescription" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                    placeholder="Enter service description" required></textarea>
+        </div>
+        <div class="mb-4">
+          <label for="editServiceDuration" class="block text-sm font-medium text-gray-700">Service Duration</label>
+          <select id="editServiceDuration" class="w-full p-2 mt-1 border border-gray-300 rounded-md" required>
+            <option value="30 minutes">30 minutes</option>
+            <option value="1 hour">1 hour</option>
+            <option value="1.5 hours">1.5 hours</option>
+            <option value="2 hours">2 hours</option>
+            <option value="Custom">Custom...</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label for="editServicePrice" class="block text-sm font-medium text-gray-700">Price ($)</label>
+          <input type="number" id="editServicePrice" class="w-full p-2 mt-1 border border-gray-300 rounded-md"
+                 placeholder="Enter service price" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn-primary text-white text-sm px-4 py-2 rounded-md">Save</button>
+          <button type="button"
+                  class="ml-2 bg-gray-300 px-4 py-2 text-sm rounded-md hover:bg-gray-400"
+                  onclick="document.getElementById('editServiceModal').classList.add('hidden')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Show Add Service Modal
+  document.querySelector('a[href="#addServiceModal"]').addEventListener('click', function () {
+    document.getElementById('addServiceModal').classList.remove('hidden');
+  });
+
+  // Hide Add Service Modal if the background is clicked
+  document.getElementById('addServiceModal').addEventListener('click', function (e) {
+    if (e.target === this) {
+      this.classList.add('hidden');
+    }
+  });
+
+  // Show Edit Service Modal and fill with data
+  document.querySelectorAll('.card .btn-primary').forEach(button => {
+    button.addEventListener('click', function () {
+      const card = this.closest('.card');
+      const serviceName = card.querySelector('.card-header').textContent;
+      const serviceDescription = card.querySelector('.card-body p').textContent;
+      const serviceDuration = card.querySelector('.card-body p:nth-child(3)').textContent.split(': ')[1];
+      const servicePrice = card.querySelector('.card-body p:nth-child(4)').textContent.split(': ')[1].replace('$', '');
+
+      document.getElementById('editServiceName').value = serviceName;
+      document.getElementById('editServiceDescription').value = serviceDescription;
+      document.getElementById('editServiceDuration').value = serviceDuration;
+      document.getElementById('editServicePrice').value = servicePrice;
+
+      document.getElementById('editServiceModal').classList.remove('hidden');
+    });
+  });
+
+  // Hide Edit Service Modal if the background is clicked
+  document.getElementById('editServiceModal').addEventListener('click', function (e) {
+    if (e.target === this) {
+      this.classList.add('hidden');
+    }
+  });
+</script>
+
+</body>
+
+</html>

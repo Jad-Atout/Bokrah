@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bokrah - Customer Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            width: 250px;
+            transition: all 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-collapsed .sidebar {
+            width: 70px;
+        }
+        
+        .sidebar-collapsed .main-content {
+            margin-left: 70px;
+        }
+        
+        .sidebar-collapsed .menu-text {
+            display: none;
+        }
+        
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .notification-dropdown.active {
+            display: block;
+        }
+        
+        .appointment-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .appointment-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover:not(.disabled) {
+            background-color: #EBF5FF;
+        }
+
+        .calendar-day.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+
+        .calendar-day.disabled {
+            color: #CBD5E0;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar bg-white shadow-lg fixed h-full">
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center justify-between mb-8">
+                    <span class="text-2xl font-bold text-blue-600 menu-text">Bokrah</span>
+                    <button id="toggleSidebar" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                
+                <nav class="flex-1">
+                    <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                        <i class="fas fa-home w-6"></i>
+                        <span class="menu-text ml-3">Home</span>
+                    </a>
+                    <a href="#" class="flex items-center p-3 bg-blue-50 text-blue-600 rounded-lg mb-2">
+                        <i class="fas fa-calendar-alt w-6"></i>
+                        <span class="menu-text ml-3">Appointments</span>
+                    </a>
+                    <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                        <i class="fas fa-concierge-bell w-6"></i>
+                        <span class="menu-text ml-3">Services</span>
+                    </a>
+                    <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                        <i class="fas fa-user w-6"></i>
+                        <span class="menu-text ml-3">Profile</span>
+                    </a>
+                </nav>
+                
+                <div class="mt-auto">
+                    <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg">
+                        <i class="fas fa-sign-out-alt w-6"></i>
+                        <span class="menu-text ml-3">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content flex-1 p-8">
+            <!-- Top Bar -->
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">Welcome, John!</h1>
+                <div class="flex items-center space-x-4">
+                    <!-- AI Assistant -->
+                    <button class="p-2 text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-robot text-xl"></i>
+                    </button>
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button id="notificationBtn" class="p-2 text-gray-600 hover:text-blue-600">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                        </button>
+                        <div id="notificationDropdown" class="notification-dropdown bg-white shadow-lg rounded-lg z-50">
+                            <div class="p-4 border-b">
+                                <h3 class="font-semibold">Notifications</h3>
+                            </div>
+                            <div class="p-2">
+                                <div class="p-3 hover:bg-gray-50 cursor-pointer">
+                                    <p class="text-sm text-gray-800">Your appointment tomorrow at 2 PM is confirmed.</p>
+                                    <span class="text-xs text-gray-500">2 minutes ago</span>
+                                </div>
+                                <div class="p-3 hover:bg-gray-50 cursor-pointer">
+                                    <p class="text-sm text-gray-800">Reminder: Dental checkup in 1 hour.</p>
+                                    <span class="text-xs text-gray-500">1 hour ago</span>
+                                </div>
+                                <div class="p-3 hover:bg-gray-50 cursor-pointer">
+                                    <p class="text-sm text-gray-800">Your last appointment was rescheduled.</p>
+                                    <span class="text-xs text-gray-500">2 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <button class="p-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 flex items-center justify-center">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Book New Appointment
+                </button>
+                <button class="p-6 bg-white text-gray-800 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center">
+                    <i class="fas fa-history mr-2"></i>
+                    View History
+                </button>
+                <button class="p-6 bg-white text-gray-800 rounded-lg shadow-md hover:bg-gray-50 flex items-center justify-center">
+                    <i class="fas fa-robot mr-2"></i>
+                    Ask AI Assistant
+                </button>
+            </div>
+
+            <!-- Calendar and Appointments -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Calendar -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold">Calendar</h2>
+                        <div class="flex space-x-2">
+                            <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="p-2 font-medium">January 2025</span>
+                            <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid mb-4">
+                        <div class="text-center p-2 font-medium text-gray-600">Sun</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Mon</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Tue</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Wed</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Thu</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Fri</div>
+                        <div class="text-center p-2 font-medium text-gray-600">Sat</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarDays"></div>
+                </div>
+
+                <!-- Upcoming Appointments -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-6">Upcoming Appointments</h2>
+                    <div class="space-y-4">
+                        <div class="appointment-card p-4 border rounded-lg hover:shadow-md">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-medium">Dental Checkup</h3>
+                                <span class="text-blue-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <i class="far fa-clock mr-2"></i>
+                                Tomorrow, 2:00 PM
+                            </p>
+                            <p class="text-sm text-gray-600 mb-3">
+                                <i class="far fa-user mr-2"></i>
+                                Dr. Smith
+                            </p>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50">
+                                    Reschedule
+                                </button>
+                                <button class="px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="appointment-card p-4 border rounded-lg hover:shadow-md">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-medium">Physical Therapy</h3>
+                                <span class="text-blue-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <i class="far fa-clock mr-2"></i>
+                                Feb 3, 10:00 AM
+                            </p>
+                            <p class="text-sm text-gray-600 mb-3">
+                                <i class="far fa-user mr-2"></i>
+                                Dr. Johnson
+                            </p>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50">
+                                    Reschedule
+                                </button>
+                                <button class="px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Toggle Sidebar
+        document.getElementById('toggleSidebar').addEventListener('click', function() {
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+
+        // Toggle Notifications
+        document.getElementById('notificationBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('notificationDropdown').classList.toggle('active');
+        });
+
+        // Close notifications when clicking outside
+        document.addEventListener('click', function() {
+            document.getElementById('notificationDropdown').classList.remove('active');
+        });
+
+        // Generate Calendar
+        function generateCalendar() {
+            const calendarDays = document.getElementById('calendarDays');
+            const totalDays = 31; // January 2025
+            const firstDay = 3; // Wednesday
+
+            // Add empty cells for days before the 1st
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day disabled';
+                calendarDays.appendChild(emptyDay);
+            }
+
+            // Add calendar days
+            for (let day = 1; day <= totalDays; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day hover:bg-blue-50';
+                dayElement.textContent = day;
+                
+                // Add special styling for current day
+                if (day === 31) {
+                    dayElement.className += ' active';
+                }
+                
+                dayElement.addEventListener('click', function() {
+                    // Remove active class from all days
+                    document.querySelectorAll('.calendar-day').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    // Add active class to clicked day
+                    this.classList.add('active');
+                });
+                
+                calendarDays.appendChild(dayElement);
+            }
+        }
+
+        // Initialize calendar
+        generateCalendar();
+    </script>
+</body>
+</html>
