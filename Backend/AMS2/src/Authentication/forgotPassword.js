@@ -37,20 +37,16 @@ export const forgotPassword = async (req, res, next) => {
 export const sendCode = async (req, res, next) => {
     try {
         const { email } = req.body;
-console.log("1111111111")
         const generateCode = customAlphabet('1234567890', 6);
         const code = generateCode();
-        console.log("222222222222")
 
         const user = await userModel.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: "Email not found" });
         }
-        console.log("333333333333")
 
         user.sendCode=code;
         await user.save();
-        console.log("44444444444")
 
 
         await sendEmail(email, 'Password Reset Code',await sendCodeTemplate(email, user.userName, code));

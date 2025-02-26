@@ -29,7 +29,6 @@ export const googleAuthCallback = async (req, res, next) => {
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
 
     const{client,role,user} = await transCreateClient(clientData,userData,googleData)
-    console.log(client)
     const token = jwt.sign(
         {
             userId: user._id,

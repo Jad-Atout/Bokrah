@@ -1,6 +1,7 @@
 import staffModel from "../../../../DB/models/staff.js"
 import {AppError} from "../../AppError.js";
 import {google} from "googleapis";
+
 export const checkAvailability = async (authClient, staffId, startTime, endTime) => {
     const staff = await staffModel.findById(staffId);
     if (!staff || !staff.calendarId) {
@@ -13,7 +14,7 @@ export const checkAvailability = async (authClient, staffId, startTime, endTime)
             timeMin: startTime,
             timeMax: endTime,
             timeZone:'UTC',
-            items: [{ id: calendar }]
+            items: [{ id: calendarId }]
         }
     })
     const busySlots = response.data.calendars[calendarId].busy

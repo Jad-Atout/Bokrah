@@ -4,21 +4,20 @@ import userModel from "../models/user.js";
 import staffModel from "../models/staff.js";
 import {AppError} from "../../src/utils/AppError.js";
 import roleModel from "../models/role.js";
+import getOrCreateSubCalendar from "../../src/utils/Google/Services/colendarManagement.js";
 //TODO fixing returs for appERRor in delete and update
 //TODO if a user exists make it staff ?
-export const transCreateStaff = async (userData,staffData)=>{
+export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
 
     const session = await mongoose.startSession(); // Start a session
     session.startTransaction();
     try {
-        console.log(userData)
         const checkUserExistence = await userModel.find({
             $or: [
                 { email: userData.email },
                 { phoneNumber: userData.phoneNumber }
             ]
         }).session(session);
-        console.log(checkUserExistence)
         if (checkUserExistence.length !==0) {
             return {staff:null,user:null,appError:new AppError('User already exists', 409)}
         }
@@ -33,6 +32,10 @@ export const transCreateStaff = async (userData,staffData)=>{
 
         const staff= new staffModel(staffData);
         await staff.save({session})
+
+        staff.calendarId = await getOrCreateSubCalendar(oauth2Client, staff.id,user.userName);
+        await staff.save({session})
+
 
         await session.commitTransaction();
         session.endSession();

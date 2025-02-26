@@ -7,8 +7,6 @@ const customerSchema = new mongoose.Schema({
         required: true,
         unique: true, // Ensures each User has only one Customer
     },
-    clientId: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Client' }]
-
-}, { timestamps: true });
+}, );
 
 export default mongoose.models.Customer || mongoose.model("Customer", customerSchema);

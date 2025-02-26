@@ -33,7 +33,6 @@ export const customerLocalRegister = async (req, res, next) => {
     const tokenData={id:user._id, email:user.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
-    console.log(user);
     await sendEmail(user.email,  "Welcome",
         await welcomeEmailTemplate( user.userName, token)
     );

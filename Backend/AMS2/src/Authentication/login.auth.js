@@ -14,7 +14,6 @@ export const generalLogin = async (req, res,next) => {
     if(email) filter.email = email;
     if(phoneNumber) filter.phoneNumber = phoneNumber;
     const user = await userModel.findOne(filter);
-    console.log(user.confirmed)
     if (!user) {
         return next(new AppError("User doesn't exist"),401);
     }else if(!user.confirmed){
@@ -27,7 +26,6 @@ export const generalLogin = async (req, res,next) => {
         return next(new AppError("Wrong Password",403));
     }
     const role = await roleModel.findById(user.roleId)
-    console.log(role)
     let tokenData = {
         id: user.id,
         userName: user.userName,

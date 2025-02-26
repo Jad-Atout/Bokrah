@@ -4,6 +4,7 @@ import {validationHandler} from "../../middleware/validation.js";
 import {createStaffValidationSchema} from "./staff.validation.js";
 import {createStaff, getClientStaff,updateStaff,deleteStaff} from "./staff.controler.js";
 import {auth,roles} from "../../middleware/auth.js"
+import prepareToken from "../../utils/Google/Services/refreshToken.js";
 
 
 const router = Router();
@@ -14,7 +15,8 @@ router.get('/:clientId',
 router.post('/',
     auth(roles.Client),
     validationHandler(createStaffValidationSchema),
-     asyncHandler(createStaff)
+    asyncHandler(prepareToken()),
+    asyncHandler(createStaff)
 )
 router.patch('/:staffId',auth(roles.Client),updateStaff)
 router.delete('/:staffId',auth(roles.Client),deleteStaff)

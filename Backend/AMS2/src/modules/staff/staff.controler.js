@@ -9,9 +9,11 @@ import {setPasswordEmailTemplate} from "../../utils/emailTemplete.js"
 export const createStaff = async (req, res, next) => {
     const {userName, email, phoneNumber, roleDescription} = req.body;
     const {clientId} = req.authUser;
+    const oauth2Client= req.oauth2Client
     const {staff,user,appError} = await transCreateStaff(
         {userName, email, phoneNumber, authProvider: "actor"},
         {clientId, roleDescription},
+        oauth2Client
     )
     if (appError) {
         return next(appError)

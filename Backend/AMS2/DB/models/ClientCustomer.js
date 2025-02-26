@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const UserClient = new mongoose.Schema({
-    userId: {
+    customerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true

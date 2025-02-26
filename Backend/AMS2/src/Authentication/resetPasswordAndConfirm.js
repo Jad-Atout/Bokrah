@@ -11,10 +11,8 @@ export const setPasswordAndConfirm = async (req, res, next) => {
         const { password } = req.body;
 
         const decoded = jwt.verify(token, process.env.JWT_CONFIRME_SECRET);
-        console.log(decoded);
 
         const user = await userModel.findById(decoded.id);
-        console.log(user);
         if (!user) return next(new AppError("Invalid token", 400));
 
 
