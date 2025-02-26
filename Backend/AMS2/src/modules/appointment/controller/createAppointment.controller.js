@@ -8,7 +8,7 @@ import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
 import {calculateEndTime, checkInternalAvailability, generateRecurringDates} from "./helpers.js";
-
+//TODO share the staff calendar with the staff
 export const createAppointment = async (req, res, next) => {
     const { startTime, customerId, recurrence, bufferTime = 0 } = req.body;
     const { clientId } = req.params;
@@ -64,8 +64,9 @@ export const createAppointment = async (req, res, next) => {
                     }
                 );
                 createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
-
                 subAppointments.push({ staffId, services, startTime: currentStartTime, endTime, eventId: event.id });
+
+                const staffAvailability = await availabilityModel.findOne({ staffId });
 
                 currentStartTime = new Date(endTime);
                 currentStartTime.setMinutes(currentStartTime.getMinutes() + bufferTime);
@@ -94,7 +95,6 @@ export const createAppointment = async (req, res, next) => {
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointments,
-            events: createdEvents,
         });
 
     } catch (error) {

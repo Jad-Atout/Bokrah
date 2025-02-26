@@ -58,13 +58,17 @@ export const authServices = () => {
         }
 
         if (missingStaffs.length > 0 || missingServices.length > 0 || unauthorizedStaffs.length > 0 || unauthorizedServices.length > 0) {
-            return next(new AppError({
+            return res.status(400).json({
                 message: "Some staff or services were not found or unauthorized.",
-                missingStaffs,
-                missingServices,
-                unauthorizedStaffs,
-                unauthorizedServices
-            }, 400));
+                details: {
+                    missingStaffs,
+                    missingServices,
+                    unauthorizedStaffs,
+                    unauthorizedServices
+                }
+            });
+
+
         }
         req.staffsServices = validatedStaffsServices;
         return next();

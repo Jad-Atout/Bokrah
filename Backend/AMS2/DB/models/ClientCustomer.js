@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+//TODO: client block customer if he absent for more than three times
 const UserClient = new mongoose.Schema({
     customerId: {
         type: mongoose.Schema.Types.ObjectId,

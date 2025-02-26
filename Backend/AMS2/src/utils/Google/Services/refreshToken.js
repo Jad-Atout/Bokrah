@@ -8,7 +8,6 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL;
 const REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh the token 10 minutes before it expires
 
-//TODO make sure that the token is not refreshed every time the function is called
 
 
 /**
@@ -29,7 +28,7 @@ const REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh the token 10 minutes bef
  */
 const prepareToken = () => {
     return async (req, res, next) => {
-        const {clientId} = req.authUser;
+        const {clientId} = req.params;
         const googleCalendar = await googleModel.findOne ({clientId:clientId});
         if (!googleCalendar) {
             return next(new AppError('Google calendar record not found for client.', 404));

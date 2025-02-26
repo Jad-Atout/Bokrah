@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 
+//TODO provide more data to the event
 const createCalendarEvent = async (auth, { customerName, staffName, serviceNames, startTime, endTime, calendarId }) => {
     const calendar = google.calendar({ version: "v3", auth });
 

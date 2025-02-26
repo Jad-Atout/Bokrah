@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-//TODO make the phone number unique
 const userModel = new mongoose.Schema({
     userName: {
         type: String,
@@ -24,7 +23,8 @@ const userModel = new mongoose.Schema({
         default: "local"
     },
     phoneNumber: {
-        type:String
+        type:String,
+        unique: true
     },
     roleId: {
         type: mongoose.Schema.Types.ObjectId,

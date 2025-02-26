@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import {AppError} from "../../utils/AppError.js";
 import {transCreateClient} from "../../../DB/Controller/client.DB.controller.js";
 //TODO make staff instance from client
+//TODO post the buisnessName after google signup
+//TODO if a an existing user is not a client the system should rais an error  or make the user a client
 export const googleAuthCallback = async (req, res, next) => {
     const authService = new GoogleAuthService();
     const { code, state } = req.query;
@@ -29,6 +31,7 @@ export const googleAuthCallback = async (req, res, next) => {
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
 
     const{client,role,user} = await transCreateClient(clientData,userData,googleData)
+
     const token = jwt.sign(
         {
             userId: user._id,

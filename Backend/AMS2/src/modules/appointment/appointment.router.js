@@ -6,7 +6,8 @@ import {asyncHandler} from "../../utils/catchError.js";
 const router = Router();
 import {auth, roles} from "../../middleware/auth.js";
 import {cancelAppointment} from "./controller/cancelAppointment.controller.js";
-
+import {generateAvailableSlots} from "./controller/getAvailableTimeSlots.js";
+//TODO create update and delete appointment and also get available time slots
 router.post('/:clientId',
     auth(roles.Client),
     asyncHandler(authServices()),
@@ -19,5 +20,10 @@ router.patch('/:appointmentId/cancel/:clientId',
     asyncHandler(cancelAppointment)
 )
 
+router.post('/slots/:clientId',
+    asyncHandler(authServices()),
+    asyncHandler(prepareToken()),
+    asyncHandler(generateAvailableSlots)
+)
 
 export default router;
