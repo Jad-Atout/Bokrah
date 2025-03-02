@@ -28,7 +28,10 @@ const REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh the token 10 minutes bef
  */
 const prepareToken = () => {
     return async (req, res, next) => {
-        const {clientId} = req.params;
+        let clientId = req.authUser?.clientId
+        if (!clientId) {
+            clientId = req.params.clientId;
+        }
         const googleCalendar = await googleModel.findOne ({clientId:clientId});
         if (!googleCalendar) {
             return next(new AppError('Google calendar record not found for client.', 404));
@@ -58,7 +61,7 @@ export default prepareToken;
  * @param {string} refreshToken - The refresh token used to set credentials for the Google OAuth2 client.
  * @returns {google.auth.OAuth2} A configured instance of the Google OAuth2 client.
  */
-const initializeOAuthClient = (refreshToken) => {
+export const initializeOAuthClient = (refreshToken) => {
     const googleOAuthClient = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CALLBACK_URL);
     googleOAuthClient.setCredentials({refresh_token: refreshToken});
     return googleOAuthClient;

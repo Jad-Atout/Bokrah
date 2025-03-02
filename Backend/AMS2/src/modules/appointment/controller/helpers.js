@@ -27,6 +27,7 @@ export const checkInternalAvailability = async (staffId, startTime, endTime) => 
         const slotStart = parseTime(slot.startTime);
         const slotEnd = parseTime(slot.endTime);
 
+
         return (startTimeInMinutes >= slotStart && endTimeInMinutes <= slotEnd);
     });
 };

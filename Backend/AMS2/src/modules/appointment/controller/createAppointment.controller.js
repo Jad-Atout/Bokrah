@@ -7,15 +7,16 @@ import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
+import availabilityModel from "../../../../DB/models/availability.js";
 import {calculateEndTime, checkInternalAvailability, generateRecurringDates} from "./helpers.js";
 //TODO share the staff calendar with the staff
+//TODO send email to the customer and staff
 export const createAppointment = async (req, res, next) => {
     const { startTime, customerId, recurrence, bufferTime = 0 } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
     const staffsServices = req.staffsServices;
     const APPOINTMENT_STATUS = "Booked";
-
     const session = await mongoose.startSession();
     session.startTransaction();
     let createdEvents = [];
@@ -25,6 +26,7 @@ export const createAppointment = async (req, res, next) => {
         ref:"User",
         select:"userName",
     }]).select("userName");
+    if(!customer) return next(new Error("customer is not found"));
 
     try {
         const appointmentDates = generateRecurringDates(startTime, recurrence);
@@ -45,15 +47,19 @@ export const createAppointment = async (req, res, next) => {
 
                 const isInternalAvailable = await checkInternalAvailability(staffId, currentStartTime, endTime);
                 if (!isInternalAvailable) {
-                    return next(new AppError(`Staff ${staffData.userId.userName} is unavailable according to internal availability at ${currentStartTime.toISOString()}`, 400));
-                }
+                    throw new AppError(
+                        `Staff ${staffData.userId.userName} is unavailable according to internal availability at ${currentStartTime.toISOString()}`,
+                        400
+                    );                }
 
                 const isAvailable = await checkAvailability(authClient, staffId, currentStartTime, endTime);
                 if (!isAvailable) {
-                    return next(new AppError(`Staff ${staffData.userId.userName} is unavailable at ${currentStartTime.toISOString()}`, 400));
-                }
+                    throw new AppError(
+                        `Staff ${staffData.userId.userName} is unavailable at ${currentStartTime.toISOString()}`,
+                        400
+                    );                }
 
-                const event = await createEvent(authClient,
+                const event = await createEvent(req,authClient,
                     {
                         customerName:customer.userId.userName,
                         staffName:staffData.userId.userName,
@@ -65,8 +71,6 @@ export const createAppointment = async (req, res, next) => {
                 );
                 createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
                 subAppointments.push({ staffId, services, startTime: currentStartTime, endTime, eventId: event.id });
-
-                const staffAvailability = await availabilityModel.findOne({ staffId });
 
                 currentStartTime = new Date(endTime);
                 currentStartTime.setMinutes(currentStartTime.getMinutes() + bufferTime);
@@ -106,7 +110,7 @@ export const createAppointment = async (req, res, next) => {
                 await deleteEvent(authClient, event.calendarId, event.eventId);
             }
         }
-        return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
+        return next(new AppError(`Failed to create appointment(s): ${error}`, 500));
     }
 };
 

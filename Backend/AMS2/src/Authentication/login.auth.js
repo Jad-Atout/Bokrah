@@ -6,7 +6,6 @@ import roleModel from "../../DB/models/role.js";
 import clientModel from "../../DB/models/client.js";
 import customerModel from "../../DB/models/customer.js";
 import staffModel from "../../DB/models/staff.js";
-import {sendEmail} from "../utils/email.js";
 
 export const generalLogin = async (req, res,next) => {
     const { email, password,phoneNumber } = req.body;
@@ -30,6 +29,7 @@ export const generalLogin = async (req, res,next) => {
         id: user.id,
         userName: user.userName,
         email: user.email,
+        phoneNumber:user.phoneNumber,
         role: role,
     }
     if(role.client){

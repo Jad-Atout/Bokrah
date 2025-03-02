@@ -4,8 +4,6 @@ import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
 import dotenv from "dotenv";
 dotenv.config()
-
-import mongoose from 'mongoose';
 import {
     transCreateCustomer,
     transDeleteCustomer,
@@ -14,10 +12,36 @@ import {
 import {sendEmail} from "../../utils/email.js";
 import {setPasswordEmailTemplate, welcomeEmailTemplate} from "../../utils/emailTemplete.js";
 import jwt from "jsonwebtoken";
-//TODO end point to create a customer
-// when creating an Appointment assign customer to client
 // login directry after confirmation
-export const customerLocalRegister = async (req, res, next) => {
+
+
+
+export const createCustomer = async (req, res, next) => {
+    const { userName, email, phoneNumber } = req.body;
+    const filter = {}
+    if(email) filter.email = email;
+    if(phoneNumber) filter.phoneNumber = phoneNumber;
+    let user = await userModel.findOne(filter)
+    if(user) return res.status(400).json({ message: "User already exists", user });
+
+    user = await transCreateCustomer({userName, email, phoneNumber,authProvider: "actor"})
+
+    if(user instanceof AppError) return next(user);
+    const tokenData={id:user._id, email:user.email,}
+    const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
+    await sendEmail(user.email,  "Welcome",
+        await welcomeEmailTemplate( user.userName, token)
+    );
+    await sendEmail(user.email,  "Set Your Password & Confirm Your Email",
+        await setPasswordEmailTemplate( user.userName, token))
+
+    return res.status(201).json({ message: "Successfully created", user });
+};
+
+
+
+
+export const customerRegister = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
     const filter = {}
     if(email) filter.email = email;
@@ -30,6 +54,7 @@ export const customerLocalRegister = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
     user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(user instanceof AppError) return next(user);
+
     const tokenData={id:user._id, email:user.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
@@ -37,8 +62,8 @@ export const customerLocalRegister = async (req, res, next) => {
         await welcomeEmailTemplate( user.userName, token)
     );
     return res.status(201).json({ message: "Successfully created", user });
-
 };
+
 export const getClientCustomers = async (req, res, next) => {
         const {clientId} = req.params
         const userClients = await UserClient.find({ clientId: clientId });

@@ -1,4 +1,3 @@
-import {confirmEmail} from "../Authentication/confirmEmail.auth.js"
 
 //TODO redfine the email structure so it can't be a spam email
 export async function welcomeEmailTemplate( userName, token) {

@@ -4,7 +4,7 @@ import userModel from "../models/user.js";
 import staffModel from "../models/staff.js";
 import {AppError} from "../../src/utils/AppError.js";
 import roleModel from "../models/role.js";
-import getOrCreateSubCalendar from "../../src/utils/Google/Services/colendarManagement.js";
+import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 //TODO fixing returs for appERRor in delete and update
 //TODO if a user exists make it staff ?
 export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
@@ -47,6 +47,8 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
         return new AppError(err.message || 'Internal server error', 500);
     }
 }
+
+
 export const transDeleteStaff = async (staffId) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -60,6 +62,7 @@ export const transDeleteStaff = async (staffId) => {
         await roleModel.findByIdAndDelete(user.roleId, { session });
         await userModel.findByIdAndDelete(staff.userId, { session });
         await staffModel.findByIdAndDelete(staffId, { session });
+        //TODO delete him from services
 
         await session.commitTransaction();
         session.endSession();

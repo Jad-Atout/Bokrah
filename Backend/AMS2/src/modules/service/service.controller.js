@@ -1,8 +1,6 @@
-import Service from '../../../DB/models/service.js';
+import serviceModel from '../../../DB/models/service.js';
 import {AppError} from '../../utils/AppError.js';
 import {transDeleteService, transUpdateService} from "../../../DB/Controller/service.DB.controller.js";
-
-//Todo revision the return value of delete and update if it needs to contain staff data
 export const createService = async (req, res, next) => {
         const user = req.authUser
         const { serviceName, serviceDescription, price, duration,} = req.body;
@@ -11,7 +9,7 @@ export const createService = async (req, res, next) => {
             return next(new AppError("Unauthorized: Only clients can create services", 403));
         }
 
-        const service = new Service({
+        const service = new serviceModel({
             serviceName,
             serviceDescription,
             price,
@@ -49,7 +47,7 @@ const formatService = (data) => {
 
 export const getClientServices = async (req, res) => {
     const {clientId} = req.params;
-    const services = await Service.find({ clientId: clientId })
+    const services = await serviceModel.find({ clientId: clientId })
         .populate({
             path: "staff",
             select: "roleDescription",
@@ -80,7 +78,31 @@ export const updateService = async (req, res,next) => {
         const {...serviceData } = req.body;
         const {updatedService,appError} = await transUpdateService(service,serviceData);
         if(appError)return next(appError)
-        return res.json({  message: "Service updated successfully.", updatedService });
+        let data = []
+         const updatedServiceData=   await serviceModel.findById(updatedService._id)
+            .populate({
+            path: "staff",
+            select: "roleDescription",
+            populate: {
+                path: "userId",
+                model: "User",
+                select: "userName email phoneNumber"
+            }
+        })
+            .populate({
+                path: "clientId",
+                select: "businessName industry",
+                populate: {
+                    path: "userId",
+                    model: "User",
+                    select: "userName"
+                }
+            })
+            .exec();
+        data.push(updatedServiceData);
+
+
+        return res.json({  message: "Service updated successfully.", service:formatService(data) });
 };
 
 export const deleteService = async (req, res, next) => {

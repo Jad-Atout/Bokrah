@@ -27,6 +27,7 @@ export default class GoogleAuthService{
     }
     async handleOAuthRedirect(authCode){
         const {tokens} = await this.#oauthClient.getToken(authCode);
+        this.#oauthClient.setCredentials(tokens);
         return{
             idToken:tokens.id_token,
             access_token:tokens.access_token,

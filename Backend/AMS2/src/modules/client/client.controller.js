@@ -1,20 +1,14 @@
 import GoogleAuthService from "../../utils/Google/googleAuth.js";
 import jwt from "jsonwebtoken";
 import {AppError} from "../../utils/AppError.js";
-import {transCreateClient} from "../../../DB/Controller/client.DB.controller.js";
-//TODO make staff instance from client
-//TODO post the buisnessName after google signup
-//TODO if a an existing user is not a client the system should rais an error  or make the user a client
+import {transCreateClient, transDeleteClient, transUpdateClient} from "../../../DB/Controller/client.DB.controller.js";
 export const googleAuthCallback = async (req, res, next) => {
     const authService = new GoogleAuthService();
-    const { code, state } = req.query;
-    const formData = state ? JSON.parse(decodeURIComponent(state)) : {};
-    const { businessName, industry,phoneNumber } = formData;
+    const { code } = req.query;
 
     if (!code) {
         return next(new AppError("Authorization code is missing from the callback.", 400));
     }
-
     const { idToken, access_token, refresh_token } = await authService.handleOAuthRedirect(code);
     const decodedIdToken = jwt.decode(idToken);
     const userData  = {
@@ -22,11 +16,10 @@ export const googleAuthCallback = async (req, res, next) => {
         email:decodedIdToken.email,
         authProvider: "google",
         confirmed: decodedIdToken.email_verified,
-        phoneNumber:phoneNumber
     }
     const clientData={
-        businessName:businessName,
-        industry:industry,
+        businessName:null,
+        industry:null,
     }
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
 
@@ -54,13 +47,31 @@ export const googleAuthCallback = async (req, res, next) => {
 };
 
 export const gClientLogin = async (req, res) => {
-    const { businessName, industry,phoneNumber } = req.query;  // Get params from the request
     const authService = new GoogleAuthService();
     const authUrl = authService.generateAuthUrl();
-    const modifiedAuthUrl = `${authUrl}&state=${encodeURIComponent(JSON.stringify({ businessName, industry,phoneNumber }))}`;
-    return res.redirect(modifiedAuthUrl);
+    return res.redirect(authUrl);
 };
 
+export const updateClient = async (req, res, next) => {
+    const {clientId} = req.authUser
+    const {userName,email,phoneNumber,businessName,industry,staffData} = req.body;
+    const userData = {userName,email,phoneNumber}
+    const clientData = {businessName,industry}
+    const result =await transUpdateClient(clientId,userData,clientData,staffData)
+    if (result instanceof AppError) {
+        return next(result);
+    }
+    return res.status(200).json(result);
+};
+export const deleteClient = async (req, res, next) => {
+    const { clientId} = req.authUser;
+    const result = await transDeleteClient(clientId);
+    if (result instanceof AppError) {
+        return next(result);
+    }
+    return res.json(result);
+
+};
 
 
 

@@ -1,16 +1,23 @@
 import express from "express";
-import {customerLocalRegister, deleteCustomer, getClientCustomers, updateCustomer} from "./customer.controller.js";
+import {customerRegister, deleteCustomer, getClientCustomers, updateCustomer,createCustomer} from "./customer.controller.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
-import {createLocalCustomerSchema} from "./customer.validation.js";
+import {createLocalCustomerSchema,createCustomerSchema} from "./customer.validation.js";
 import {auth, roles} from "../../middleware/auth.js";
-
+//TODO email domain validation
 const router = express.Router({mergeParams: true});
 
 router.post('/register',
     validationHandler(createLocalCustomerSchema)
-    ,asyncHandler(customerLocalRegister)
+    ,asyncHandler(customerRegister)
 );
+
+router.post('/create',
+    auth([roles.Client,roles.Staff]),
+    validationHandler(createCustomerSchema)
+    ,asyncHandler(createCustomer)
+);
+
 router.post('/login',)
 
 router.put('/:customerID',
