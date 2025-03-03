@@ -96,17 +96,18 @@ export const generateAvailableSlots = async (req, res, next) => {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
         }
-        const  mergedSlots  = mergeSlots(availableSlots);
+        const  mergedSlots  = mergeSlots(availableSlots,staffsServices.length);
         return res.status(200).json({
             message: 'Available slots generated successfully',
             mergedSlots,
+            availableSlots,
         });
     } catch (error) {
         return next(new AppError(`Failed to generate available slots: ${error.message}`, 500));
     }
 };
 
-function mergeSlots(slots) {
+function mergeSlots(slots,staffNumber) {
     slots.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
     let mergedSlots = [];
@@ -135,10 +136,10 @@ function mergeSlots(slots) {
 
         mergedSlots.push(mergedSlot);
     }
-     const slot = mergedSlots.map((s)=> {
-         if (s.staffIds.length >1) {
-             return s
-         }
+     const slot = mergedSlots.filter((s)=> {
+         return s.staffIds.length === staffNumber
+
+
 
      })
     return { slot};
