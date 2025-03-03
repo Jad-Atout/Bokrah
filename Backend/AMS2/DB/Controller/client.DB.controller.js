@@ -21,7 +21,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
 
         if (!role?.client) {
             if(!user){
-                role = new roleModel({client: true})
+                role = new roleModel({client: true,staff:true})
                 await role.save({session})
                 userData.roleId = role._id;
                 user = new userModel(userData)

@@ -54,8 +54,9 @@ export const gClientLogin = async (req, res) => {
 
 export const updateClient = async (req, res, next) => {
     const {clientId} = req.authUser
-    const {userName,email,phoneNumber,businessName,industry,staffData} = req.body;
-    const userData = {userName,email,phoneNumber}
+    //TODO a staff data updating
+    const {userName,phoneNumber,businessName,industry,staffData} = req.body;
+    const userData = {userName,phoneNumber}
     const clientData = {businessName,industry}
     const result =await transUpdateClient(clientId,userData,clientData,staffData)
     if (result instanceof AppError) {

@@ -4,7 +4,6 @@ import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createLocalCustomerSchema,createCustomerSchema} from "./customer.validation.js";
 import {auth, roles} from "../../middleware/auth.js";
-//TODO email domain validation
 const router = express.Router({mergeParams: true});
 
 router.post('/register',

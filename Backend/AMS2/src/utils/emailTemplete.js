@@ -1,4 +1,3 @@
-
 //TODO redfine the email structure so it can't be a spam email
 export async function welcomeEmailTemplate( userName, token) {
     return `
@@ -63,6 +62,41 @@ export async function setPasswordEmailTemplate( userName, token) {
             
             <p>If you did not sign up for this account, please ignore this email.</p>
             
+            <p>Best Regards,<br><strong>Bokrah Team</strong></p>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+
+            <footer style="text-align: center; font-size: 12px; color: #888;">
+                © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
+            </footer>
+        </div>
+    `;
+}
+// , startTime , endTime
+
+/* <li><strong>Date & Time:</strong> ${new Date(startTime).toLocaleString()}</li>
+                <li><strong>End Time:</strong> ${new Date(endTime).toLocaleString()}</li>*/
+export async function appointmentConfirmationEmail(customerName, staffName, serviceNames) {
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="color: rgb(37, 99, 235);">Appointment Confirmation 📅</h2>
+            <p>Dear ${customerName},</p>
+            
+            <p>Your appointment has been successfully scheduled with <strong>${staffName}</strong>.</p>
+
+            <p><strong>Details:</strong></p>
+            <ul>
+                <li><strong>Service(s):</strong> ${serviceNames.join(", ")}</li>
+               
+            </ul>
+
+            <p>We look forward to seeing you! If you need to reschedule or cancel, please contact us in advance.</p>
+
+            <br>
+            <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" 
+                 alt="Bokrah Logo" 
+                 style="max-width: 100%; border-radius: 5px;">
+
             <p>Best Regards,<br><strong>Bokrah Team</strong></p>
 
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">

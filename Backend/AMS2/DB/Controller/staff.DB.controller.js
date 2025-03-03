@@ -7,6 +7,7 @@ import roleModel from "../models/role.js";
 import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 //TODO fixing returs for appERRor in delete and update
 //TODO if a user exists make it staff ?
+//TODO vertfy ownership
 export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
 
     const session = await mongoose.startSession(); // Start a session

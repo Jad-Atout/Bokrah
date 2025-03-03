@@ -6,7 +6,7 @@ const deleteEvent = async (auth, calendarId, eventId) => {
         throw new AppError("Google authentication credentials not provided", 401);
     }
     if (!calendarId || !eventId) {
-        throw new AppError("Both calendar ID and event ID are required to delete the event", 400);
+        return new AppError("Both calendar ID and event ID are required to delete the event", 400);
     }
 
     try {
@@ -16,7 +16,7 @@ const deleteEvent = async (auth, calendarId, eventId) => {
             eventId,
         });
     } catch (error) {
-        throw new AppError(`Failed to delete event from calendar ${calendarId}`, 500);
+        return  new AppError(`Failed to delete event from calendar ${calendarId}`, 500);
     }
 };
 export default deleteEvent

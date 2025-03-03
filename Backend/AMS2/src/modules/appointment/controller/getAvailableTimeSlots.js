@@ -1,6 +1,7 @@
 import { AppError } from '../../../utils/AppError.js';
 import staffModel from '../../../../DB/models/staff.js';
 import { getEvents } from '../../../utils/Google/events/getEvents.js';
+//TODO discuss the ordering and keeping the smaller slots data for create appointments
 
 const parseTimeAMPM = (timeStr, date) => {
     const [time, modifier] = timeStr.split(' ');

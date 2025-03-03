@@ -40,6 +40,7 @@ export const createLocalCustomerSchema = Joi.object({
             }),
     });
 
+const commonDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"];
 
 export const createCustomerSchema = Joi.object({
     userName: Joi.string().min(3).max(30).required().messages({
@@ -48,9 +49,19 @@ export const createCustomerSchema = Joi.object({
         "string.max": "User name must not exceed 30 characters.",
     }),
 
-    email: Joi.string().email().messages({
-        "string.email": "Please enter a valid email address.",
-    }),
+    email: Joi.string()
+        .email()
+        .custom((value, helpers) => {
+            const domain = value.split("@")[1];
+            if (!commonDomains.includes(domain)) {
+                return helpers.error("string.domain", { domain: commonDomains.join(", ") });
+            }
+            return value;
+        })
+        .messages({
+            "string.email": "Please enter a valid email address.",
+            "string.domain": "Only emails from the following domains are allowed: {#domain}.",
+        }),
 
     phoneNumber: Joi.string()
         .pattern(/^[0-9]{10,15}$/)
