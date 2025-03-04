@@ -10,6 +10,8 @@ import customerClientModel from "../../../../DB/models/ClientCustomer.js";
 import {calculateEndTime, checkInternalAvailability, generateRecurringDates} from "./helpers.js";
 import {sendEmail} from "../../../utils/email.js";
 import {appointmentConfirmationEmail} from "../../../utils/emailTemplete.js";
+import reminderModel from "../../../../DB/models/reminder.js";
+import {scheduleReminders} from "../../../utils/scheduler.js";
 //TODO fix integrity handleing
 //TODO share the staff calendar with the staff
 //TODO send email to the customer and staff
@@ -35,7 +37,18 @@ export const createAppointment = async (req, res, next) => {
     if(!customer) return next(new Error("customer is not found"));
 
     try {
+
         const appointmentDates = generateRecurringDates(startTime, recurrence);
+        //
+        const reminderSettings = await reminderModel.findOne({ clientId });
+        const defaultReminders = (reminderSettings && Array.isArray(reminderSettings.reminderTimes))
+            ? reminderSettings.reminderTimes.map((time, index) => ({
+                method: reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
+                minutes: Number.isFinite(time) ? time : 60 // Default to 60 minutes if invalid
+            }))
+            : [{ method: "email", minutes: 60 }];
+
+        //
 
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
@@ -80,14 +93,13 @@ export const createAppointment = async (req, res, next) => {
                     { email: customer.userId.email },
                     //  { email: staffData.userId.email },
                 ],
+                        //
                     sendUpdates: "all",
-                    reminders: {
-                    useDefault: false,
-                        overrides: [
-                        { method: "email", minutes: 60 },
-                        { method: "popup", minutes: 30 },
-                    ]
-                },
+                        reminders: {
+                            useDefault: false,
+                            overrides: reminderSettings
+                        },
+                        //
             }
             );
 
@@ -113,22 +125,20 @@ export const createAppointment = async (req, res, next) => {
             createdAppointments.push(appointment);
         }
         //TODO after adding this we have to make sure when deleting to keep data intgrity
-        const assign = new customerClientModel({customerId:customerId,clientId})
-        await assign.save({session})
+        const existingAssignment = await customerClientModel.findOne({ customerId, clientId });
+        if (!existingAssignment) {
+            const assign = new customerClientModel({ customerId, clientId });
+            await assign.save({ session });
+        }
 
         await session.commitTransaction();
         session.endSession();
 
-        // Collect all staff names
         const staffNames = staffsServices.map(staffServices => staffServices.staff.userId.userName).join(", ");
-
-// Collect all services
         const allServices = staffsServices.flatMap(staffServices =>
             staffServices.services.map(service => service.serviceName)
         );
-
-// Send the email
-        await sendEmail(
+     /*   await sendEmail(
             customer.userId.email,
             "Your Appointment Confirmation",
             await appointmentConfirmationEmail(
@@ -138,7 +148,19 @@ export const createAppointment = async (req, res, next) => {
                 //startTime, // Appointment start time
                 //calculateEndTime(startTime, allServices) // Calculate end time
             )
+        );*/
+
+        //
+        await scheduleReminders(
+            customer.userId.userName,
+            createdAppointments,
+            customer.userId.email,
+            defaultReminders,
+            staffNames,
+            allServices
         );
+
+        //
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointments,
