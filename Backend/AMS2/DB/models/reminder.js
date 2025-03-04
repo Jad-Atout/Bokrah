@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 
+const reminderSchema = new mongoose.Schema({
+    clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
+    reminderTimes: [{ type: Number, required: true }], // Minutes before appointment
+    reminderMethods: [{ type: String, enum: ["email", "SMS", "popup"], required: true }]
+});
+
+export default mongoose.model("Reminder", reminderSchema);
+
+
+
+
+
+/*
+import mongoose from "mongoose";
+
 const ReminderSchema = new mongoose.Schema({
     message: {
         type: String,
@@ -17,3 +32,4 @@ const ReminderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export default mongoose.model("Reminder", ReminderSchegma);
+*/

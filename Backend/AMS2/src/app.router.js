@@ -12,6 +12,7 @@ import availabilityRouter from "./modules/availability/availability.router.js";
 import appointmentRouter from "./modules/appointment/appointment.router.js";
 
 import 'dotenv/config'
+import reminderRouter from "./modules/reminder/reminder.router.js";
 
 
 
@@ -28,6 +29,7 @@ const initApp = (app,express) => {
     app.use('/website', websiteRouter)
     app.use('/availability',availabilityRouter )
     app.use('/appointment',appointmentRouter )
+    app.use("/reminder", reminderRouter);
 
 
     app.use('*',(req,res)=>{

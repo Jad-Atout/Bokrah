@@ -74,36 +74,112 @@ export async function setPasswordEmailTemplate( userName, token) {
 }
 // , startTime , endTime
 
-/* <li><strong>Date & Time:</strong> ${new Date(startTime).toLocaleString()}</li>
-                <li><strong>End Time:</strong> ${new Date(endTime).toLocaleString()}</li>*/
-export async function appointmentConfirmationEmail(customerName, staffName, serviceNames) {
+
+export async function appointmentConfirmationEmail(
+    customerName,
+    staffNames,
+   // serviceNames,
+   // startTime
+   // endTime
+) {
+    // Safely convert start/end times if they're provided
+    const startTimeString = startTime
+        ? new Date(startTime).toLocaleString()
+        : "N/A";
+    const endTimeString = endTime
+        ? new Date(endTime).toLocaleString()
+        : "N/A";
+
     return `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-            <h2 style="color: rgb(37, 99, 235);">Appointment Confirmation 📅</h2>
-            <p>Dear ${customerName},</p>
-            
-            <p>Your appointment has been successfully scheduled with <strong>${staffName}</strong>.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+      <h2 style="color: rgb(37, 99, 235);">Appointment Confirmation 📅</h2>
+      <p>Dear ${customerName},</p>
+      
+      <p>Your appointment has been successfully scheduled with <strong>${staffNames}</strong>.</p>
 
-            <p><strong>Details:</strong></p>
-            <ul>
-                <li><strong>Service(s):</strong> ${serviceNames.join(", ")}</li>
-               
-            </ul>
+      <p><strong>Details:</strong></p>
+      <ul>
+        <li><strong>Service(s):</strong> ${serviceNames.join(", ")}</li>
+        <li><strong>Date & Time:</strong> ${startTimeString}</li>
+        <li><strong>End Time:</strong> ${endTimeString}</li>
+      </ul>
 
-            <p>We look forward to seeing you! If you need to reschedule or cancel, please contact us in advance.</p>
+      <p>We look forward to seeing you! If you need to reschedule or cancel, please contact us in advance.</p>
 
-            <br>
-            <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" 
-                 alt="Bokrah Logo" 
-                 style="max-width: 100%; border-radius: 5px;">
+      <br>
+      <img 
+        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" 
+        alt="Bokrah Logo" 
+        style="max-width: 100%; border-radius: 5px;"
+      />
 
-            <p>Best Regards,<br><strong>Bokrah Team</strong></p>
+      <p>Best Regards,<br><strong>Bokrah Team</strong></p>
 
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 
-            <footer style="text-align: center; font-size: 12px; color: #888;">
-                © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
-            </footer>
-        </div>
+      <footer style="text-align: center; font-size: 12px; color: #888;">
+        © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
+      </footer>
+    </div>
+  `;
+}
+
+
+export async function appointmentFullDetailsEmail(
+    userName,
+    staffNames,
+    allServices,
+    subAppointments
+) {
+    // Optional: format times nicely
+    const formatOptions = {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    };
+
+    // Build a list of subAppointments
+    const subAppointmentsHTML = subAppointments.map((sub, i) => {
+        const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
+        const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
+
+        const serviceList = Array.isArray(sub.services)
+            ? sub.services.map(s => s.serviceName).join(", ")
+            : "No services";
+
+        return `
+      <div style="margin-bottom: 1em;">
+        <strong>Sub-Appointment #${i + 1}</strong><br/>
+        <strong>Start:</strong> ${startStr}<br/>
+        <strong>End:</strong>   ${endStr}<br/>
+        <strong>Services:</strong> ${serviceList}
+      </div>
     `;
+    }).join("");
+
+    return `
+    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:10px;">
+      <h2 style="color: #2563EB;">Appointment Details 📅</h2>
+      <p>Dear ${userName},</p>
+      <p>Your appointment is scheduled with <strong>${staffNames}</strong>.</p>
+      
+      <p><strong>All Services:</strong> ${allServices.join(", ")}</p>
+      <h3>Sub-Appointments:</h3>
+      ${subAppointmentsHTML}
+
+      <p>If you need to reschedule or cancel, please contact us in advance.</p>
+      <br/>
+      <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
+           alt="Bokrah Logo"
+           style="max-width:100%; border-radius:5px;" />
+      <p>Best Regards,<br/><strong>Bokrah Team</strong></p>
+      <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+      <footer style="text-align:center; font-size:12px; color:#888;">
+        © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
+      </footer>
+    </div>
+  `;
 }
