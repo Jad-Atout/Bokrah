@@ -8,9 +8,12 @@ import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
 import {calculateEndTime, checkInternalAvailability, generateRecurringDates} from "./helpers.js";
+import {sendEmail} from "../../../utils/email.js";
+import {appointmentConfirmationEmail} from "../../../utils/emailTemplete.js";
 //TODO fix integrity handleing
 //TODO share the staff calendar with the staff
 //TODO send email to the customer and staff
+//TODO the local customer must be confirmed
 
 export const createAppointment = async (req, res, next) => {
     const { startTime, customerId, recurrence, bufferTime = 0 } = req.body;
@@ -61,10 +64,7 @@ export const createAppointment = async (req, res, next) => {
                         `Staff ${staffData.userId.userName} is unavailable at ${currentStartTime.toISOString()}`,
                     400
                 );                }
-                console.log(customer.userId.email)
-                console.log(customer.userId.userName)
-                console.log(staffData.userId.userName)
-                console.log(staffData.userId.email)
+
 
                 const event = await createEvent(req,authClient,
                     {
@@ -106,6 +106,7 @@ export const createAppointment = async (req, res, next) => {
                 customerId,
                 status: APPOINTMENT_STATUS,
                 subAppointments,
+                recurrence
             });
 
             await appointment.save({ session });

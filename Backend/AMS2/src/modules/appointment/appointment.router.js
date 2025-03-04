@@ -9,7 +9,7 @@ import {cancelAppointment} from "./controller/cancelAppointment.controller.js";
 import {generateAvailableSlots} from "./controller/getAvailableTimeSlots.js";
 import {deleteAppointment} from "./controller/deleteAppointment.controller.js";
 import {updateAppointment} from "./controller/updateAppointment.controller.js";
-//TODO create update and delete appointment and also get available time slots
+
 router.post('/:clientId',
     auth(roles.Client),
     asyncHandler(authServices()),

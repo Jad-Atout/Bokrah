@@ -49,6 +49,7 @@ export const calculateEndTime = (startTime, services) => {
     let totalDuration = services.reduce((acc, service) => acc + service.duration, 0);
     return new Date(new Date(startTime).getTime() + totalDuration * 60000).toISOString();
 };
+//TODO consider the interval
 export const generateRecurringDates = (startTime, recurrence) => {
     let dates = [startTime];
     if (!recurrence || !recurrence.type || recurrence.count <= 1) return dates;

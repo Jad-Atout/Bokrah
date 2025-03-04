@@ -39,9 +39,10 @@ const AppointmentSchema = new mongoose.Schema({
         default: "Booked"
     },
     recurrence: {
-        frequency: { type: String, enum: ["daily", "weekly", "monthly"], default: null },
+        type: { type: String, enum: ["daily", "weekly", "monthly"], default: null },
         interval: { type: Number, default: 1 },
-        endDate: { type: Date, default: null }
+        endDate: { type: Date, default: null },
+        count: { type: Number, default: 0 },
     },
     subAppointments: [SubAppointmentSchema] // Multiple sub-appointments for different staff
 }, { timestamps: true });

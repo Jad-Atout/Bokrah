@@ -23,7 +23,7 @@ This middleware function generates available time slots for staff based on their
 
 #### **Cons:**
 - The function assumes sorted event data; if events are unsorted, sorting will add **O(n log n)** complexity.
-- It does not merge small gaps into larger ones, which might result in many small slots that cannot accommodate longer appointments.
+- It does not merge small gaps into larger ones, which might appError in many small slots that cannot accommodate longer appointments.
 - **Edge case issue**: If two adjacent slots are separated by a minimal gap (e.g., 1-minute), they won’t be merged.
 
 ### **2. Available Slots Generation (`generateAvailableSlots` function)**
