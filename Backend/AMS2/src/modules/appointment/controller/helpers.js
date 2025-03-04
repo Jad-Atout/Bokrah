@@ -49,7 +49,6 @@ export const calculateEndTime = (startTime, services) => {
     let totalDuration = services.reduce((acc, service) => acc + service.duration, 0);
     return new Date(new Date(startTime).getTime() + totalDuration * 60000).toISOString();
 };
-//TODO consider the interval
 export const generateRecurringDates = (startTime, recurrence) => {
     let dates = [startTime];
     if (!recurrence || !recurrence.type || recurrence.count <= 1) return dates;
@@ -57,9 +56,9 @@ export const generateRecurringDates = (startTime, recurrence) => {
 
     for (let i = 1; i < recurrence.count; i++) {
         const newDate = new Date(startDate);
-        if (recurrence.type === "daily") newDate.setDate(newDate.getDate() + i);
-        else if (recurrence.type === "weekly") newDate.setDate(newDate.getDate() + i * 7);
-        else if (recurrence.type === "monthly") newDate.setMonth(newDate.getMonth() + i);
+        if (recurrence.type === "daily") newDate.setDate(newDate.getDate() + recurrence.interval);
+        else if (recurrence.type === "weekly") newDate.setDate(newDate.getDate() + recurrence.interval * 7);
+        else if (recurrence.type === "monthly") newDate.setMonth(newDate.getMonth() + recurrence.interval);
         dates.push(newDate.toISOString());
     }
     return dates;

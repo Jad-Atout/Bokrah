@@ -28,7 +28,7 @@ export const populateStaff = [
         select: "serviceName"
     },
 ]
-//TODO fix staff create and delete bug
+
 export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
 
     const session = await mongoose.startSession(); // Start a session
@@ -53,9 +53,7 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
 
         }else {
             user = checkUserExistence[0]
-            console.log(user)
             role = await roleModel.findById(user.roleId)
-            console.log(role)
             if(role.staff || role.client) return {staff:null,user:null,appError:new AppError('Staff already exists in the system', 409)}
 
             role.staff = true
@@ -101,7 +99,6 @@ export const transDeleteStaff = async (staff,oauth2Client) => {
         if(appointments.length > 0) return {appError:new AppError('Staff has appointments please cancel or edit them', 404),staff:null,appointmentIds:appointments}
 
         const user = await userModel.findById(staff.userId)
-        console.log(user)
         await roleModel.findByIdAndUpdate(user.roleId,{staff: false}, { session });
 
         staff=await staffModel.findByIdAndDelete(staff._id, { session }).populate(populateStaff);

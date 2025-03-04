@@ -17,7 +17,20 @@ export const deleteAppointment = async (req, res, next) => {
     let deletedAppointments = [];
 
     try {
-        const appointment = await appointmentModel.findById(appointmentId).populate("subAppointments.staffId").session(session);
+        const appointment = await appointmentModel.findById(appointmentId).
+        populate([{
+            path: "customerId",
+            ref: "customer",
+            populate: {
+                path:"userId",
+                ref: "user",
+            }
+        },{
+            path:"subAppointments.staffId",
+            ref:"staff"
+        }]).
+        session(session);
+        console.log(appointment);
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
@@ -27,7 +40,8 @@ export const deleteAppointment = async (req, res, next) => {
             const staffData = subAppointment.staffId;
 
             if (eventId) {
-                await deleteEvent(authClient, staffData.calendarId, eventId);
+               // { customerName, staffName, serviceNames, startTime, endTime, calendarId }
+                await deleteEvent(authClient, staffData.calendarId, eventId,);
                 deletedEvents.push({ eventId, calendarId: staffData.calendarId });
             }
         }
