@@ -28,13 +28,14 @@ export const createAppointment = async (req, res, next) => {
     let createdEvents = [];
     let createdAppointments = [];
 
-    const customer = await customerModel.findById(customerId).populate([{
-        path: "userId",
-        ref: "User",
-        select: "userName email",
-    }]).select("userName email");
+    const customer = await customerModel.findById(customerId)
+        .populate([{ path: "userId", ref: "User", select: "userName email" }])
+        .select("userName email userId");
 
-    if (!customer) return next(new AppError("Customer not found", 404));
+
+    if (!customer?.userId) {
+        return next(new AppError("Customer not found", 404));
+    }
 
     try {
         const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
