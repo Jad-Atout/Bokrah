@@ -54,10 +54,8 @@ export const calculateEndTime = (startTime, services) => {
 
 export const generateRecurringDates = (startTime, recurrence) => {
     let dates = [startTime];
-    console.log(startTime)
     if (!recurrence || !recurrence.type || recurrence.count <= 1) return dates;
     let currentDate = new Date(startTime);
-    console.log(currentDate)
     for (let i = 1; i < recurrence.count; i++) {
         if (recurrence.type === "daily") currentDate.setDate(currentDate.getDate() + recurrence.interval);
         else if (recurrence.type === "weekly") currentDate.setDate(currentDate.getDate() + recurrence.interval * 7);

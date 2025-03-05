@@ -34,16 +34,7 @@ export const deleteAppointment = async (req, res, next) => {
             return next(new AppError("Appointment not found", 404));
         }
 
-        for (const subAppointment of appointment.subAppointments) {
-            const { eventId, staffId } = subAppointment;
-            const staffData = subAppointment.staffId;
 
-            if (eventId) {
-                const eventData = await deleteEvent(authClient, staffData.calendarId, eventId,);
-                console.log("EVENT DATA!!!!!!!",eventData);
-                deletedEvents.push({ eventId, calendarId: staffData.calendarId ,eventData});
-            }
-        }
 
         await appointmentModel.findByIdAndDelete(appointmentId, { session });
         deletedAppointments.push(appointment);
@@ -67,6 +58,15 @@ export const deleteAppointment = async (req, res, next) => {
             if (event?.eventId) {
                 req.eventData = event.eventData;
                 await createEvent(req,authClient, {calendarId:event.calendarId});
+            }
+        }
+        for (const subAppointment of appointment.subAppointments) {
+            const { eventId, staffId } = subAppointment;
+            const staffData = subAppointment.staffId;
+
+            if (eventId) {
+                const eventData = await deleteEvent(authClient, staffData.calendarId, eventId,);
+                deletedEvents.push({ eventId, calendarId: staffData.calendarId ,eventData});
             }
         }
 

@@ -27,7 +27,7 @@ export const createAppointment = async (req, res, next) => {
     session.startTransaction();
     let createdEvents = [];
     let createdAppointments = [];
-
+//TODO search by userId for customer
     const customer = await customerModel.findById(customerId).populate([{
         path: "userId",
         ref: "User",
