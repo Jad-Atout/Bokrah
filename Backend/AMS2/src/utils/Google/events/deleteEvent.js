@@ -39,7 +39,7 @@ const deleteEvent = async (auth, calendarId, eventId) => {
         return { eventData };
 
     } catch (error) {
-        return  new AppError(`Failed to delete event from calendar ${calendarId}: ${error.message}`, 500);
+        return new AppError(`Failed to delete event from calendar ${calendarId}: ${error.message}`, 500);
     }
 };
 

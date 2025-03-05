@@ -28,6 +28,7 @@ router.delete('/:clientId',
 )
 router.put('/:clientId',
     auth(roles.Client),
+    asyncHandler(authServices()),
     asyncHandler(prepareToken()),
     asyncHandler(updateAppointment)
 )
