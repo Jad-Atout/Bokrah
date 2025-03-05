@@ -41,11 +41,13 @@ export const createAppointment = async (req, res, next) => {
         const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
 
         const reminderSettings = await reminderModel.findOne({ clientId });
-        const defaultReminders = reminderSettings?.reminderTimes?.map((time, index) => ({
-            method: reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
-            minutes: Number.isFinite(time) ? time : 60, // Default to 60 minutes if invalid
-        })) || [{ method: "email", minutes: 60 }];
-
+        const defaultReminders =
+            reminderSettings?.reminderTimes?.map((time, index) => ({
+                method:
+                    reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
+                minutes: Number.isFinite(time) ? time : 60,
+            })) || [{ method: "email", minutes: 60 }];
+let appointmentId
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
@@ -94,7 +96,7 @@ export const createAppointment = async (req, res, next) => {
                             calendarId: staffData.calendarId,
                             attendees: [{ email: customer.userId.email }],
                             sendUpdates: "all",
-                            reminders: { useDefault: false, overrides: reminderSettings },
+                            reminders: { useDefault: false, overrides: defaultReminders  },
                         });
                         createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
 
@@ -115,6 +117,9 @@ export const createAppointment = async (req, res, next) => {
 
             await appointment.save({ session });
             createdAppointments.push(appointment);
+            //
+             appointmentId = appointment._id.toString();
+
         }
 
         const existingAssignment = await customerClientModel.findOne({ customerId, clientId });
@@ -126,7 +131,6 @@ export const createAppointment = async (req, res, next) => {
         const staffNames = SS.map(staffServices => staffServices.staff.userId.userName).join(", ");
         const allServices = SS.flatMap(staffServices => staffServices.services.map(service => service.serviceName));
 
-
         // Schedule reminders
         await scheduleReminders(
             customer.userId.userName,
@@ -134,7 +138,9 @@ export const createAppointment = async (req, res, next) => {
             customer.userId.email,
             defaultReminders,
             staffNames,
-            allServices
+            allServices,
+            appointmentId,
+            clientId
         );
 
         await session.commitTransaction();
@@ -142,16 +148,6 @@ export const createAppointment = async (req, res, next) => {
 
 
 
-        // Send email to customer (optional)
-        /* await sendEmail(
-            customer.userId.email,
-            "Your Appointment Confirmation",
-            await appointmentConfirmationEmail(
-                customer.userId.userName, // Customer name
-                staffNames, // All staff names
-                allServices, // List of services
-            )
-        ); */
 
 
 

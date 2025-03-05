@@ -128,9 +128,11 @@ export async function appointmentFullDetailsEmail(
     userName,
     staffNames,
     allServices,
-    subAppointments
+    subAppointments,
+    appointmentId,
+    clientId
 ) {
-    // Optional: format times nicely
+    // Format the times
     const formatOptions = {
         weekday: "short",
         year: "numeric",
@@ -140,7 +142,7 @@ export async function appointmentFullDetailsEmail(
         minute: "2-digit",
     };
 
-    // Build a list of subAppointments
+    // Build a list of sub-appointments (just displaying info, no sub-cancel links)
     const subAppointmentsHTML = subAppointments.map((sub, i) => {
         const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
         const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
@@ -159,6 +161,10 @@ export async function appointmentFullDetailsEmail(
     `;
     }).join("");
 
+    // Single link for cancelling the entire appointment
+    // (Uses your existing PATCH /:appointmentId/cancel/:clientId route)
+    const cancelAllLink = `${process.env.BASE_URL}/appointment/${appointmentId}/cancel/${clientId}`;
+
     return `
     <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:10px;">
       <h2 style="color: #2563EB;">Appointment Details 📅</h2>
@@ -166,14 +172,36 @@ export async function appointmentFullDetailsEmail(
       <p>Your appointment is scheduled with <strong>${staffNames}</strong>.</p>
       
       <p><strong>All Services:</strong> ${allServices.join(", ")}</p>
+
       <h3>Sub-Appointments:</h3>
       ${subAppointmentsHTML}
 
-      <p>If you need to reschedule or cancel, please contact us in advance.</p>
+      <br/>
+      <!-- Button to cancel the entire appointment -->
+      <a 
+        href="${cancelAllLink}"
+        style="
+          display:inline-block;
+          padding:12px 18px;
+          background:#e3342f;
+          color:#fff;
+          text-decoration:none;
+          border-radius:6px;
+          font-weight:bold;
+        "
+      >
+        Cancel Entire Appointment
+      </a>
+
+      <p style="margin-top: 1em;">
+        If you need to reschedule or cancel, please use the link above or contact us in advance.
+      </p>
+
       <br/>
       <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
            alt="Bokrah Logo"
            style="max-width:100%; border-radius:5px;" />
+
       <p>Best Regards,<br/><strong>Bokrah Team</strong></p>
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
       <footer style="text-align:center; font-size:12px; color:#888;">
@@ -182,3 +210,4 @@ export async function appointmentFullDetailsEmail(
     </div>
   `;
 }
+
