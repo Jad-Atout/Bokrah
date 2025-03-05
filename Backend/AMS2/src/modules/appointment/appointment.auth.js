@@ -1,17 +1,124 @@
-import {AppError} from "../../utils/AppError.js";
-import serviceModel from "../../../DB/models/service.js"
-import staffModel from "../../../DB/models/staff.js"
+import { AppError } from "../../utils/AppError.js";
+import serviceModel from "../../../DB/models/service.js";
+import staffModel from "../../../DB/models/staff.js";
 
-
-/*
-✅ Validate if all staff exist
-✅ Validate if all services exist for each staff
-✅ Validate if all staff and services belong to the provided clientId
-✅ Replace staff IDs with full staff objects
-✅ Replace service IDs with full service objects
-✅ Return an error if any staff, service, or ownership is incorrect
-*/
+//TODO this file needs code refinement
 export const authServices = () => {
+    return async (req, res, next) => {
+        const { slot } = req.body;  // The slots in the request body
+        const { clientId } = req.params;
+
+        if (!Array.isArray(slot) || slot.length === 0) {
+            return next(new AppError("No slots provided", 400));
+        }
+
+        let missingStaffs = [];
+        let missingServices = [];
+        let unauthorizedStaffs = [];
+        let unauthorizedServices = [];
+        let validatedStaffsServices = [];
+
+        for (const slotItem of slot) {
+            const { subSlots } = slotItem;
+
+            if (!Array.isArray(subSlots) || subSlots.length === 0) {
+                return next(new AppError("No sub-slots provided in the slot", 400));
+            }
+
+            for (const subSlot of subSlots) {
+                const { staffServices, startTime, endTime } = subSlot;
+
+                if (!Array.isArray(staffServices) || staffServices.length === 0) {
+                    return next(new AppError("No staff services provided for subSlot", 400));
+                }
+
+                for (const staffService of staffServices) {
+                    const { staffId, services } = staffService;
+
+                    // Validate staff
+                    const staff = await staffModel.findById(staffId);
+                    if (!staff) {
+                        missingStaffs.push(staffId);
+                        continue; // Skip further processing for this staff if not found
+                    }
+
+                    if (staff.clientId.toString() !== clientId) {
+                        unauthorizedStaffs.push(staffId);
+                        continue;
+                    }
+
+                    // Fetch the full service objects for the provided service IDs and convert to plain JS objects
+                    const serviceObjects = await serviceModel.find({ _id: { $in: services } }).lean();
+
+                    if (serviceObjects.length !== services.length) {
+                        const foundServiceIds = serviceObjects.map(service => service._id.toString());
+                        const staffMissingServices = services.filter(id => !foundServiceIds.includes(id));
+                        missingServices.push({ staffId, missingServiceIds: staffMissingServices });
+                    }
+
+                    const unauthorized = serviceObjects.filter(service => service.clientId.toString() !== clientId);
+                    if (unauthorized.length > 0) {
+                        unauthorizedServices.push({ staffId, unauthorizedServiceIds: unauthorized.map(service => service._id.toString()) });
+                    }
+
+                    // Replace service IDs with service objects in the staffServices array
+                    staffService.services = serviceObjects; // Replaces the service IDs with the full service objects
+
+                    validatedStaffsServices.push({
+                        staff,
+                        services: serviceObjects // Now this is an array of plain JavaScript objects
+                    });
+                }
+
+                // Validate time range (startTime and endTime)
+                const parsedStartTime = new Date(startTime);
+                const parsedEndTime = new Date(endTime);
+                if (parsedStartTime >= parsedEndTime) {
+                    return next(new AppError("Start time must be before end time", 400));
+                }
+            }
+        }
+
+        // If any errors, send appropriate response
+        if (missingStaffs.length > 0) {
+            return next(new AppError(`Missing staff: ${missingStaffs.join(', ')}`, 400));
+        }
+
+        if (missingServices.length > 0) {
+            return next(new AppError(`Missing services: ${JSON.stringify(missingServices)}`, 400));
+        }
+
+        if (unauthorizedStaffs.length > 0) {
+            return next(new AppError(`Unauthorized staff: ${unauthorizedStaffs.join(', ')}`, 400));
+        }
+
+        if (unauthorizedServices.length > 0) {
+            return next(new AppError(`Unauthorized services: ${JSON.stringify(unauthorizedServices)}`, 400));
+        }
+
+        // Replace service IDs in the slot data itself with full service objects
+        req.body.slot = slot.map(slotItem => {
+            const newSlotItem = { ...slotItem };
+            newSlotItem.subSlots = newSlotItem.subSlots.map(subSlot => {
+                const newSubSlot = { ...subSlot };
+                newSubSlot.staffServices = newSubSlot.staffServices.map(staffService => {
+                    const newStaffService = { ...staffService };
+                    newStaffService.services = staffService.services; // This is now an array of full service objects
+                    return newStaffService;
+                });
+                return newSubSlot;
+            });
+            return newSlotItem;
+        });
+        req.staffsServices = validatedStaffsServices
+
+        // If everything is valid, continue to the next middleware
+        next();
+    };
+};
+
+
+export const authSlots = () => {
     return async (req, res, next) => {
         const { staffsServices } = req.body;
         const { clientId } = req.params;

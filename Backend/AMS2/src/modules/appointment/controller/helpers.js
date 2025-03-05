@@ -1,6 +1,6 @@
 import staffModel from "../../../../DB/models/staff.js"; // Assuming the availability model is here
 
-
+//TODO availabilty AM / PM
 export const checkInternalAvailability = async (staffId, startTime, endTime) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -49,17 +49,20 @@ export const calculateEndTime = (startTime, services) => {
     let totalDuration = services.reduce((acc, service) => acc + service.duration, 0);
     return new Date(new Date(startTime).getTime() + totalDuration * 60000).toISOString();
 };
+
+
+
 export const generateRecurringDates = (startTime, recurrence) => {
     let dates = [startTime];
+    console.log(startTime)
     if (!recurrence || !recurrence.type || recurrence.count <= 1) return dates;
-    const startDate = new Date(startTime);
-
+    let currentDate = new Date(startTime);
+    console.log(currentDate)
     for (let i = 1; i < recurrence.count; i++) {
-        const newDate = new Date(startDate);
-        if (recurrence.type === "daily") newDate.setDate(newDate.getDate() + recurrence.interval);
-        else if (recurrence.type === "weekly") newDate.setDate(newDate.getDate() + recurrence.interval * 7);
-        else if (recurrence.type === "monthly") newDate.setMonth(newDate.getMonth() + recurrence.interval);
-        dates.push(newDate.toISOString());
+        if (recurrence.type === "daily") currentDate.setDate(currentDate.getDate() + recurrence.interval);
+        else if (recurrence.type === "weekly") currentDate.setDate(currentDate.getDate() + recurrence.interval * 7);
+        else if (recurrence.type === "monthly") currentDate.setMonth(currentDate.getMonth() + recurrence.interval);
+        dates.push(currentDate.toISOString());
     }
     return dates;
 };

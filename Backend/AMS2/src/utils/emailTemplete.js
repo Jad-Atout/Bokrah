@@ -78,11 +78,10 @@ export async function setPasswordEmailTemplate( userName, token) {
 export async function appointmentConfirmationEmail(
     customerName,
     staffNames,
-   // serviceNames,
-   // startTime
-   // endTime
+    serviceNames,
+    startTime,
+    endTime,
 ) {
-    // Safely convert start/end times if they're provided
     const startTimeString = startTime
         ? new Date(startTime).toLocaleString()
         : "N/A";

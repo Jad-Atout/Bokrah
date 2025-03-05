@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import { AppError } from "../../../utils/AppError.js";
+//TODO delete the reminder
 //TODO deleting events when appointment ends
 export const cancelAppointment = async (req, res, next) => {
     const { appointmentId } = req.params;

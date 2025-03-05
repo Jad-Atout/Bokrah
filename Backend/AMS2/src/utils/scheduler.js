@@ -13,14 +13,14 @@ export const scheduleReminders = async (
     staffNames,
     allServices
 ) => {
-    console.log("Created Appointments:", createdAppointments);
+//TODO ,,send the staffs services so each staffs can have an appointment
+// create a function that check the sub appointment and from the staff id in sub-appointment fetch
+// staff data and send email to him (you have a email-template for staffs I guess use it)
 
     if (!Array.isArray(createdAppointments) || createdAppointments.length === 0) {
-        console.error("❌ createdAppointments is not a valid array:", createdAppointments);
         return;
     }
 
-    // Log current server time in local & UTC
     const now = new Date();
     console.log("------------------------------");
     console.log("Server local now:", now.toString()); // Local time
@@ -72,8 +72,8 @@ export const scheduleReminders = async (
                             await appointmentConfirmationEmail(
                                 userName,
                                 staffNames,
-                              //  allServices,
-                             //   appointment.subAppointments  // pass the entire subAppointments array
+                                allServices,
+                                appointment.subAppointments  // pass the entire subAppointments array
                             )
                         );
                     }

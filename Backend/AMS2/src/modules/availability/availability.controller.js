@@ -58,3 +58,7 @@ export const deleteAvailability = async (req, res, next) => {
         return res.status(404).json({ message: "No availability assigned to this staff" });
     }
 };
+
+export const getAvailibilty = async (req, res, next) => {
+    return res.json(await availabilityModel.findById(req.body.id))
+}

@@ -3,7 +3,7 @@ import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import mongoose from "mongoose";
 import createEvent from "../../../utils/Google/events/createEvent.js";
-//TODO fix integrity handleing
+//TODO delete the reminder
 
 //TODO send email to the customer and staff when an appointment is deleted
 export const deleteAppointment = async (req, res, next) => {
@@ -30,7 +30,6 @@ export const deleteAppointment = async (req, res, next) => {
             ref:"staff"
         }]).
         session(session);
-        console.log(appointment);
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
@@ -40,20 +39,18 @@ export const deleteAppointment = async (req, res, next) => {
             const staffData = subAppointment.staffId;
 
             if (eventId) {
-               // { customerName, staffName, serviceNames, startTime, endTime, calendarId }
-                await deleteEvent(authClient, staffData.calendarId, eventId,);
-                deletedEvents.push({ eventId, calendarId: staffData.calendarId });
+                const eventData = await deleteEvent(authClient, staffData.calendarId, eventId,);
+                console.log("EVENT DATA!!!!!!!",eventData);
+                deletedEvents.push({ eventId, calendarId: staffData.calendarId ,eventData});
             }
         }
 
         await appointmentModel.findByIdAndDelete(appointmentId, { session });
         deletedAppointments.push(appointment);
 
+
         await session.commitTransaction();
         session.endSession();
-        if(req.session){
-            req.deletedEvents = deletedEvents;
-        }
 
 
         return res.status(200).json({
@@ -62,13 +59,14 @@ export const deleteAppointment = async (req, res, next) => {
         });
 
     } catch (error) {
+        console.log(error)
         await session.abortTransaction();
         session.endSession();
 
         for (const event of deletedEvents) {
             if (event?.eventId) {
-                //TODO pass the event data
-                await createEvent(authClient, event.calendarId, event.eventId);
+                req.eventData = event.eventData;
+                await createEvent(req,authClient, {calendarId:event.calendarId});
             }
         }
 
