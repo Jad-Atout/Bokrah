@@ -11,7 +11,9 @@ export const scheduleReminders = async (
     email,
     reminders,
     staffNames,
-    allServices
+    allServices,
+    appointmentId,
+    clientId
 ) => {
 //TODO ,,send the staffs services so each staffs can have an appointment
 // create a function that check the sub appointment and from the staff id in sub-appointment fetch
@@ -29,6 +31,8 @@ export const scheduleReminders = async (
 
     // For each *appointment* (could be multiple if you have recurrence)
     for (const appointment of createdAppointments) {
+        const apptId = appointment._id.toString();
+
         console.log("🔍 Checking appointment:", appointment);
 
         // Validate subAppointments
@@ -69,11 +73,13 @@ export const scheduleReminders = async (
                         await sendEmail(
                             email,
                             "Appointment Reminder: Full Details",
-                            await appointmentConfirmationEmail(
+                            await appointmentFullDetailsEmail(
                                 userName,
                                 staffNames,
                                 allServices,
-                                appointment.subAppointments  // pass the entire subAppointments array
+                                appointment.subAppointments,  // pass the entire subAppointments array
+                                apptId,
+                                clientId
                             )
                         );
                     }

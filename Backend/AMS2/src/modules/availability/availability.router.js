@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import {setAvailability, deleteAvailability, getAvailibilty} from "./availability.controller.js";
+import {setAvailability, deleteAvailability, getAvailability, updateAvailability} from "./availability.controller.js";
 import {auth, roles} from "../../middleware/auth.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {staffAvailabilitySchema} from "./availabilty.validation.js";
@@ -14,6 +14,7 @@ router.post("/",auth(roles.Client),
 
 router.delete("/",deleteAvailability)
 
-router.get("/",getAvailibilty)
+router.get("/:staffId",getAvailability)
+router.patch("/",updateAvailability)
 
 export default router;
