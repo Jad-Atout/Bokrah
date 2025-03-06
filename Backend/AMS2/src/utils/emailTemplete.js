@@ -142,24 +142,49 @@ export async function appointmentFullDetailsEmail(
         minute: "2-digit",
     };
 
-    // Build a list of sub-appointments (just displaying info, no sub-cancel links)
-    const subAppointmentsHTML = subAppointments.map((sub, i) => {
-        const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
-        const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
+    // Build a list of sub-appointments, each with its own Cancel link
+    const subAppointmentsHTML = subAppointments
+        .map((sub, i) => {
+            const startStr = new Date(sub.startTime).toLocaleString(
+                "en-US",
+                formatOptions
+            );
+            const endStr = new Date(sub.endTime).toLocaleString(
+                "en-US",
+                formatOptions
+            );
+            const serviceList = Array.isArray(sub.services)
+                ? sub.services.map((s) => s.serviceName).join(", ")
+                : "No services";
 
-        const serviceList = Array.isArray(sub.services)
-            ? sub.services.map(s => s.serviceName).join(", ")
-            : "No services";
+            const subCancelLink = `${process.env.BASE_URL}/appointment/${clientId}/${appointmentId}/sub/${sub._id}/`;
 
-        return `
-      <div style="margin-bottom: 1em;">
-        <strong>Sub-Appointment #${i + 1}</strong><br/>
-        <strong>Start:</strong> ${startStr}<br/>
-        <strong>End:</strong>   ${endStr}<br/>
-        <strong>Services:</strong> ${serviceList}
-      </div>
-    `;
-    }).join("");
+            return `
+        <div style="margin-bottom: 1em;">
+          <strong>Sub-Appointment #${i + 1}</strong><br/>
+          <strong>Start:</strong> ${startStr}<br/>
+          <strong>End:</strong>   ${endStr}<br/>
+          <strong>Services:</strong> ${serviceList}
+          <br/><br/>
+          <!-- Button to cancel just this sub-appointment -->
+          <a 
+            href="${subCancelLink}"
+            style="
+              display:inline-block;
+              padding:8px 14px;
+              background:#f97316; /* orangeish color */
+              color:#fff;
+              text-decoration:none;
+              border-radius:4px;
+              font-weight:bold;
+            "
+          >
+            Cancel This Sub-Appointment
+          </a>
+        </div>
+      `;
+        })
+        .join("");
 
     // Single link for cancelling the entire appointment
     // (Uses your existing PATCH /:appointmentId/cancel/:clientId route)
@@ -183,7 +208,7 @@ export async function appointmentFullDetailsEmail(
         style="
           display:inline-block;
           padding:12px 18px;
-          background:#e3342f;
+          background:#dc2626; /* red color */
           color:#fff;
           text-decoration:none;
           border-radius:6px;
@@ -194,7 +219,7 @@ export async function appointmentFullDetailsEmail(
       </a>
 
       <p style="margin-top: 1em;">
-        If you need to reschedule or cancel, please use the link above or contact us in advance.
+        If you need to reschedule or cancel, please use the links above or contact us in advance.
       </p>
 
       <br/>
@@ -211,3 +236,74 @@ export async function appointmentFullDetailsEmail(
   `;
 }
 
+
+export async function appointmentDeletedEmail(
+    userName,
+    staffNames,
+    allServices,
+    subAppointments = []
+) {
+    // Format the times for any sub‑appointments you still want to display
+    const formatOptions = {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    };
+
+    // If you want to show which sub-appointments were canceled, you can build an HTML list:
+    const subAppointmentsHTML = subAppointments.map((sub, i) => {
+        const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
+        const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
+
+        const serviceList = Array.isArray(sub.services)
+            ? sub.services.map(s => s.serviceName).join(", ")
+            : "No services";
+
+        return `
+      <div style="margin-bottom: 1em;">
+        <strong>Sub-Appointment #${i + 1}</strong><br/>
+        <strong>Start:</strong> ${startStr}<br/>
+        <strong>End:</strong>   ${endStr}<br/>
+        <strong>Services:</strong> ${serviceList}
+      </div>
+    `;
+    }).join("");
+
+    return `
+    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:10px;">
+      <h2 style="color: #e3342f;">Appointment Canceled</h2>
+      <p>Dear ${userName},</p>
+      
+      <p>We wanted to let you know that your appointment with <strong>${staffNames}</strong> has been 
+      <strong style="color: #e3342f;">canceled</strong>. Below are the details of the canceled appointment:</p>
+
+      <p><strong>All Services:</strong> ${allServices.join(", ")}</p>
+
+      ${
+        subAppointments.length > 0
+            ? `
+            <h3>Canceled Sub-Appointments:</h3>
+            ${subAppointmentsHTML}
+          `
+            : ""
+    }
+
+      <p>If you have any questions or would like to schedule a new appointment, feel free to reach out.</p>
+      
+      <br/>
+      <img 
+        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
+        alt="Bokrah Logo"
+        style="max-width:100%; border-radius:5px;"
+      />
+      <p>Best Regards,<br/><strong>Bokrah Team</strong></p>
+      <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
+      <footer style="text-align:center; font-size:12px; color:#888;">
+        © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
+      </footer>
+    </div>
+  `;
+}
