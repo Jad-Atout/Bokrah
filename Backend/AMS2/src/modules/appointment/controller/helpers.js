@@ -1,6 +1,7 @@
-import staffModel from "../../../../DB/models/staff.js"; // Assuming the availability model is here
+import staffModel from "../../../../DB/models/staff.js";
+import createEvent from "../../../utils/Google/events/createEvent.js";
+import deleteEvent from "../../../utils/Google/events/deleteEvent.js"; // Assuming the availability model is here
 
-//TODO availabilty AM / PM
 export const checkInternalAvailability = async (staffId, startTime, endTime) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -64,3 +65,25 @@ export const generateRecurringDates = (startTime, recurrence) => {
     }
     return dates;
 };
+
+
+export const eventCreateRollback = async (createdEvents, authClient)=>{
+    for (const event of createdEvents) {
+        if (event?.eventId) {
+            await deleteEvent(authClient, event.calendarId, event.eventId);
+        }
+    }
+}
+
+export const eventDeleteRollback = async (req, authClient, deletedEvents, appointment)=>{
+    for (let i = 0; i < deletedEvents.length; i++) {
+        const event = deletedEvents[i];
+        const sA = appointment.subAppointments[i];
+        req.eventData = event.eventData
+        if (event?.eventId) {
+            const e = await createEvent(req,authClient, {calendarId: event.calendarId});
+            sA.eventId = e.id;
+            await appointment.save()
+        }
+    }
+}

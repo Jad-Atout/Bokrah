@@ -4,25 +4,34 @@ import roleModel from "../models/role.js";
 import customerModel from "../models/customer.js";
 
 import {AppError} from "../../src/utils/AppError.js";
-
+//TODO verify the session
+//handel the return
 export const transCreateCustomer = async(customerData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const role = await roleModel({customer:true})
-        await role.save({session})
-        customerData.roleId = role._id;
-        const user = new userModel(customerData)
-        await user.save({ session });
-        const customer = new customerModel({userId:user._id})
+        let user
+        if(!customerData.userId) {
+            const role = new roleModel({customer:true})
+            await role.save({session})
+            customerData.roleId = role._id;
+            user = new userModel(customerData)
+            await user.save({session});
+
+        }else {
+            user =  await userModel.findById(customerData.userId)
+            await roleModel.findByIdAndUpdate(user.roleId,{customer: true})
+        }
+        const customer = new customerModel({userId: user._id})
         await customer.save({session})
+
         await session.commitTransaction();
         session.endSession();
-        return user
+        return {user,customer,appError:null}
     }catch (err){
         await session.abortTransaction();
         session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
+        return {user:null,customer:null,appError:new AppError(err.message || 'Internal server error', 500)}
     }
 }
 export const transUpdateCustomer =async (userData,customerData=null) => {

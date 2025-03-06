@@ -4,29 +4,34 @@ const createCalendarEvent = async (req, auth, { customerName, staffName, service
     const calendar = google.calendar({ version: "v3", auth });
 
     const eventData = req.eventData;
+    let event
 
-    const event = eventData ? {
-        summary: eventData.eventData.summary ,
-        description: eventData.eventData.description,
-        start: eventData.eventData.start,
-        end: eventData.eventData.end,
-    } : {
-        summary: `Appointment with ${customerName} \n
+    if(eventData){
+         event = {
+            summary: eventData.summary ,
+            description: eventData.description,
+            start: eventData.start,
+            end: eventData.end,
+        }
+    }else {
+         event = {
+            summary: `Appointment with ${customerName} \n
             organizer:  
                 Name: ${req.authUser.userName}
                 email: ${req.authUser.email}
                 phoneNumber: ${req.authUser.phoneNumber}
         `,
-        description: `Staff: ${staffName}\nServices: ${ serviceNames.join(", ") }`,
-        start: {
-            dateTime: new Date(startTime).toISOString(),
-            timeZone: "UTC",
-        },
-        end: {
-            dateTime: new Date(endTime).toISOString(),
-            timeZone: "UTC",
-        },
-    };
+            description: `Staff: ${staffName}\nServices: ${ serviceNames.join(", ") }`,
+            start: {
+                dateTime: new Date(startTime).toISOString(),
+                timeZone: "UTC",
+            },
+            end: {
+                dateTime: new Date(endTime).toISOString(),
+                timeZone: "UTC",
+            },
+        };
+    }
 
         const response = await calendar.events.insert({
             calendarId,

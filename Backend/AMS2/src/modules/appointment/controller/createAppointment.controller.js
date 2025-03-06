@@ -7,18 +7,28 @@ import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
-import { calculateEndTime, checkInternalAvailability, generateRecurringDates } from "./helpers.js";
+import {
+    calculateEndTime,
+    checkInternalAvailability,
+    generateRecurringDates,
+    eventCreateRollback
+} from "./helpers.js";
 import { sendEmail } from "../../../utils/email.js";
 import { appointmentConfirmationEmail } from "../../../utils/emailTemplete.js";
 import reminderModel from "../../../../DB/models/reminder.js";
 import { scheduleReminders } from "../../../utils/scheduler.js";
+import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
 //TODO fix integrity handling
 //TODO share the staff calendar with the staff
 //TODO send email to the customer and staff
 //TODO the local customer must be confirmed
 
+
+
+
+
 export const createAppointment = async (req, res, next) => {
-    const { customerId, recurrence, slot } = req.body;
+    let { customerId, recurrence, slot,userId } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
     const SS = req.staffsServices;
@@ -28,7 +38,10 @@ export const createAppointment = async (req, res, next) => {
     let createdEvents = [];
     let createdAppointments = [];
 //TODO search by userId for customer
-
+    if(!customerId && userId) {
+        const {customer: cust} = await transCreateCustomer({userId})
+        customerId = cust._id
+    }
 
     const customer = await customerModel.findById(customerId)
         .populate([{ path: "userId", ref: "User", select: "userName email" }])
@@ -40,7 +53,6 @@ export const createAppointment = async (req, res, next) => {
     }
 
     try {
-        const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
 
         const reminderSettings = await reminderModel.findOne({ clientId });
         const defaultReminders =
@@ -49,7 +61,8 @@ export const createAppointment = async (req, res, next) => {
                     reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
                 minutes: Number.isFinite(time) ? time : 60,
             })) || [{ method: "email", minutes: 60 }];
-let appointmentId
+
+        const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
@@ -72,8 +85,7 @@ let appointmentId
                             .session(session);
 
                         const endTimeCalculated = calculateEndTime(startTime, services);
-                        //console.log(endTimeCalculated,endTime)
-                        //if(endTime!=endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
+                        if(endTime!==endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
 
                         const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
                         if (!isInternalAvailable) {
@@ -119,8 +131,7 @@ let appointmentId
 
             await appointment.save({ session });
             createdAppointments.push(appointment);
-            //
-             appointmentId = appointment._id.toString();
+
 
         }
 
@@ -134,23 +145,19 @@ let appointmentId
         const allServices = SS.flatMap(staffServices => staffServices.services.map(service => service.serviceName));
 
         // Schedule reminders
-        await scheduleReminders(
-            customer.userId.userName,
-            createdAppointments,
-            customer.userId.email,
-            defaultReminders,
-            staffNames,
-            allServices,
-            appointmentId,
-            clientId
-        );
+        // await scheduleReminders(
+        //     customer.userId.userName,
+        //     createdAppointments,
+        //     customer.userId.email,
+        //     defaultReminders,
+        //     staffNames,
+        //     allServices,
+        //     appointmentId,
+        //     clientId
+        // );
 
         await session.commitTransaction();
         session.endSession();
-
-
-
-
 
 
         return res.status(201).json({
@@ -158,18 +165,12 @@ let appointmentId
             appointments: createdAppointments,
         });
     } catch (error) {
-        console.log(error)
-        if (session.inTransaction()) {
-            await session.abortTransaction();
-        }
+        await session.abortTransaction();
         session.endSession();
 
         // Rollback created events in case of error
-        for (const event of createdEvents) {
-            if (event?.eventId) {
-                await deleteEvent(authClient, event.calendarId, event.eventId);
-            }
-        }
+        await eventCreateRollback(createdEvents,authClient)
+
         return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
     }
 };

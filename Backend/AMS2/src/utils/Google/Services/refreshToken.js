@@ -112,7 +112,8 @@ const refreshAccessTokenIfNeeded = async (googleCalendar, oauthClient) => {
     }
 
     const refreshedCredentials = refreshedData.credentials;
-    const { expiry_date, access_token } = refreshedCredentials;
+    console.log(refreshedCredentials)
+    const { expiry_date, access_token,refresh_token  } = refreshedCredentials;
 
     if (!expiry_date || typeof expiry_date !== "number" || expiry_date <= 0) {
         throw new AppError(`Invalid expiry_date value: ${expiry_date}`);
@@ -120,6 +121,7 @@ const refreshAccessTokenIfNeeded = async (googleCalendar, oauthClient) => {
 
     googleCalendar.updatedAt = new Date(expiry_date).toISOString();
     googleCalendar.accessToken = access_token; // Optional: store the new access token if needed
+    if(refresh_token!==googleCalendar.refreshToken) googleCalendar.refreshToken=refresh_token
     await googleCalendar.save();
     console.log("Token expiry updated and saved.");
 };

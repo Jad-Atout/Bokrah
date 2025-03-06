@@ -18,7 +18,6 @@ const deleteEvent = async (auth, calendarId, eventId) => {
             calendarId,
             eventId,
         });
-
         // Extract the event details from the fetched event object
         const { summary, description, start, end } = event.data;
         // Construct the event details object
@@ -36,7 +35,7 @@ const deleteEvent = async (auth, calendarId, eventId) => {
         });
 
         // Return event data after deletion
-        return { eventData };
+        return  eventData ;
 
     } catch (error) {
         return new AppError(`Failed to delete event from calendar ${calendarId}: ${error.message}`, 500);

@@ -3,6 +3,7 @@ import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import mongoose from "mongoose";
 import createEvent from "../../../utils/Google/events/createEvent.js";
+import {eventDeleteRollback} from "./helpers.js";
 //TODO delete the reminder
 
 //TODO send email to the customer and staff when an appointment is deleted
@@ -16,29 +17,30 @@ export const deleteAppointment = async (req, res, next) => {
     let deletedEvents = [];
     let deletedAppointments = [];
 
+    const appointment = await appointmentModel.findById(appointmentId).
+    populate([{
+        path: "customerId",
+        ref: "customer",
+        populate: {
+            path:"userId",
+            ref: "user",
+        }
+    },{
+        path:"subAppointments.staffId",
+        ref:"staff"
+    }]).
+    session(session);
     try {
-        const appointment = await appointmentModel.findById(appointmentId).
-        populate([{
-            path: "customerId",
-            ref: "customer",
-            populate: {
-                path:"userId",
-                ref: "user",
-            }
-        },{
-            path:"subAppointments.staffId",
-            ref:"staff"
-        }]).
-        session(session);
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
 
-
-
-        await appointmentModel.findByIdAndDelete(appointmentId, { session });
+         await appointmentModel.findByIdAndDelete(appointmentId, { session });
         deletedAppointments.push(appointment);
-
+        for (const subAppointment of appointment.subAppointments) {
+            const eventData = await deleteEvent(authClient, subAppointment.staffId.calendarId,subAppointment.eventId);
+            deletedEvents.push({eventId:subAppointment.eventId, calendarId:subAppointment.staffId.calendarId,eventData})
+        }
 
         await session.commitTransaction();
         session.endSession();
@@ -50,25 +52,10 @@ export const deleteAppointment = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log(error)
         await session.abortTransaction();
         session.endSession();
+       await eventDeleteRollback(req,authClient,deletedEvents,appointment)
 
-        for (const event of deletedEvents) {
-            if (event?.eventId) {
-                req.eventData = event.eventData;
-                await createEvent(req,authClient, {calendarId:event.calendarId});
-            }
-        }
-        for (const subAppointment of appointment.subAppointments) {
-            const { eventId, staffId } = subAppointment;
-            const staffData = subAppointment.staffId;
-
-            if (eventId) {
-                const eventData = await deleteEvent(authClient, staffData.calendarId, eventId,);
-                deletedEvents.push({ eventId, calendarId: staffData.calendarId ,eventData});
-            }
-        }
 
         return next(new AppError(`Failed to delete appointment(s): ${error}`, 500));
     }

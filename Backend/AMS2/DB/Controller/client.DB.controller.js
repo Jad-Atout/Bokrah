@@ -17,7 +17,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
     session.startTransaction();
     try {
         let user = await userModel.findOne({email: userData.email}).session(session);
-        let role = await roleModel.findById(user.roleId).session(session);
+        let role = (user)?await roleModel.findById(user.roleId).session(session):null
 
         if (!role?.client) {
             if(!user){
@@ -31,6 +31,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
                 role.client = true
                 role.staff = true
                 await role.save({session})
+
             }
             const client = new clientModel(clientData)
             await client.save({session})

@@ -54,7 +54,6 @@ export const gClientLogin = async (req, res) => {
 
 export const updateClient = async (req, res, next) => {
     const {clientId} = req.authUser
-    //TODO a staff data updating
     const {userName,phoneNumber,businessName,industry,staffData} = req.body;
     const userData = {userName,phoneNumber}
     const clientData = {businessName,industry}

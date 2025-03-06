@@ -9,6 +9,7 @@ import {cancelAppointment} from "./controller/cancelAppointment.controller.js";
 import {generateAvailableSlots} from "./controller/getAvailableTimeSlots.js";
 import {deleteAppointment} from "./controller/deleteAppointment.controller.js";
 import {updateAppointment} from "./controller/updateAppointment.controller.js";
+import {cancelSubAppointment} from "./controller/subappointments.controller.js";
 
 router.post('/:clientId',
     auth(roles.Client),
@@ -37,5 +38,10 @@ router.post('/slots/:clientId',
     asyncHandler(prepareToken()),
     asyncHandler(generateAvailableSlots)
 )
+
+router.delete('/:clientId/:appointmentId/:subAppointmentId',
+    auth(roles.Client),
+    asyncHandler(prepareToken()),
+    asyncHandler(cancelSubAppointment))
 
 export default router;
