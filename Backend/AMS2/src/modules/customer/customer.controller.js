@@ -2,8 +2,8 @@ import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
+import customerModel from "../../../DB/models/Customer.js";
 import dotenv from "dotenv";
-dotenv.config()
 import {
     transCreateCustomer,
     transDeleteCustomer,
@@ -12,6 +12,8 @@ import {
 import {sendEmail} from "../../utils/email.js";
 import {setPasswordEmailTemplate, welcomeEmailTemplate} from "../../utils/emailTemplete.js";
 import jwt from "jsonwebtoken";
+dotenv.config()
+
 // login directry after confirmation
 
 
@@ -24,22 +26,22 @@ export const createCustomer = async (req, res, next) => {
     let user = await userModel.findOne(filter)
     if(user) return res.status(400).json({ message: "User already exists", user });
 
-    user = await transCreateCustomer({userName, email, phoneNumber,authProvider: "actor"})
+    let {newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber,authProvider: "actor"})
 
-    if(user instanceof AppError) return next(user);
-    const tokenData={id:user._id, email:user.email,}
+    if(appError) return next(appError);
+    const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
-    await sendEmail(user.email,  "Welcome",
-        await welcomeEmailTemplate( user.userName, token)
+    await sendEmail(newUser.email,  "Welcome",
+        await welcomeEmailTemplate( newUser.userName, token)
     );
-    await sendEmail(user.email,  "Set Your Password & Confirm Your Email",
-        await setPasswordEmailTemplate( user.userName, token))
-    return res.status(201).json({ message: "Successfully created", user });
+    await sendEmail(newUser.email,  "Set Your Password & Confirm Your Email",
+        await setPasswordEmailTemplate( newUser.userName, token))
+    return res.status(201).json({ message: "Successfully created", user,customer });
 };
 
 
 
-
+//TODO use it in Auth
 export const customerRegister = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
     const filter = {}
@@ -51,16 +53,16 @@ export const customerRegister = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
-    user = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
-    if(user instanceof AppError) return next(user);
+    let {newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
+    if(appError) return next(appError);
 
     const tokenData={id:user._id, email:user.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
-    await sendEmail(user.email,  "Welcome",
-        await welcomeEmailTemplate( user.userName, token)
+    await sendEmail(newUser.email,  "Welcome",
+        await welcomeEmailTemplate( newUser.userName, token)
     );
-    return res.status(201).json({ message: "Successfully created", user });
+    return res.status(201).json({ message: "Successfully created", newUser,customer });
 };
 
 export const getClientCustomers = async (req, res, next) => {
@@ -87,11 +89,11 @@ export const updateCustomer = async (req, res, next) => {
     const userData = {userName, email, phoneNumber,_id:customer.userId}
     if(password) userData.password = await bcrypt.hash(password, 8);
 
-    const updatedCustomer = await transUpdateCustomer( userData);
-    if (updatedCustomer instanceof AppError) {
-        return next(updatedCustomer);
+    let {newUser,newCustomer,appError} = await transUpdateCustomer( userData);
+    if (appError) {
+        return next(appError);
     }
-    return res.json({message:"Customer updated successfully",updatedCustomer});
+    return res.json({message:"Customer updated successfully",newCustomer,newUser});
 }
 
 
@@ -99,11 +101,11 @@ export const deleteCustomer = async (req, res, next) => {
     const { customerId } = req.params
     const id = req.authUser.id
     if(customerId !==id) return next( new AppError("User is not authorized for this action", 401));
-    const deletedCustomer = await transDeleteCustomer(id)
-    if (deletedCustomer instanceof AppError) {
-        return next(deletedCustomer);
+    let {deletedUser,deletedCustomer,appError} = await transDeleteCustomer(id)
+    if (appError) {
+        return next(appError);
     }
-    return res.status(200).json({message:"Successfully deleted", deletedCustomer});
+    return res.status(200).json({message:"Successfully deleted", deletedCustomer,deletedUser});
 
 }
 

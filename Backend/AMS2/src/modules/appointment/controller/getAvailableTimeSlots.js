@@ -2,7 +2,7 @@ import { AppError } from '../../../utils/AppError.js';
 import staffModel from '../../../../DB/models/staff.js';
 import { getEvents } from '../../../utils/Google/events/getEvents.js';
 import { generateRecurringDates } from "./helpers.js";
-
+//TODO fix the returning of un available slots in the recurring dates
 const parseTimeAMPM = (timeStr, date) => {
     const [time, modifier] = timeStr.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
@@ -14,48 +14,38 @@ const parseTimeAMPM = (timeStr, date) => {
 };
 
 const computeFreeIntervals = (slotStart, slotEnd, events) => {
-    console.log(`\n[DEBUG] Checking free intervals between ${slotStart} and ${slotEnd}`);
-    console.log("[DEBUG] Busy Events Fetched:", JSON.stringify(events, null, 2));
-
     let freeIntervals = [{ startTime: slotStart, endTime: slotEnd }];
 
     events.forEach(event => {
         const eventStart = new Date(event.start.dateTime);
         const eventEnd = new Date(event.end.dateTime);
-        console.log(`[DEBUG] Processing Busy Event from ${eventStart} to ${eventEnd}`);
 
         freeIntervals = freeIntervals.flatMap(interval => {
             if (eventStart <= interval.startTime && eventEnd >= interval.endTime) {
-                console.log("[DEBUG] Event completely covers slot, removing...");
                 return [];
             }
             if (eventStart > interval.startTime && eventEnd < interval.endTime) {
-                console.log("[DEBUG] Splitting slot around busy event");
                 return [
                     { startTime: interval.startTime, endTime: eventStart },
                     { startTime: eventEnd, endTime: interval.endTime }
                 ];
             }
             if (eventStart <= interval.startTime && eventEnd > interval.startTime) {
-                console.log("[DEBUG] Trimming start of slot");
                 return [{ startTime: eventEnd, endTime: interval.endTime }];
             }
             if (eventStart < interval.endTime && eventEnd >= interval.endTime) {
-                console.log("[DEBUG] Trimming end of slot");
                 return [{ startTime: interval.startTime, endTime: eventStart }];
             }
             return [interval];
         });
     });
 
-    console.log("[DEBUG] Free intervals after filtering:", JSON.stringify(freeIntervals, null, 2));
     return freeIntervals;
 };
 
 const filterConsistentSlots = (availableSlots, recurrenceDates) => {
-    console.log("[DEBUG] Before filtering available slots:", JSON.stringify(availableSlots, null, 2));
-
     let slotOccurrences = {};
+
     for (let dayKey in availableSlots) {
         availableSlots[dayKey].forEach(slot => {
             let slotKey = `${slot.startTime.toISOString()}-${slot.endTime.toISOString()}`;
@@ -63,6 +53,7 @@ const filterConsistentSlots = (availableSlots, recurrenceDates) => {
         });
     }
 
+    // Only keep slots that appear in ALL recurrence dates
     let validSlots = Object.keys(slotOccurrences).filter(slotKey =>
         slotOccurrences[slotKey] === recurrenceDates.length
     );
@@ -74,9 +65,67 @@ const filterConsistentSlots = (availableSlots, recurrenceDates) => {
         );
     }
 
-    console.log("[DEBUG] After filtering consistent slots:", JSON.stringify(filteredSlots, null, 2));
     return filteredSlots;
 };
+
+// Function to merge slots and maintain service execution order
+function mergeSlots(slots, staffNumber) {
+    slots.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    let mergedSlots = [];
+    let seenSlots = new Set();
+
+    for (let i = 0; i < slots.length; i++) {
+        let currentSlot = slots[i];
+        let slotKey = `${currentSlot.startTime}-${currentSlot.endTime}`; // Fixed syntax
+
+        if (seenSlots.has(slotKey)) continue;
+        seenSlots.add(slotKey);
+
+        let mergedSlot = {
+            startTime: currentSlot.startTime,
+            endTime: currentSlot.endTime,
+            subSlots: [
+                {
+                    startTime: currentSlot.startTime,
+                    endTime: currentSlot.endTime,
+                    staffServices: currentSlot.staffServices.map(service => ({
+                        staffId: service.staffId,
+                        services: service.services
+                    }))
+                }
+            ]
+        };
+
+        for (let j = i + 1; j < slots.length; j++) {
+            let nextSlot = slots[j];
+            let currentEnd = new Date(mergedSlot.endTime);
+            let nextStart = new Date(nextSlot.startTime);
+
+            if (
+                Math.abs(nextStart - currentEnd) <= 5 * 60 * 1000 &&
+                !mergedSlot.subSlots.some(subSlot =>
+                    subSlot.staffServices.some(service =>
+                        nextSlot.staffServices.some(ns => ns.staffId === service.staffId)
+                    )
+                )
+            ) {
+                mergedSlot.endTime = nextSlot.endTime;
+                mergedSlot.subSlots.push({
+                    startTime: nextSlot.startTime,
+                    endTime: nextSlot.endTime,
+                    staffServices: nextSlot.staffServices.map(service => ({
+                        staffId: service.staffId,
+                        services: service.services
+                    }))
+                });
+            }
+        }
+
+        mergedSlots.push(mergedSlot);
+    }
+
+    return { slots: mergedSlots.filter(slot => slot.subSlots.length === staffNumber) };
+}
 
 export const generateAvailableSlots = async (req, res, next) => {
     const { startDate, endDate, recurrence } = req.body;
@@ -90,20 +139,14 @@ export const generateAvailableSlots = async (req, res, next) => {
     let availableSlots = {};
     try {
         let recurrenceDates = generateRecurringDates(startDate, recurrence);
-        console.log("[DEBUG] Generated recurrence dates:", recurrenceDates);
 
         for (const staffServices of staffsServices) {
             const { staff, services } = staffServices;
             const staffId = staff._id;
-            console.log(`[DEBUG] Processing staff ID: ${staffId}`);
-
             const staffData = await staffModel.findById(staffId)
                 .populate('availability')
                 .lean();
-            if (!staffData || !staffData.availability) {
-                console.log(`[DEBUG] No availability found for staff ${staffId}`);
-                continue;
-            }
+            if (!staffData || !staffData.availability) continue;
 
             const workingDays = staffData.availability.availability;
             for (const recDateStr of recurrenceDates) {
@@ -115,12 +158,12 @@ export const generateAvailableSlots = async (req, res, next) => {
                     for (const slot of dayAvail.slots) {
                         const slotStart = parseTimeAMPM(slot.startTime, currentDate);
                         const slotEnd = parseTimeAMPM(slot.endTime, currentDate);
-                        console.log(`[DEBUG] Checking slot from ${slotStart} to ${slotEnd} for staff ${staffId}`);
 
                         const calendarId = staffData.calendarId;
                         const events = await getEvents(authClient, calendarId, slotStart, slotEnd);
-
+                        console.log(events,slotStart,slotEnd,calendarId);
                         let freeIntervals = computeFreeIntervals(slotStart, slotEnd, events);
+                        console.log(freeIntervals)
                         let totalDuration = services.reduce((sum, service) => sum + service.duration + (service.bufferTime || 0), 0);
 
                         freeIntervals.forEach(interval => {
@@ -132,6 +175,7 @@ export const generateAvailableSlots = async (req, res, next) => {
                                     let dayKey = recDateStr.split('T')[0];
 
                                     if (!availableSlots[dayKey]) availableSlots[dayKey] = [];
+
                                     availableSlots[dayKey].push({
                                         startTime: slotStartTime,
                                         endTime: slotEndTime,
@@ -144,8 +188,6 @@ export const generateAvailableSlots = async (req, res, next) => {
                                         ]
                                     });
 
-                                    console.log(`[DEBUG] Added available slot: ${slotStartTime} to ${slotEndTime}`);
-
                                     slotStartTime = new Date(slotEndTime.getTime());
                                 }
                             }
@@ -154,13 +196,17 @@ export const generateAvailableSlots = async (req, res, next) => {
                 }
             }
         }
+        Object.keys(availableSlots).forEach(dayKey => {
+            availableSlots[dayKey] = availableSlots[dayKey].filter((value, index, self) =>
+                    index === self.findIndex((t) => (
+                        t.startTime.getTime() === value.startTime.getTime() && t.endTime.getTime() === value.endTime.getTime()
+                    ))
+            );
+        });
+        console.log(availableSlots)
 
         availableSlots = filterConsistentSlots(availableSlots, recurrenceDates);
-        console.log("[DEBUG] Available slots before merging:", JSON.stringify(availableSlots, null, 2));
-
         let mergedSlots = mergeSlots(Object.values(availableSlots).flat(), staffsServices.length);
-
-        console.log("[DEBUG] Merged slots:", JSON.stringify(mergedSlots, null, 2));
 
         return res.status(200).json({
             message: 'Available slots generated successfully',
@@ -168,7 +214,7 @@ export const generateAvailableSlots = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.error("[ERROR] Failed to generate available slots:", error);
+        console.log(error);
         return next(new AppError(`Failed to generate available slots: ${error.message}`, 500));
     }
 };

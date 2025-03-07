@@ -5,8 +5,10 @@ import customerModel from "../models/customer.js";
 
 import {AppError} from "../../src/utils/AppError.js";
 //TODO verify the session
-//handel the return
-export const transCreateCustomer = async(customerData) => {
+
+
+
+export const transCreateCustomer = async (customerData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
@@ -15,7 +17,6 @@ export const transCreateCustomer = async(customerData) => {
             const role = new roleModel({customer:true})
             await role.save({session})
             customerData.roleId = role._id;
-            user = new userModel(customerData)
             await user.save({session});
 
         }else {
@@ -27,24 +28,30 @@ export const transCreateCustomer = async(customerData) => {
 
         await session.commitTransaction();
         session.endSession();
-        return {user,customer,appError:null}
-    }catch (err){
+            return { user, customer, appError: null };
+        } catch (err) {
         await session.abortTransaction();
         session.endSession();
-        return {user:null,customer:null,appError:new AppError(err.message || 'Internal server error', 500)}
+
+        throw new AppError(err.message || "Internal server error", 500);
     }
-}
+};
+
+
+
+
 export const transUpdateCustomer =async (userData,customerData=null) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const user = await userModel.findByIdAndUpdate(userData._id, userData);
-        if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData)
-        return user
+        const user = await userModel.findByIdAndUpdate(userData._id, userData,{ session, new: true });
+        if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData,{ session, new: true })
+        return {user,customer:null,appError:null}
+
     }catch (err){
         await session.abortTransaction();
         session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
+        return {user:null,customer:null,appError:new AppError(err.message || 'Internal server error', 500)}
     }
 }
 export const transDeleteCustomer = async (customerId) => {
@@ -53,11 +60,13 @@ export const transDeleteCustomer = async (customerId) => {
     try {
         const customer = await customerModel.findByIdAndDelete(customerId)
         if(!customer) return new AppError("Customer doesn't exists", 401);
-        const user =await userModel.findByIdAndDelete(customer.userId)
-        await roleModel.findByIdAndDelete(user.roleId)
+        const user =await userModel.findByIdAndDelete(customer.userId,{ session, new: true })
+        await roleModel.findByIdAndDelete(user.roleId,{ session, new: true })
+        return {user,customer,appError:null}
     }catch (err){
+
         await session.abortTransaction();
         session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
+        return {user:null,customer:null,appError:new AppError(err.message || 'Internal server error', 500)}
     }
 }
