@@ -37,13 +37,22 @@ export const createAppointment = async (req, res, next) => {
     session.startTransaction();
     let createdEvents = [];
     let createdAppointments = [];
+    let appointmentId
 //TODO search by userId for customer
 
+    if(!customerId && userId) {
+        let foundCustomer = await customerModel.findOne({ userId });
+
+        if (!foundCustomer) {
+            const { customer: newCust } = await transCreateCustomer({ userId });
+            foundCustomer = newCust;
+        }
+        customerId = foundCustomer._id;
+    }
 
     const customer = await customerModel.findById(customerId)
         .populate([{ path: "userId", ref: "User", select: "userName email" }])
         .select("userName email userId");
-
 
     if (!customer?.userId) {
         return next(new AppError("Customer not found", 404));
@@ -128,7 +137,7 @@ export const createAppointment = async (req, res, next) => {
 
             await appointment.save({ session });
             createdAppointments.push(appointment);
-
+            appointmentId = appointment._id.toString();
 
         }
 
@@ -142,16 +151,16 @@ export const createAppointment = async (req, res, next) => {
         const allServices = SS.flatMap(staffServices => staffServices.services.map(service => service.serviceName));
 
         // Schedule reminders
-        // await scheduleReminders(
-        //     customer.userId.userName,
-        //     createdAppointments,
-        //     customer.userId.email,
-        //     defaultReminders,
-        //     staffNames,
-        //     allServices,
-        //     appointmentId,
-        //     clientId
-        // );
+         await scheduleReminders(
+             customer.userId.userName,
+             createdAppointments,
+             customer.userId.email,
+             defaultReminders,
+             staffNames,
+             allServices,
+             appointmentId,
+             clientId
+         );
 
         await session.commitTransaction();
         session.endSession();

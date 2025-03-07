@@ -34,7 +34,6 @@ export const createCustomer = async (req, res, next) => {
     );
     await sendEmail(user.email,  "Set Your Password & Confirm Your Email",
         await setPasswordEmailTemplate( user.userName, token))
-
     return res.status(201).json({ message: "Successfully created", user });
 };
 
