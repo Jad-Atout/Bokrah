@@ -38,10 +38,7 @@ export const createAppointment = async (req, res, next) => {
     let createdEvents = [];
     let createdAppointments = [];
 //TODO search by userId for customer
-    if(!customerId && userId) {
-        const {customer: cust} = await transCreateCustomer({userId})
-        customerId = cust._id
-    }
+
 
     const customer = await customerModel.findById(customerId)
         .populate([{ path: "userId", ref: "User", select: "userName email" }])
