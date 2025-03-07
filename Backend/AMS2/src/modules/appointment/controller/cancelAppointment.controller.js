@@ -5,7 +5,10 @@ import { AppError } from "../../../utils/AppError.js";
 import { cancelScheduledReminders } from "../../../utils/scheduler.js";
 import { eventDeleteRollback } from "./helpers.js";
 import { sendEmail } from "../../../utils/email.js";
-import { appointmentDeletedEmail } from "../../../utils/emailTemplete.js";
+import {
+    appointmentDeletedEmail,
+    staffCancellationEmail
+} from "../../../utils/emailTemplete.js";
 
 export const cancelAppointment = async (req, res, next) => {
     const { appointmentId, clientId } = req.params;
@@ -26,15 +29,17 @@ export const cancelAppointment = async (req, res, next) => {
                     ref: "customer",
                     populate: {
                         path: "userId",
-                        ref: "user", // must match your schema
-                        // select fields if needed: select: "email userName"
+                        ref: "user",
                     },
                 },
                 {
                     path: "subAppointments.staffId",
                     ref: "staff",
-                    // optionally populate staff's userId if your schema has it
-                    // populate: { path: "userId", ref: "user" }
+                    populate: {
+                        path: "userId",
+                        ref: "User",
+                        select: "userName email",
+                    },
                 },
             ])
             .session(session);
@@ -42,11 +47,9 @@ export const cancelAppointment = async (req, res, next) => {
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
-
         if (appointment.clientId.toString() !== clientId) {
             return next(new AppError("Unauthorized: You cannot cancel this appointment", 403));
         }
-
         if (appointment.status === "Cancelled") {
             return next(new AppError("Appointment is already cancelled", 404));
         }
@@ -75,56 +78,89 @@ export const cancelAppointment = async (req, res, next) => {
         await session.commitTransaction();
         session.endSession();
 
-
         const customerEmail = appointment.customerId?.userId?.email;
         const userName = appointment.customerId?.userId?.userName || "Valued Customer";
 
-
-//
-        const staffNamesArr = appointment.subAppointments.map((sub) => {
-            console.log("sub",sub)
-            return sub.staffId?.userName || "Staff";
+        const staffNamesArr = appointment.subAppointments.map(sub => {
+            return sub.staffId?.userId?.userName || sub.staffId?.userName || "Staff";
         });
         const staffNames = [...new Set(staffNamesArr)].join(", ");
-//
 
-//
         let allServicesArr = [];
         for (const sub of appointment.subAppointments) {
             if (Array.isArray(sub.services)) {
-                // If you store services as { serviceName, ... } objects:
-                const subServiceNames = sub.services.map((srv) => srv.serviceName);
+                const subServiceNames = sub.services.map(srv => srv.serviceName);
                 allServicesArr.push(...subServiceNames);
             }
         }
         const allServices = [...new Set(allServicesArr)];
-//
+
+
         if (customerEmail) {
-            await sendEmail(
-                customerEmail,
-                "Your Appointment Has Been Canceled",
-                await appointmentDeletedEmail(
-                    userName,
-                    staffNames,
-                    allServices,
-                    appointment.subAppointments
+          await sendEmail(
+            customerEmail,
+            "Your Appointment Has Been Canceled",
+            await appointmentDeletedEmail(
+              userName,
+              staffNames,
+              allServices,
+              appointment.subAppointments
+            )
+          );
+        } else {
+          console.warn("No customer email found. Cannot send cancellation email.");
+        }
+
+
+        const staffMap = {};
+        for (const sub of appointment.subAppointments) {
+            if (!sub.staffId) continue;
+            const staffDoc = sub.staffId;
+
+            const staffEmail = staffDoc.userId?.email;
+            if (!staffEmail) continue;
+
+            if (!staffMap[staffDoc._id]) {
+                staffMap[staffDoc._id] = {
+                    staffDoc,
+                    subAppointments: [],
+                };
+            }
+            staffMap[staffDoc._id].subAppointments.push(sub);
+        }
+
+        const staffEmailPromises = [];
+        for (const key in staffMap) {
+            const { staffDoc, subAppointments } = staffMap[key];
+            const staffName = staffDoc.userId?.userName || staffDoc.userName || "Staff";
+            const staffEmail = staffDoc.userId?.email;
+
+            staffEmailPromises.push(
+                sendEmail(
+                    staffEmail,
+                    "Appointment Cancelled",
+                    await staffCancellationEmail(
+                        userName,
+                        staffName,
+                        subAppointments
+                    )
                 )
             );
-        } else {
-            console.warn("No customer email found. Cannot send cancellation email.");
         }
+        await Promise.all(staffEmailPromises);
 
         return res.status(200).json({
             message: "Appointment cancelled successfully",
             deletedEvents,
         });
-
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
 
         await eventDeleteRollback(deletedEvents, appointment);
 
-        return next(new AppError(`Failed to cancel the appointment: ${error.message}`, 500));
+        return next(
+            new AppError(`Failed to cancel the appointment: ${error.message}`, 500)
+        );
     }
 };
