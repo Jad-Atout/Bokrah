@@ -11,7 +11,6 @@ import clientCustomer from "../models/ClientCustomer.js";
 import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 import {initializeOAuthClient} from "../../src/utils/Google/Services/refreshToken.js";
 
-//TODO still needs Razan's testing
 export const transCreateClient = async (clientData,userData,googleData) => {
     const session = await mongoose.startSession();
     session.startTransaction();

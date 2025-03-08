@@ -7,7 +7,7 @@ import {auth, roles} from "../../middleware/auth.js";
 
 const router = express.Router();
 
-router.use('/:clientId/customer',customerRouter);
+router.use('/:clientId/newCustomer',customerRouter);
 
 router.get('/oauth2callback',
     asyncHandler(googleAuthCallback)
@@ -22,7 +22,7 @@ router.patch('/',
 )
 
 
-router.delete('/',
+router.delete('/clientId',
     auth(roles.Client),
     asyncHandler(deleteClient)
 )

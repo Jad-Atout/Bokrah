@@ -16,7 +16,6 @@ import {
 import reminderModel from "../../../../DB/models/reminder.js";
 import { scheduleReminders } from "../../../utils/scheduler.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
-//TODO remove events and change the state of an appointment when it ends
 
 
 
@@ -30,7 +29,7 @@ export const createAppointment = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     let createdEvents = [];
-    let createdAppointments = [];
+    let createdAppointment;
     let appointmentId;
 
     if (!customerId && userId) {
@@ -38,7 +37,7 @@ export const createAppointment = async (req, res, next) => {
         if (!foundCustomer) {
             const {customer} = await transCreateCustomer({ userId });
             if (customer) {
-                throw new AppError("Failed to create customer", 500);
+                throw new AppError("Failed to create newCustomer", 500);
             }
             customerId = customer;
         } else {
@@ -84,10 +83,10 @@ export const createAppointment = async (req, res, next) => {
                         const endTimeCalculated = calculateEndTime(startTime, services);
                         if (endTime !== endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
 
-                        const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
-                        if (!isInternalAvailable) {
-                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
-                        }
+                        // const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
+                        // if (!isInternalAvailable) {
+                        //     throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
+                        // }
 
                         // Check external (Google Calendar) availability
                         const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
@@ -127,7 +126,7 @@ export const createAppointment = async (req, res, next) => {
             });
 
             await appointment.save({ session });
-            createdAppointments.push(appointment);
+            createdAppointment=appointment;
             appointmentId = appointment._id.toString();
         }
 
@@ -141,14 +140,13 @@ export const createAppointment = async (req, res, next) => {
         const allServices = SS.flatMap(staffServices => staffServices.services.map(service => service.serviceName));
 
         // Schedule reminders
-        await scheduleReminders(
+        await scheduleReminders(authClient,
             customer.userId.userName,
-            createdAppointments,
+            createdAppointment,
             customer.userId.email,
             defaultReminders,
             staffNames,
             allServices,
-            appointmentId,
             clientId
         );
 
@@ -157,7 +155,7 @@ export const createAppointment = async (req, res, next) => {
 
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
-            appointments: createdAppointments,
+            appointments: createdAppointment,
         });
     } catch (error) {
         await session.abortTransaction();

@@ -24,10 +24,11 @@ export const createCustomer = async (req, res, next) => {
     if(email) filter.email = email;
     if(phoneNumber) filter.phoneNumber = phoneNumber;
     let user = await userModel.findOne(filter)
-    if(user) return res.status(400).json({ message: "User already exists", user });
-
-    let {newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber,authProvider: "actor"})
-
+    let customer = await customerModel.find({userId:user?._id})
+    if(user){
+        if(customer) return res.status(400).json({ message: "User already exists", user,customer });
+    }
+    let {newUser,newCustomer,appError} = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
     if(appError) return next(appError);
     const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
@@ -36,7 +37,7 @@ export const createCustomer = async (req, res, next) => {
     );
     await sendEmail(newUser.email,  "Set Your Password & Confirm Your Email",
         await setPasswordEmailTemplate( newUser.userName, token))
-    return res.status(201).json({ message: "Successfully created", user,customer });
+    return res.status(201).json({ message: "Successfully created", user,newCustomer});
 };
 
 

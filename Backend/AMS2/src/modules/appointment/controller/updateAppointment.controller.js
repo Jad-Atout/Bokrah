@@ -137,9 +137,9 @@ export const updateAppointment = async (req, res, next) => {
 
         // Schedule reminders
         // await scheduleReminders(
-        //     customer.userId.userName,
+        //     newCustomer.userId.userName,
         //     updatedAppointments,
-        //     customer.userId.email,
+        //     newCustomer.userId.email,
         //     defaultReminders,
         //     staffNames,
         //     allServices

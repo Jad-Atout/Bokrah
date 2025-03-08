@@ -6,10 +6,6 @@ import {createLocalCustomerSchema,createCustomerSchema} from "./customer.validat
 import {auth, roles} from "../../middleware/auth.js";
 const router = express.Router({mergeParams: true});
 
-router.post('/register',
-    validationHandler(createLocalCustomerSchema)
-    ,asyncHandler(customerRegister)
-);
 
 router.post('/create',
     auth([roles.Client,roles.Staff]),
@@ -17,7 +13,6 @@ router.post('/create',
     ,asyncHandler(createCustomer)
 );
 
-router.post('/login',)
 
 router.put('/:customerID',
     auth(roles.Client),

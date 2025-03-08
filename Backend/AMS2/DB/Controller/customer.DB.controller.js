@@ -2,9 +2,7 @@ import userModel from '../models/user.js';
 import mongoose from "mongoose";
 import roleModel from "../models/role.js";
 import customerModel from "../models/customer.js";
-
 import {AppError} from "../../src/utils/AppError.js";
-
 
 
 export const transCreateCustomer = async (customerData) => {
@@ -12,15 +10,19 @@ export const transCreateCustomer = async (customerData) => {
     session.startTransaction();
     try {
         let user
-        if(!customerData.userId) {
+        if(customerData.userId) {
+            user =  await userModel.findById(customerData.userId)
+            await roleModel.findByIdAndUpdate(user.roleId,{newCustomer: true},{session})
+            await user.save({session});
+
+
+        }else {
             const role = new roleModel({customer:true})
             await role.save({session})
             customerData.roleId = role._id;
-            await user.save({session});
+            user = new userModel(customerData)
+            user.save({session})
 
-        }else {
-            user =  await userModel.findById(customerData.userId)
-            await roleModel.findByIdAndUpdate(user.roleId,{customer: true},{session})
         }
         const customer = new customerModel({userId: user._id})
         await customer.save({session})
@@ -29,6 +31,7 @@ export const transCreateCustomer = async (customerData) => {
         session.endSession();
             return { user, customer, appError: null };
         } catch (err) {
+        console.log(err)
         await session.abortTransaction();
         session.endSession();
 

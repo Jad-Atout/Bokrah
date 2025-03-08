@@ -108,7 +108,7 @@ export const cancelAppointment = async (req, res, next) => {
             )
           );
         } else {
-          console.warn("No customer email found. Cannot send cancellation email.");
+          console.warn("No newCustomer email found. Cannot send cancellation email.");
         }
 
 

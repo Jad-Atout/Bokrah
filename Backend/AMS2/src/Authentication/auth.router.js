@@ -5,8 +5,15 @@ import {confirmEmail} from "./confirmEmail.auth.js";
 import {setPasswordAndConfirm} from"./resetPasswordAndConfirm.js"
 import {forgotPassword, sendCode} from "./forgotPassword.js";
 import {customerRegister} from "../modules/customer/customer.controller.js";
+import {validationHandler} from "../middleware/validation.js";
+import {createLocalCustomerSchema} from "../modules/customer/customer.validation.js";
 const router = Router()
-//TODO Razan's send code still in the data base
+
+
+router.post('/register',
+    validationHandler(createLocalCustomerSchema)
+    ,asyncHandler(customerRegister)
+);
 router.post('/login'
     ,asyncHandler(generalLogin)
 )

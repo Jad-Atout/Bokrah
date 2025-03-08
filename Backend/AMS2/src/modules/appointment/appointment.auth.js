@@ -244,7 +244,6 @@ export const verifyAppointmentOwnership = () => {
             return next(new AppError("Appointment not found", 404));
         }
         const {customerId, subAppointments} = appointment;
-        console.log(authUser)
         if(authUser.role?.client){
             return next()
         }

@@ -17,7 +17,7 @@ const SubAppointmentSchema = new mongoose.Schema({
     eventId: { type: String }, // Google Calendar Event ID
     status: {
         type: String,
-        enum: ["Booked", "Cancelled", "Pending"],
+        enum: ["Booked", "Cancelled", "completed"],
         default: "Booked"
     }
 }, { timestamps: true });
