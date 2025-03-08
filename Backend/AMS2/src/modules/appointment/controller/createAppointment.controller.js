@@ -16,11 +16,7 @@ import {
 import reminderModel from "../../../../DB/models/reminder.js";
 import { scheduleReminders } from "../../../utils/scheduler.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
-//TODO share the staff calendar with the staff
-//TODO send email to the customer and staff
-//TODO the local customer must be confirmed
-//TODO verify the start and end to be in the future
-
+//TODO remove events and change the state of an appointment when it ends
 
 
 
@@ -32,14 +28,10 @@ export const createAppointment = async (req, res, next) => {
     const SS = req.staffsServices;
     const APPOINTMENT_STATUS = "Booked";
     const session = await mongoose.startSession();
-    session.startTransaction({
-        writeConcern: { w: 1 },
-        readConcern: { level: 'snapshot' },
-    });
+    session.startTransaction();
     let createdEvents = [];
     let createdAppointments = [];
     let appointmentId;
-//TODO search by userId for customer
 
     if (!customerId && userId) {
         let foundCustomer = await customerModel.findOne({ userId });
@@ -55,12 +47,10 @@ export const createAppointment = async (req, res, next) => {
     }
 
     const customer = await customerModel.findById(customerId)
-        .populate([{ path: "userId", ref: "User", select: "userName email" }])
-        .select("userName email userId");
+        .populate([{ path: "userId", ref: "User" }]);
 
-    if (!customer?.userId) {
-        return next(new AppError("Customer not found", 404));
-    }
+    if (!customer?.userId) return next(new AppError("Customer not found", 404));
+    if(customer.userId.authProvider ==="local" && !customer.userId.confirmed) return next(new AppError("Customer must be confirmed", 401));
 
     try {
         const reminderSettings = await reminderModel.findOne({ clientId });
@@ -71,15 +61,13 @@ export const createAppointment = async (req, res, next) => {
                 minutes: Number.isFinite(time) ? time : 60,
             })) || [{ method: "email", minutes: 60 }];
 
-        const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
+        const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
 
-            for (const slotItem of slot) {
-                const { subSlots } = slotItem;
 
-                for (const subSlot of subSlots) {
+                for (const subSlot of slot.subSlots) {
                     let { staffServices, startTime, endTime } = subSlot;
 
                     if (startTime >= endTime) {
@@ -127,7 +115,7 @@ export const createAppointment = async (req, res, next) => {
                         currentStartTime = new Date(endTimeCalculated);
                     }
                 }
-            }
+
 
             const appointment = new appointmentModel({
                 startTime: appointmentStart,
@@ -172,6 +160,7 @@ export const createAppointment = async (req, res, next) => {
             appointments: createdAppointments,
         });
     } catch (error) {
+        console.log(error)
         await session.abortTransaction();
         session.endSession();
 

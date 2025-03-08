@@ -41,7 +41,6 @@ export const createCustomer = async (req, res, next) => {
 
 
 
-//TODO use it in Auth
 export const customerRegister = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
     const filter = {}

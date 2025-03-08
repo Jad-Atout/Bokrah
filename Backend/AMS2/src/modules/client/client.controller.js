@@ -2,6 +2,9 @@ import GoogleAuthService from "../../utils/Google/googleAuth.js";
 import jwt from "jsonwebtoken";
 import {AppError} from "../../utils/AppError.js";
 import {transCreateClient, transDeleteClient, transUpdateClient} from "../../../DB/Controller/client.DB.controller.js";
+
+//TODO send set password email send welcome email
+
 export const googleAuthCallback = async (req, res, next) => {
     const authService = new GoogleAuthService();
     const { code } = req.query;

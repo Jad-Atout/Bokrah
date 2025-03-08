@@ -65,7 +65,7 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
         let staff= new staffModel(staffData);
         await staff.save({session})
 
-        staff.calendarId = await getOrCreateSubCalendar(oauth2Client,user.userName);
+        staff.calendarId = await getOrCreateSubCalendar(oauth2Client,user.userName,user.email);
         await staff.save({session})
 
         staff = await staffModel.findById(staff._id).populate(populateStaff).session(session);

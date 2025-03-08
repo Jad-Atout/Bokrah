@@ -2,17 +2,25 @@
 import schedule from "node-schedule";
 import { sendEmail } from "./email.js";
 import { appointmentFullDetailsEmail } from "./emailTemplete.js";
-
+import scheduledReminder    from "../../DB/models/scheduledReminder.js";
 export const scheduledRemindersMap = {};
+//TODO Batching and delay for the sake of performance
+//TODO schedule a job to change the appointment and event status after the completion of an appointment
 
-
-export function cancelScheduledReminders(appointmentId) {
+export async function cancelScheduledReminders(appointmentId) {
     const jobs = scheduledRemindersMap[appointmentId];
+
     if (jobs && jobs.length > 0) {
-        jobs.forEach(job => job.cancel()); // cancel each scheduled job
+        jobs.forEach(({ job }) => job.cancel()); // Cancel each scheduled job
     }
-    delete scheduledRemindersMap[appointmentId]; // remove from the map
+
+    delete scheduledRemindersMap[appointmentId]; // Remove from memory
+
+    // 🔹 Remove from MongoDB
+    await scheduledReminder.deleteMany({ appointmentId });
+    console.log(`🛑 Canceled all reminders for appointment: ${appointmentId}`);
 }
+
 
 
 export const scheduleReminders = async (
@@ -30,14 +38,9 @@ export const scheduleReminders = async (
     }
 
     const now = new Date();
-    console.log("------------------------------");
-    console.log("Server local now:", now.toString()); // Local time
-    console.log("Server UTC now:  ", now.toUTCString()); // UTC
-    console.log("------------------------------");
 
     for (const appointment of createdAppointments) {
         const apptId = appointment._id.toString();
-        console.log("🔍 Checking appointment:", appointment);
 
         if (!Array.isArray(appointment.subAppointments) || appointment.subAppointments.length === 0) {
             console.error("❌ No subAppointments found:", appointment);
@@ -60,19 +63,24 @@ export const scheduleReminders = async (
                 continue;
             }
 
-            console.log(`⏰ Reminder #${i} for appointment at:`);
-            console.log("   - reminderDate local:", reminderDate.toString());
-            console.log("   - reminderDate UTC:  ", reminderDate.toUTCString());
-            console.log("   - offset (minutes):  ", minutes);
-
-            // Only schedule if in the future
             if (reminderDate > now) {
                 console.log("   -> Scheduling this reminder...");
-                // Schedule the job
+
+                // 🔹 Save to MongoDB
+                const reminderDoc = await scheduledReminder.create({
+                    appointmentId: apptId,
+                    reminderTime: reminderDate,
+                    method,
+                    email,
+                    userName,
+                    staffNames,
+                    allServices,
+                    clientId,
+                });
+
+                // 🔹 Schedule in Node
                 const job = schedule.scheduleJob(reminderDate, async () => {
-                    console.log(
-                        `🔔 Sending ${method} reminder for appointment with earliest startTime at ${earliestStart}`
-                    );
+                    console.log(`🔔 Sending ${method} reminder for appointment with earliest startTime at ${earliestStart}`);
 
                     if (method === "email") {
                         await sendEmail(
@@ -82,24 +90,65 @@ export const scheduleReminders = async (
                                 userName,
                                 staffNames,
                                 allServices,
-                                appointment.subAppointments, // pass the entire subAppointments array
+                                appointment.subAppointments,
                                 apptId,
                                 clientId
                             )
                         );
                     }
+
+                    // 🔹 Mark as executed in DB
+                    await scheduledReminder.findByIdAndUpdate(reminderDoc._id, { isExecuted: true });
                 });
 
-                // Store the job reference so we can cancel later
-                scheduledRemindersMap[apptId].push(job);
-
+                // 🔹 Store in memory for quick cancellation
+                scheduledRemindersMap[apptId].push({ job, reminderId: reminderDoc._id });
             } else {
-                console.log(
-                    `❗ Skipped scheduling a reminder in the past:
+                console.log(`❗ Skipped scheduling a reminder in the past:
            reminderDate local = ${reminderDate.toString()},
-           reminderDate UTC   = ${reminderDate.toUTCString()}`
-                );
+           reminderDate UTC   = ${reminderDate.toUTCString()}`);
             }
         }
     }
 };
+
+export async function reloadScheduledReminders() {
+    const pendingReminders = await scheduledReminder.find({ isExecuted: false });
+
+    pendingReminders.forEach((reminder) => {
+        const { appointmentId, reminderTime, method, email, userName, staffNames, allServices, clientId, _id } = reminder;
+
+        if (new Date(reminderTime) > new Date()) {
+            console.log(`🔄 Reloading reminder for appointment ${appointmentId} at ${reminderTime}`);
+
+            // Schedule again
+            const job = schedule.scheduleJob(reminderTime, async () => {
+                console.log(`🔔 Sending reloaded ${method} reminder for appointment ${appointmentId}`);
+
+                if (method === "email") {
+                    await sendEmail(
+                        email,
+                        "Appointment Reminder: Full Details",
+                        await appointmentFullDetailsEmail(
+                            userName,
+                            staffNames,
+                            allServices,
+                            [],
+                            appointmentId,
+                            clientId
+                        )
+                    );
+                }
+
+                // Mark as executed in DB
+                await scheduledReminder.findByIdAndUpdate(_id, { isExecuted: true });
+            });
+
+            // Store in memory
+            if (!scheduledRemindersMap[appointmentId]) {
+                scheduledRemindersMap[appointmentId] = [];
+            }
+            scheduledRemindersMap[appointmentId].push({ job, reminderId: _id });
+        }
+    });
+}

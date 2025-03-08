@@ -8,7 +8,7 @@ import {
 import jwt from "jsonwebtoken";
 import {sendEmail} from "../../utils/email.js";
 import {setPasswordEmailTemplate} from "../../utils/emailTemplete.js"
-
+//TODO get staff bu service and git service by staff
 
 export const createStaff = async (req, res, next) => {
     const {userName, email, phoneNumber, roleDescription} = req.body;

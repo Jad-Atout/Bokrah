@@ -13,7 +13,6 @@ import reminderModel from "../../../../DB/models/reminder.js"
 import staffModel from "../../../../DB/models/staff.js"
 import mongoose from "mongoose";
 import {checkAvailability} from "../../../utils/Google/Services/checkAvailability.js";
-//TODO ownership
 
 export const updateAppointment = async (req, res, next) => {
     const { appointmentId, recurrence, slot } = req.body;
@@ -47,17 +46,14 @@ export const updateAppointment = async (req, res, next) => {
             minutes: Number.isFinite(time) ? time : 60, // Default to 60 minutes if invalid
         })) || [{ method: "email", minutes: 60 }];
 
-        const appointmentDates = generateRecurringDates(slot[0].startTime, recurrence);
+        const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
 
         // Create the appointment
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
-//This for loop is extra
-            for (const slotItem of slot) {
-                const { subSlots } = slotItem;
 
-                for (const subSlot of subSlots) {
+                for (const subSlot of slot.subSlots) {
                     let { staffServices, startTime, endTime } = subSlot;
 
                     if (startTime >= endTime) {
@@ -101,7 +97,7 @@ export const updateAppointment = async (req, res, next) => {
                         currentStartTime = new Date(endTimeCalculated);
                     }
                 }
-            }
+
 
 
             const newStaffIds = new Set(subAppointments.map(sub => sub.staffId.toString()));

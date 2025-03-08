@@ -2,7 +2,7 @@ import { AppError } from '../../../utils/AppError.js';
 import staffModel from '../../../../DB/models/staff.js';
 import { getEvents } from '../../../utils/Google/events/getEvents.js';
 import { generateRecurringDates } from "./helpers.js";
-//TODO fix the returning of un available slots in the recurring dates
+
 const parseTimeAMPM = (timeStr, date) => {
     const [time, modifier] = timeStr.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
@@ -39,45 +39,20 @@ const computeFreeIntervals = (slotStart, slotEnd, events) => {
             return [interval];
         });
     });
-
     return freeIntervals;
 };
 
-const filterConsistentSlots = (availableSlots, recurrenceDates) => {
-    let slotOccurrences = {};
 
-    for (let dayKey in availableSlots) {
-        availableSlots[dayKey].forEach(slot => {
-            let slotKey = `${slot.startTime.toISOString()}-${slot.endTime.toISOString()}`;
-            slotOccurrences[slotKey] = (slotOccurrences[slotKey] || 0) + 1;
-        });
-    }
-
-    // Only keep slots that appear in ALL recurrence dates
-    let validSlots = Object.keys(slotOccurrences).filter(slotKey =>
-        slotOccurrences[slotKey] === recurrenceDates.length
-    );
-
-    let filteredSlots = {};
-    for (let dayKey in availableSlots) {
-        filteredSlots[dayKey] = availableSlots[dayKey].filter(slot =>
-            validSlots.includes(`${slot.startTime.toISOString()}-${slot.endTime.toISOString()}`)
-        );
-    }
-
-    return filteredSlots;
-};
 
 // Function to merge slots and maintain service execution order
-function mergeSlots(slots, staffNumber) {
+function mergeSlots(slots, staffsCount) {
     slots.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
     let mergedSlots = [];
     let seenSlots = new Set();
 
     for (let i = 0; i < slots.length; i++) {
         let currentSlot = slots[i];
-        let slotKey = `${currentSlot.startTime}-${currentSlot.endTime}`; // Fixed syntax
-
+        let slotKey = `${currentSlot.staffServices[0].staffId.toString()}-${currentSlot.startTime}-${currentSlot.endTime}`;
         if (seenSlots.has(slotKey)) continue;
         seenSlots.add(slotKey);
 
@@ -102,7 +77,7 @@ function mergeSlots(slots, staffNumber) {
             let nextStart = new Date(nextSlot.startTime);
 
             if (
-                Math.abs(nextStart - currentEnd) <= 5 * 60 * 1000 &&
+                Math.abs(nextStart - currentEnd) <= 5 * 60 * 1000 &&  // Check for proximity within 5 mins
                 !mergedSlot.subSlots.some(subSlot =>
                     subSlot.staffServices.some(service =>
                         nextSlot.staffServices.some(ns => ns.staffId === service.staffId)
@@ -124,8 +99,9 @@ function mergeSlots(slots, staffNumber) {
         mergedSlots.push(mergedSlot);
     }
 
-    return { slots: mergedSlots.filter(slot => slot.subSlots.length === staffNumber) };
+    return { slots: mergedSlots.filter(slot => slot.subSlots.length === staffsCount) };
 }
+
 
 export const generateAvailableSlots = async (req, res, next) => {
     const { startDate, endDate, recurrence } = req.body;
@@ -140,42 +116,50 @@ export const generateAvailableSlots = async (req, res, next) => {
     try {
         let recurrenceDates = generateRecurringDates(startDate, recurrence);
 
-        for (const staffServices of staffsServices) {
-            const { staff, services } = staffServices;
-            const staffId = staff._id;
-            const staffData = await staffModel.findById(staffId)
-                .populate('availability')
-                .lean();
-            if (!staffData || !staffData.availability) continue;
+        for (const recDateStr of recurrenceDates) {
+            let currentDate = new Date(recDateStr);
+            let dayKey = recDateStr.split('T')[0]; // Store slots per date
+            availableSlots[dayKey] = availableSlots[dayKey] || [];
 
-            const workingDays = staffData.availability.availability;
-            for (const recDateStr of recurrenceDates) {
-                let currentDate = new Date(recDateStr);
-                const dayName = currentDate.toLocaleString('en-US', { weekday: 'long' });
+            const dayName = currentDate.toLocaleString('en-US', { weekday: 'long' });
+
+            for (const staffServices of staffsServices) {
+                const { staff, services } = staffServices;
+                const staffId = staff._id;
+                const staffData = await staffModel.findById(staffId)
+                    .populate('availability')
+                    .lean();
+                if (!staffData || !staffData.availability) continue;
+
+                const workingDays = staffData.availability.availability;
                 const dayAvail = workingDays.find(a => a.day.toLowerCase() === dayName.toLowerCase());
 
-                if (dayAvail && dayAvail.slots.length > 0) {
-                    for (const slot of dayAvail.slots) {
-                        const slotStart = parseTimeAMPM(slot.startTime, currentDate);
-                        const slotEnd = parseTimeAMPM(slot.endTime, currentDate);
+                if (!dayAvail || dayAvail.slots.length === 0) continue;
 
-                        const calendarId = staffData.calendarId;
-                        const events = await getEvents(authClient, calendarId, slotStart, slotEnd);
-                        console.log(events,slotStart,slotEnd,calendarId);
-                        let freeIntervals = computeFreeIntervals(slotStart, slotEnd, events);
-                        console.log(freeIntervals)
-                        let totalDuration = services.reduce((sum, service) => sum + service.duration + (service.bufferTime || 0), 0);
+                for (const slot of dayAvail.slots) {
+                    const slotStart = parseTimeAMPM(slot.startTime, currentDate);
+                    const slotEnd = parseTimeAMPM(slot.endTime, currentDate);
 
-                        freeIntervals.forEach(interval => {
-                            const duration = (interval.endTime - interval.startTime) / (1000 * 60);
-                            if (duration >= totalDuration) {
-                                let slotStartTime = new Date(interval.startTime);
-                                while (slotStartTime.getTime() + totalDuration * 60000 <= interval.endTime.getTime()) {
-                                    let slotEndTime = new Date(slotStartTime.getTime() + totalDuration * 60000);
-                                    let dayKey = recDateStr.split('T')[0];
+                    const calendarId = staffData.calendarId;
+                    const events = await getEvents(authClient, calendarId, slotStart, slotEnd);
+                    let freeIntervals = computeFreeIntervals(slotStart, slotEnd, events);
+                    let totalDuration = services.reduce((sum, service) => sum + service.duration + (service.bufferTime || 0), 0);
+                    freeIntervals.forEach(interval => {
+                        const duration = (interval.endTime - interval.startTime) / (1000 * 60);
+                        if (duration >= totalDuration) {
+                            let slotStartTime = new Date(interval.startTime);
 
-                                    if (!availableSlots[dayKey]) availableSlots[dayKey] = [];
+                            while (slotStartTime.getTime() + totalDuration * 60000 <= interval.endTime.getTime()) {
+                                let slotEndTime = new Date(slotStartTime.getTime() + totalDuration * 60000);
 
+                                // Ensure the slot is only skipped if the exact staff member is already assigned
+                                const isDuplicate = availableSlots[dayKey].some(existingSlot =>
+                                    existingSlot.startTime.getTime() === slotStartTime.getTime() &&
+                                    existingSlot.endTime.getTime() === slotEndTime.getTime() &&
+                                    existingSlot.staffServices.some(service => service.staffId.toString() === staffId.toString()) // Check staff ID
+                                );
+
+                                if (!isDuplicate) {
                                     availableSlots[dayKey].push({
                                         startTime: slotStartTime,
                                         endTime: slotEndTime,
@@ -188,25 +172,17 @@ export const generateAvailableSlots = async (req, res, next) => {
                                         ]
                                     });
 
-                                    slotStartTime = new Date(slotEndTime.getTime());
                                 }
+
+                                slotStartTime = new Date(slotEndTime.getTime());
                             }
-                        });
-                    }
+                        }
+                    });
+
                 }
             }
         }
-        Object.keys(availableSlots).forEach(dayKey => {
-            availableSlots[dayKey] = availableSlots[dayKey].filter((value, index, self) =>
-                    index === self.findIndex((t) => (
-                        t.startTime.getTime() === value.startTime.getTime() && t.endTime.getTime() === value.endTime.getTime()
-                    ))
-            );
-        });
-        console.log(availableSlots)
-
-        availableSlots = filterConsistentSlots(availableSlots, recurrenceDates);
-        let mergedSlots = mergeSlots(Object.values(availableSlots).flat(), staffsServices.length);
+        let mergedSlots = mergeSlots(getCommonSlots(availableSlots), staffsServices.length);
 
         return res.status(200).json({
             message: 'Available slots generated successfully',
@@ -214,7 +190,53 @@ export const generateAvailableSlots = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log(error);
         return next(new AppError(`Failed to generate available slots: ${error.message}`, 500));
     }
 };
+
+
+function getCommonSlots(slotsByDate) {
+    const dates = Object.keys(slotsByDate);
+    if (dates.length === 0) return [];
+
+    const firstDate = dates[0]; // Pick the first date
+    const slotCounts = new Map();
+
+    // Normalize time slots by removing date part
+    function getTimeKey(slot) {
+        const startTime = slot.startTime.toISOString().slice(11, 19);
+        const endTime = slot.endTime.toISOString().slice(11, 19);
+
+        const staffId = slot.staffServices[0].staffId.toString();
+
+        return `${staffId}-${startTime}-${endTime}`;
+    }
+
+
+
+    dates.forEach(date => {
+        slotsByDate[date].forEach(slot => {
+            const key = getTimeKey(slot);
+            slotCounts.set(key, (slotCounts.get(key) || 0) + 1);
+        });
+    });
+
+    const totalDays = dates.length;
+
+    // Find time slots that appear in ALL dates
+    const commonTimeKeys = new Set(
+        [...slotCounts.entries()]
+            .filter(([_, count]) => count === totalDays)
+            .map(([key]) => key)
+    );
+
+    // Return only common slots from the first date
+    return slotsByDate[firstDate].filter(slot =>
+        commonTimeKeys.has(getTimeKey(slot))
+    );
+}
+
+
+
+
+

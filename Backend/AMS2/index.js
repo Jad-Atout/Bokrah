@@ -8,7 +8,7 @@ const app = express();
 initApp(app,express)
 
 
-app.listen(process.env.PORT||10000, () => {
-    console.log("Server running on port: " + process.env.PORT);
+app.listen( () => {
+    console.log(`🚀 Server running on port ${parseInt(process.env.PORT)}`);
 })
 export { app }

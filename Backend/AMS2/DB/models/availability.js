@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-//TODO: disable id for sub documents
 const availabilitySchema = new mongoose.Schema({
     timeZone: { type: String, required: true },
     availability: [

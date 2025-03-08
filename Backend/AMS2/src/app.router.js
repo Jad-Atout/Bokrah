@@ -13,6 +13,7 @@ import appointmentRouter from "./modules/appointment/appointment.router.js";
 
 import 'dotenv/config'
 import reminderRouter from "./modules/reminder/reminder.router.js";
+import {reloadScheduledReminders} from "./utils/scheduler.js";
 
 
 
@@ -20,6 +21,7 @@ const initApp = (app,express) => {
     app.use(express.json());
     app.use(cors())
     connectDB()
+
     app.use('/client',clientRouter)
     app.use('/customer', customerRouter)
     app.use('/service', serviceRouter)

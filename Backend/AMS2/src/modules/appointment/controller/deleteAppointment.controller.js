@@ -2,11 +2,8 @@ import { AppError } from "../../../utils/AppError.js";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import mongoose from "mongoose";
-import createEvent from "../../../utils/Google/events/createEvent.js";
 import {eventDeleteRollback} from "./helpers.js";
-//TODO delete the reminder
 
-//TODO send email to the customer and staff when an appointment is deleted
 export const deleteAppointment = async (req, res, next) => {
     const { appointmentId } = req.body;
     const { clientId } = req.params;

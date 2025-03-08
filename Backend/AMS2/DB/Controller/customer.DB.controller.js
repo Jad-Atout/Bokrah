@@ -4,7 +4,6 @@ import roleModel from "../models/role.js";
 import customerModel from "../models/customer.js";
 
 import {AppError} from "../../src/utils/AppError.js";
-//TODO verify the session
 
 
 
@@ -21,7 +20,7 @@ export const transCreateCustomer = async (customerData) => {
 
         }else {
             user =  await userModel.findById(customerData.userId)
-            await roleModel.findByIdAndUpdate(user.roleId,{customer: true})
+            await roleModel.findByIdAndUpdate(user.roleId,{customer: true},{session})
         }
         const customer = new customerModel({userId: user._id})
         await customer.save({session})
