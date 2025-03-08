@@ -8,7 +8,7 @@ const app = express();
 initApp(app,express)
 
 
-app.listen( () => {
+app.listen( parseInt(process.env.PORT),() => {
     console.log(`🚀 Server running on port ${parseInt(process.env.PORT)}`);
 })
 export { app }

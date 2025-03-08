@@ -160,7 +160,6 @@ export const createAppointment = async (req, res, next) => {
             appointments: createdAppointments,
         });
     } catch (error) {
-        console.log(error)
         await session.abortTransaction();
         session.endSession();
 
