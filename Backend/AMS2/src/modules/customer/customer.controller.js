@@ -65,17 +65,33 @@ export const customerRegister = async (req, res, next) => {
 };
 
 export const getClientCustomers = async (req, res, next) => {
-        const {clientId} = req.params
-        const userClients = await UserClient.find({ clientId: clientId });
-        if (!userClients || userClients.length === 0) {
+    try {
+        const { clientId } = req.params;
 
-            return res.status(404).json({ message: "No customers found for this client" });
-
+        const userClient = await UserClient.find({ clientId });
+        if (!userClient || userClient.length === 0) {
+            return res.status(404).json({
+                message: "No customers found for this client",
+                customers: [],
+            });
         }
-        const userIds = userClients.map(userClient => userClient.userId);
-        const customers = await userModel.find({ _id: { $in: userIds } }).populate("roleId");
-        return res.status(200).json({ message: "success", customers });
 
+        const customerIds = userClient.map((uc) => uc.customerId);
+
+        const customers = await customerModel.find({ _id: { $in: customerIds } })
+            .populate({
+                path: "userId",
+                select: "userName email phoneNumber",
+            });
+
+        return res.status(200).json({
+            message: "success",
+            customers,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
 };
 
 export const updateCustomer = async (req, res, next) => {

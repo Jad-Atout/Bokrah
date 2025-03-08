@@ -253,6 +253,7 @@ export async function appointmentDeletedEmail(
         minute: "2-digit",
     };
 
+
     // If you want to show which sub-appointments were canceled, you can build an HTML list:
     const subAppointmentsHTML = subAppointments.map((sub, i) => {
         const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
@@ -306,4 +307,45 @@ export async function appointmentDeletedEmail(
       </footer>
     </div>
   `;
+}
+
+
+export async function staffCancellationEmail(customerName, staffName, subAppointments) {
+    // Generate sub-appointment details
+    const subHTML = subAppointments.map((sub, i) => {
+        const start = new Date(sub.startTime).toLocaleString();
+        const end   = new Date(sub.endTime).toLocaleString();
+        const serviceNames = (sub.services || []).map(s => s.serviceName).join(", ");
+
+        return `
+            <div style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
+                <strong style="color: rgb(37, 99, 235);">Sub-Appointment #${i + 1}</strong><br>
+                <strong>Services:</strong> ${serviceNames}<br>
+                <strong>Start:</strong> ${start}<br>
+                <strong>End:</strong> ${end}
+            </div>
+        `;
+    }).join("");
+
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="color: rgb(37, 99, 235);">Appointment Canceled</h2>
+            <p>Hello <strong>${staffName}</strong>,</p>
+            <p>The appointment with <strong>${customerName}</strong> has been canceled.</p>
+
+            <h3 style="color: rgb(37, 99, 235);">Canceled Sub-Appointments:</h3>
+            ${subHTML}
+
+            <p>Please update your records accordingly.</p>
+            <br>
+
+            <p>Best Regards,<br><strong>Bokrah Team</strong></p>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+
+            <footer style="text-align: center; font-size: 12px; color: #888;">
+                © ${new Date().getFullYear()} Bokrah. All Rights Reserved.
+            </footer>
+        </div>
+    `;
 }
