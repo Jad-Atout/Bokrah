@@ -2,7 +2,7 @@ import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
 import UserClient from "../../../DB/models/ClientCustomer.js";
-import customerModel from "../../../DB/models/Customer.js";
+import customerModel from "../../../DB/models/customer.js";
 import dotenv from "dotenv";
 import {
     transCreateCustomer,
