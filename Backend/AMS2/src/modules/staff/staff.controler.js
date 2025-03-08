@@ -8,6 +8,7 @@ import {
 import jwt from "jsonwebtoken";
 import {sendEmail} from "../../utils/email.js";
 import {setPasswordEmailTemplate} from "../../utils/emailTemplete.js"
+import {pagination} from "../../utils/pagination.js";
 //TODO get staff bu service and git service by staff
 
 export const createStaff = async (req, res, next) => {
@@ -63,7 +64,9 @@ function filterStaffData(data) {
 
 export const getClientStaff = async (req, res) => {
     const { clientId } = req.params
-    const staffs = await staffModel.find({clientId: clientId}).populate(populateStaff)
+    const {skip, limit} = pagination(req.query.page,req.query.limit);
+    const staffs = await staffModel.find({clientId: clientId}).populate(populateStaff).skip(skip)
+        .limit(limit);
     return res.json({message:"success",staffs:filterStaffData(staffs)},200)
 }
 
