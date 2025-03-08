@@ -1,5 +1,5 @@
 import express from "express";
-import {customerRegister, deleteCustomer, getClientCustomers, updateCustomer,createCustomer} from "./customer.controller.js";
+import { deleteCustomer, getClientCustomers, updateCustomer,createCustomer} from "./customer.controller.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createLocalCustomerSchema,createCustomerSchema} from "./customer.validation.js";
