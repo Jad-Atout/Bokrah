@@ -3,7 +3,7 @@ import {AppError} from "../../src/utils/AppError.js";
 import roleModel from '../../DB/models/role.js';
 import clientModel from "../models/client.js"
 import googleModel from "../models/GoogleCalendar.js"
-import serviceModel from "../models/Service.js"
+import serviceModel from "../models/service.js"
 import mongoose from "mongoose";
 import staffModel from "../models/staff.js";
 import appointmentModel from "../models/appointment.js";
