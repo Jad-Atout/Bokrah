@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const scheduledReminderSchema = new mongoose.Schema({
+const appointmentReminderSchema = new mongoose.Schema({
     appointmentId: { type: String, required: true, index: true },
     reminderTime: { type: Date, required: true },
     method: { type: String, enum: ["email"], required: true },
@@ -12,4 +12,4 @@ const scheduledReminderSchema = new mongoose.Schema({
     isExecuted: { type: Boolean, default: false },
 });
 
-export default mongoose.model("ScheduledReminder", scheduledReminderSchema);
+export default mongoose.model("AppointmentReminderJob", appointmentReminderSchema);

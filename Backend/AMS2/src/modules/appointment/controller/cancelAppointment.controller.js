@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import { AppError } from "../../../utils/AppError.js";
-import { cancelScheduledReminders } from "../../../utils/scheduler.js";
 import { eventDeleteRollback } from "./helpers.js";
 import { sendEmail } from "../../../utils/email.js";
 import {
     appointmentDeletedEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
+import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const cancelAppointment = async (req, res, next) => {
     const { appointmentId, clientId } = req.params;
@@ -73,7 +73,7 @@ export const cancelAppointment = async (req, res, next) => {
         appointment.status = "Cancelled";
         await appointment.save({ session });
 
-        cancelScheduledReminders(appointmentId);
+        cancelReminders(appointmentId);
 
         await session.commitTransaction();
         session.endSession();

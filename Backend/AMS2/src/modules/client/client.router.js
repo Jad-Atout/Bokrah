@@ -22,7 +22,7 @@ router.patch('/',
 )
 
 
-router.delete('/clientId',
+router.delete('/',
     auth(roles.Client),
     asyncHandler(deleteClient)
 )

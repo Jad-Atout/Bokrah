@@ -14,8 +14,8 @@ import {
 } from "./helpers.js";
 
 import reminderModel from "../../../../DB/models/reminder.js";
-import { scheduleReminders } from "../../../utils/scheduler.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
+import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 
 
@@ -83,12 +83,12 @@ export const createAppointment = async (req, res, next) => {
                         const endTimeCalculated = calculateEndTime(startTime, services);
                         if (endTime !== endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
 
-                        // const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
-                        // if (!isInternalAvailable) {
-                        //     throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
-                        // }
+                        const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
+                        if (!isInternalAvailable) {
+                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
+                        }
 
-                        // Check external (Google Calendar) availability
+                       // Check external (Google Calendar) availability
                         const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
                         if (!isAvailable) {
                             throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
@@ -136,19 +136,18 @@ export const createAppointment = async (req, res, next) => {
             await assign.save({ session });
         }
 
-        const staffNames = SS.map(staffServices => staffServices.staff.userId.userName).join(", ");
-        const allServices = SS.flatMap(staffServices => staffServices.services.map(service => service.serviceName));
-
         // Schedule reminders
-        await scheduleReminders(authClient,
-            customer.userId.userName,
+        await scheduleReminders(
             createdAppointment,
-            customer.userId.email,
-            defaultReminders,
-            staffNames,
-            allServices,
-            clientId
+            authClient,
+            defaultReminders.map((reminder) => ({
+                minutes: reminder.minutes,
+                email: customer.userId.email,
+                userName: customer.userId.userName,
+                clientId,
+            }))
         );
+
 
         await session.commitTransaction();
         session.endSession();
@@ -158,10 +157,10 @@ export const createAppointment = async (req, res, next) => {
             appointments: createdAppointment,
         });
     } catch (error) {
+        console.log(error)
         await session.abortTransaction();
         session.endSession();
 
-        // Rollback created events in case of error
         await eventCreateRollback(createdEvents, authClient);
 
         return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
