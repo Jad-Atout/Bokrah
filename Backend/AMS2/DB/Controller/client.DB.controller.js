@@ -47,13 +47,14 @@ export const transCreateClient = async (clientData,userData,googleData) => {
 
             await session.commitTransaction();
             session.endSession();
-            return {role, user, client, google,staff}
+
+            return {role, user, client, google,staff,newClient:true}
         }else{
             const role = await  roleModel.findById(user.roleId)
             const client = await  clientModel.findOne({userId:user._id})
             const staff = await staffModel.findOne({clientId: client._id})
             await googleModel.findOneAndUpdate({ clientId: client._id },googleData)
-            return {role, user, client,staff}
+            return {role, user, client,staff,newClient:false}
         }
 
     } catch (error) {

@@ -8,6 +8,7 @@ import {transCreateClient, transDeleteClient, transUpdateClient} from "../../../
 export const googleAuthCallback = async (req, res, next) => {
     const authService = new GoogleAuthService();
     const { code } = req.query;
+    const redirectAction = req.query.action;
 
     if (!code) {
         return next(new AppError("Authorization code is missing from the callback.", 400));
@@ -26,7 +27,7 @@ export const googleAuthCallback = async (req, res, next) => {
     }
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
     //TODO if client already exists handel the existance don't end it to update 
-    const{client,role,user} = await transCreateClient(clientData,userData,googleData)
+    const{client,role,user,newClient} = await transCreateClient(clientData,userData,googleData)
 
     const token = jwt.sign(
         {
@@ -40,8 +41,15 @@ export const googleAuthCallback = async (req, res, next) => {
         },
         process.env.JWT_SECRET,
     );
+    if (redirectAction === "signup" && newClient || redirectAction==="login" && newClient) {
+        return res.status(201).json({message: "success",token})
 
-    return res.redirect(`http://localhost:5174/register?token=${token}`);
+    }else if(redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
+        return res.status(200).json({message: "success",token})
+    }
+
+
+
 
 
 
@@ -50,7 +58,9 @@ export const googleAuthCallback = async (req, res, next) => {
 export const gClientLogin = async (req, res) => {
     const authService = new GoogleAuthService();
     const authUrl = authService.generateAuthUrl();
-    return res.redirect(authUrl);
+    const action = req.query.action || 'login';
+    const redirectUrl = `${authUrl}&action=${action}`;
+    return res.redirect(redirectUrl);
 };
 
 export const updateClient = async (req, res, next) => {
