@@ -73,7 +73,7 @@ export const cancelAppointment = async (req, res, next) => {
         appointment.status = "Cancelled";
         await appointment.save({ session });
 
-        cancelReminders(appointmentId);
+        await cancelReminders(appointmentId);
 
         await session.commitTransaction();
         session.endSession();

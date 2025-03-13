@@ -25,7 +25,7 @@ export const googleAuthCallback = async (req, res, next) => {
         industry:null,
     }
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
-
+    //TODO if client already exists handel the existance don't end it to update 
     const{client,role,user} = await transCreateClient(clientData,userData,googleData)
 
     const token = jwt.sign(

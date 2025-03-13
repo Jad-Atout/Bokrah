@@ -18,13 +18,21 @@ import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.control
 import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 
+/*
+Token expiry updated and saved.
+AppError: Failed to create newCustomer
+    at createAppointment (file:///C:/Users/HP/Bokrah/Backend
+ess/task_queues:95:5)
+    at async file:///C:/Users/HP/Bokrah/Backend/AMS2/src/utils/catchError.js:4:20 {
+  statusCode: 500
+}
 
+ */
 
 export const createAppointment = async (req, res, next) => {
     let { customerId, recurrence, slot, userId } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
-    const SS = req.staffsServices;
     const APPOINTMENT_STATUS = "Booked";
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -83,10 +91,10 @@ export const createAppointment = async (req, res, next) => {
                         const endTimeCalculated = calculateEndTime(startTime, services);
                         if (endTime !== endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
 
-                        const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
-                        if (!isInternalAvailable) {
-                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
-                        }
+                        // const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
+                        // if (!isInternalAvailable) {
+                        //     throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
+                        // }
 
                        // Check external (Google Calendar) availability
                         const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
@@ -135,7 +143,7 @@ export const createAppointment = async (req, res, next) => {
             const assign = new customerClientModel({ customerId, clientId });
             await assign.save({ session });
         }
-
+        console.log(createdAppointment)
         // Schedule reminders
         await scheduleReminders(
             createdAppointment,

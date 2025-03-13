@@ -32,6 +32,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
                 await role.save({session})
 
             }
+            clientData.userId = user._id
             const client = new clientModel(clientData)
             await client.save({session})
             googleData.clientId = client._id
@@ -86,6 +87,7 @@ export const transUpdateClient = async (clientId, userData, clientData,staffData
 
 
 export const transDeleteClient = async (clientId) => {
+    //TODO delete the instance of client not the appointment and the user instance
     const session = await mongoose.startSession();
     session.startTransaction();
     try {

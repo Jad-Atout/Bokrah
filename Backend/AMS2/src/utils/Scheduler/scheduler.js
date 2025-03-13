@@ -1,7 +1,6 @@
 import schedule from "node-schedule";
 import scheduledJob from "../../../DB/models/scheduledJob.js";
 import jobHandlers from "./jobHandler.js";
-import {connectDB} from "../../../DB/connection.js";
 
 export const jobs = {};
 

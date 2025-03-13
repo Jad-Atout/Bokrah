@@ -4,30 +4,50 @@ import {sendEmail} from "../email.js";
 import {appointmentFullDetailsEmail} from "../emailTemplete.js";
 import scheduledJob from "../../../DB/models/scheduledJob.js";
 import {cancelScheduledSubAppointments, scheduleSubAppointments} from "./appointmentSchedules.js"; // Import scheduler functions
-// the reminder is not created only the sub appointment
-export async function scheduleReminders(appointment,auth, reminderData) {
+// the reminder is not deleted at when it is sent
+export async function scheduleReminders(appointment, auth, reminderData) {
     for (const subAppointment of appointment.subAppointments) {
         const { _id: subAppointmentId, staffId, services } = subAppointment;
 
         for (const reminder of reminderData) {
             const { minutes, email, userName, clientId } = reminder;
-            const reminderTime = new Date(appointment.startTime);
+
+            const reminderTime = new Date(subAppointment.startTime);
             reminderTime.setMinutes(reminderTime.getMinutes() - minutes);
 
-            if (reminderTime > new Date()) {
-                await scheduleJob("appointmentReminder", subAppointmentId, reminderTime, async () => {
+            const reminderJob = new AppointmentReminderJob({
+                appointmentId: appointment._id,
+                subAppointmentId,
+                staffId,
+                email,
+                userName,
+                clientId,
+                minutes,
+                reminderTime,
+                method: "email",
+            });
+
+            await reminderJob.save();
+
+            // Ensure we use a separate variable for scheduling
+            const jobTime = new Date(reminderTime); // Clone to avoid mutation
+
+            if (jobTime > new Date()) {
+                await scheduleJob("appointmentReminder", subAppointmentId, jobTime, async () => {
                     await sendEmail(
                         email,
                         "Appointment Reminder",
-                        //TODO you cn send also an email fo the staff from here
+                        // TODO: You can also send an email to the staff from here
                         await appointmentFullDetailsEmail(userName, [staffId], services, [], appointment._id, clientId)
                     );
+                    await AppointmentReminderJob.findByIdAndDelete(reminderJob._id)
                 });
             }
         }
     }
-    await scheduleSubAppointments(appointment,auth)
+    await scheduleSubAppointments(appointment, auth);
 }
+
 
 
 export async function handleAppointmentReminder(job) {
@@ -57,6 +77,7 @@ export async function cancelReminders(appointmentId) {
         delete jobs[(await job)._id];
         await deleteJob(job._id);
     }
+    await AppointmentReminderJob.deleteMany({ appointmentId });
 
     console.log(`🛑 Canceled all reminders for appointment: ${appointmentId}`);
 }

@@ -31,11 +31,10 @@ const initApp = (app,express) => {
     app.use('/availability',availabilityRouter )
     app.use('/appointment',appointmentRouter )
     app.use("/reminder", reminderRouter);
-    app.use((req, res, next) => {
-        res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+    const cors = require("cors");
+    app.use(cors({ origin: process.env.BASE_URL, credentials: true }));
 
-        next();
-    });
+
 
     app.use('*',(req,res)=>{
         res.status(404).send('Page Not Found');
