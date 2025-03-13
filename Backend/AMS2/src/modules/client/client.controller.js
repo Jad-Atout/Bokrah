@@ -41,7 +41,7 @@ export const googleAuthCallback = async (req, res, next) => {
         process.env.JWT_SECRET,
     );
 
-    return res.redirect(`http://localhost:5174/auth-success?token=${token}`);
+    return res.redirect(`http://localhost:5174/register?token=${token}`);
 
 
 
