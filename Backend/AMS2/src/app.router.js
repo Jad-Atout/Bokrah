@@ -31,7 +31,7 @@ const initApp = (app,express) => {
     app.use('/availability',availabilityRouter )
     app.use('/appointment',appointmentRouter )
     app.use("/reminder", reminderRouter);
-    app.use(cors({ origin: process.env.BASE_URL, credentials: true }));
+    app.use(cors({ origin: "http://localhost:5174", credentials: true }));
 
 
 
