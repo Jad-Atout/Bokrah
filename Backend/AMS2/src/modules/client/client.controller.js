@@ -41,10 +41,8 @@ export const googleAuthCallback = async (req, res, next) => {
         process.env.JWT_SECRET,
     );
 
-    return res.status(200).json({
-        message: "Google authentication successful.",
-        token,
-    });
+    return res.redirect(`http://localhost:5174/auth-success?token=${token}`);
+
 
 
 };
