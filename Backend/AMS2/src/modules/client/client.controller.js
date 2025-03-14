@@ -43,21 +43,11 @@ export const googleAuthCallback = async (req, res, next) => {
         },
         process.env.JWT_SECRET,
     );
-    // if (redirectAction === "signup" && newClient || redirectAction === "login" && newClient) {
-    //     //Move to register
-    //     return res.redirect(`http://localhost:5173/register?token=${token}`);
-    // } else if (redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
-    //     //Move get the token and login
-    //     return res.redirect(`http://localhost:5173/?token=${token}`);
-    // }
-        return res.redirect(`http://localhost:5173/register?token=${token}`);
-
-
-
-
-
-
-
+    if (redirectAction === "signup" && newClient || redirectAction === "login" && newClient) {
+        return res.redirect(`${process.env.REDIRECT_REGISTER_BASE_URL}${token}`);
+    } else if (redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
+        return res.redirect(`${process.env.REDIRECT_DASHBORD_URL}${token}`);
+    }
 };
 export const gClientLogin = async (req, res) => {
     const authService = new GoogleAuthService();
