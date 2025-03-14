@@ -17,14 +17,16 @@ export default class GoogleAuthService{
             GoogleAuthService.#CLIENT_URI
         )
     }
-    generateAuthUrl(){
+    generateAuthUrl(action) {
         return this.#oauthClient.generateAuthUrl({
             access_type: 'offline',
-            scope:GoogleAuthService.#SCOPES,
-            include_granted_scopes:true,
-            prompt:'consent'
-        })
+            scope: GoogleAuthService.#SCOPES,
+            include_granted_scopes: true,
+            prompt: 'consent',
+            state: action // Send the action in the state parameter
+        });
     }
+
     async handleOAuthRedirect(authCode){
         const {tokens} = await this.#oauthClient.getToken(authCode);
         this.#oauthClient.setCredentials(tokens);

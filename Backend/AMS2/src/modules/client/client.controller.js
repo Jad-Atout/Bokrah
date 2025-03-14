@@ -7,12 +7,14 @@ import {transCreateClient, transDeleteClient, transUpdateClient} from "../../../
 
 export const googleAuthCallback = async (req, res, next) => {
     const authService = new GoogleAuthService();
-    const { code } = req.query;
-    const redirectAction = req.query.action;
+    const { code, state } = req.query;
 
     if (!code) {
         return next(new AppError("Authorization code is missing from the callback.", 400));
     }
+
+    let redirectAction = state;
+
     const { idToken, access_token, refresh_token } = await authService.handleOAuthRedirect(code);
     const decodedIdToken = jwt.decode(idToken);
     const userData  = {
@@ -41,12 +43,15 @@ export const googleAuthCallback = async (req, res, next) => {
         },
         process.env.JWT_SECRET,
     );
-    if (redirectAction === "signup" && newClient || redirectAction==="login" && newClient) {
-        return res.status(201).json({message: "success",token})
+    // if (redirectAction === "signup" && newClient || redirectAction === "login" && newClient) {
+    //     //Move to register
+    //     return res.redirect(`http://localhost:5173/register?token=${token}`);
+    // } else if (redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
+    //     //Move get the token and login
+    //     return res.redirect(`http://localhost:5173/?token=${token}`);
+    // }
+        return res.redirect(`http://localhost:5173/register?token=${token}`);
 
-    }else if(redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
-        return res.status(200).json({message: "success",token})
-    }
 
 
 
@@ -54,14 +59,14 @@ export const googleAuthCallback = async (req, res, next) => {
 
 
 };
-
 export const gClientLogin = async (req, res) => {
     const authService = new GoogleAuthService();
-    const authUrl = authService.generateAuthUrl();
-    const action = req.query.action || 'login';
-    const redirectUrl = `${authUrl}&action=${action}`;
-    return res.redirect(redirectUrl);
+    const action = req.query.action || 'login';  // Get the action (default to login)
+    const authUrl = authService.generateAuthUrl(action); // Pass the action
+
+    return res.redirect(authUrl);
 };
+
 
 export const updateClient = async (req, res, next) => {
     const {clientId} = req.authUser

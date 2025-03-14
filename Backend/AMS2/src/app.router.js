@@ -21,13 +21,6 @@ const initApp = (app,express) => {
     app.use(cors())
     connectDB()
 
-    const corsOptions = {
-        origin: 'http://localhost:5174',
-        methods: 'GET,POST,PUT,DELETE',
-        allowedHeaders: 'Content-Type, Authorization',
-    };
-    app.use(cors(corsOptions));  // Apply CORS middleware
-
     app.use('/client',clientRouter)
     app.use('/customer', customerRouter)
     app.use('/service', serviceRouter)
