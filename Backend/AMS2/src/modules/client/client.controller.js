@@ -43,10 +43,14 @@ export const googleAuthCallback = async (req, res, next) => {
         },
         process.env.JWT_SECRET,
     );
+
+    const registerUrl = `${process.env.REDIRECT_REGISTER_BASE_URL}?token=${token}`;
+    const dashboardUrl = `${process.env.REDIRECT_DASHBORD_URL}?token=${token}`;
+
     if (redirectAction === "signup" && newClient || redirectAction === "login" && newClient) {
-        return res.redirect(`${process.env.REDIRECT_REGISTER_BASE_URL}${token}`);
+        return res.redirect(registerUrl);
     } else if (redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
-        return res.redirect(`${process.env.REDIRECT_DASHBORD_URL}${token}`);
+        return res.redirect(dashboardUrl);
     }
 };
 export const gClientLogin = async (req, res) => {
