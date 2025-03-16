@@ -1,7 +1,12 @@
 import GoogleAuthService from "../../utils/Google/googleAuth.js";
 import jwt from "jsonwebtoken";
 import {AppError} from "../../utils/AppError.js";
-import {transCreateClient, transDeleteClient, transUpdateClient} from "../../../DB/Controller/client.DB.controller.js";
+import {
+    getAllClients,
+    transCreateClient,
+    transDeleteClient,
+    transUpdateClient
+} from "../../../DB/Controller/client.DB.controller.js";
 
 //TODO send set password email send welcome email
 
@@ -28,7 +33,7 @@ export const googleAuthCallback = async (req, res, next) => {
         industry:null,
     }
     const googleData = {accessToken:access_token, refreshToken:refresh_token}
-    //TODO if client already exists handel the existance don't end it to update 
+    //TODO if client already exists handel the existance don't end it to update
     const{client,role,user,newClient} = await transCreateClient(clientData,userData,googleData)
 
     const token = jwt.sign(
@@ -44,11 +49,16 @@ export const googleAuthCallback = async (req, res, next) => {
         process.env.JWT_SECRET,
     );
     if (redirectAction === "signup" && newClient || redirectAction === "login" && newClient) {
+        console.log(`${process.env.REDIRECT_REGISTER_BASE_URL}${token}`)
         return res.redirect(`${process.env.REDIRECT_REGISTER_BASE_URL}${token}`);
     } else if (redirectAction === "login" && !newClient || redirectAction === "signup" && !newClient) {
-        return res.redirect(`${process.env.REDIRECT_DASHBORD_URL}${token}`);
+        console.log(`${process.env.REDIRECT_DASHBORD_URL}${token}`)
+        return res.redirect(`${process.env.REDIRECT_DASHBOaRD_URL}${token}`);
     }
 };
+
+
+
 export const gClientLogin = async (req, res) => {
     const authService = new GoogleAuthService();
     const action = req.query.action || 'login';  // Get the action (default to login)
@@ -56,6 +66,13 @@ export const gClientLogin = async (req, res) => {
 
     return res.redirect(authUrl);
 };
+
+
+export const getClients = async (req, res) => {
+    const {totalClients,clients} = await getAllClients()
+    return res.status(200).json({message:"success",totalClients,clients})
+}
+
 
 
 export const updateClient = async (req, res, next) => {

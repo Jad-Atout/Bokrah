@@ -15,7 +15,7 @@ import {
 
 import reminderModel from "../../../../DB/models/reminder.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
-import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+//import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 
 /*
@@ -172,5 +172,15 @@ export const createAppointment = async (req, res, next) => {
         await eventCreateRollback(createdEvents, authClient);
 
         return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
+    }
+};
+
+export const getAppointmentsCount = async (req, res, next) => {
+    try {
+        const appointmentCount = await appointmentModel.countDocuments();
+        return res.status(200).json({ message: "Success", count: appointmentCount });
+    } catch (error) {
+        console.error("Error fetching appointment count:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
     }
 };

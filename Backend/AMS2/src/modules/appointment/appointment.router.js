@@ -1,4 +1,4 @@
-import {createAppointment} from "./controller/createAppointment.controller.js";
+import {createAppointment, getAppointmentsCount} from "./controller/createAppointment.controller.js";
 import { Router } from 'express';
 import {authServices, authSlots, verifyAppointmentOwnership} from "./appointment.auth.js";
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
@@ -52,5 +52,8 @@ router.delete('/:clientId/:appointmentId/:subAppointmentId',
     auth(role),
     asyncHandler(prepareToken()),
     asyncHandler(cancelSubAppointment))
+
+router.get('/count', auth([roles.Admin]),
+    asyncHandler(getAppointmentsCount));
 
 export default router;

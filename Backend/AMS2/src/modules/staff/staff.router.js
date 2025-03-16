@@ -2,13 +2,15 @@ import {Router} from "express";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createStaffValidationSchema} from "./staff.validation.js";
-import {createStaff, getClientStaff,updateStaff,deleteStaff} from "./staff.controler.js";
+import {createStaff, getClientStaff, updateStaff, deleteStaff, getStaffCount} from "./staff.controller.js";
 import {auth,roles} from "../../middleware/auth.js"
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
 import {verifyOwnership} from "./staff.auth.js";
 
 
 const router = Router();
+
+router.get('/count',auth([roles.Admin]), getStaffCount);
 
 router.get('/:clientId',
     asyncHandler(getClientStaff))
@@ -32,7 +34,6 @@ router.delete('/:staffId',
     asyncHandler(prepareToken()),
     asyncHandler(deleteStaff),
 )
-
 
 
 export default router;

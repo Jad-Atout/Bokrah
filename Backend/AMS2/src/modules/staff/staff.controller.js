@@ -33,7 +33,6 @@ export const createStaff = async (req, res, next) => {
 
 
 function filterStaffData(data) {
-    console.log(data)
     return data.map(staff => ({
             staff: {
                 userName: staff.userId.userName,
@@ -67,7 +66,7 @@ export const getClientStaff = async (req, res) => {
     const {skip, limit} = pagination(req.query.page,req.query.limit);
     const staffs = await staffModel.find({clientId: clientId}).populate(populateStaff).skip(skip)
         .limit(limit);
-    return res.json({message:"success",staffs:filterStaffData(staffs)},200)
+    return res.status(200).json({message:"success",staffs:filterStaffData(staffs)})
 }
 
 export const deleteStaff = async (req, res, next) => {
@@ -94,5 +93,12 @@ export const updateStaff = async (req, res, next) => {
         }
         let data = [staff]
         return res.json({message:"Successfully updated", staffs:filterStaffData(data)});
+
+};
+
+
+export const getStaffCount = async (req, res, next) => {
+        const staffCount = await staffModel.countDocuments();
+        return res.status(200).json({ message: "Success", count: staffCount });
 
 };

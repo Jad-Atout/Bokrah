@@ -16,12 +16,14 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bullmq": "^5.43.1",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "google-auth-library": "^9.15.1",
     "googleapis": "^144.0.0",
+    "ioredis": "^5.6.0",
     "jest-config": "^29.7.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
@@ -36,6 +38,7 @@
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
+    "redis": "^4.7.0",
     "sequelize": "^6.37.5"
   },
   "devDependencies": {
