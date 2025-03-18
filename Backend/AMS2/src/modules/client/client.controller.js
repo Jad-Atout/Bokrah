@@ -8,6 +8,7 @@ import {
 
 } from "../../../DB/Controller/client.DB.controller.js";
 
+//TODO Client Validation
 
 export const googleAuthCallback = async (req, res, next) => {
     try {
@@ -53,7 +54,7 @@ export const googleAuthCallback = async (req, res, next) => {
                 clientId: client._id,
             },
             process.env.JWT_SECRET
-        );
+        );console.log(token)
 
 
         const redirectAction = state; // "signup" or "login"

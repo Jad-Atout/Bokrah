@@ -15,7 +15,7 @@ import {
 
 import reminderModel from "../../../../DB/models/reminder.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
-//import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 
 /*
@@ -37,8 +37,8 @@ export const createAppointment = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     let createdEvents = [];
-    let createdAppointment;
-    let appointmentId;
+    let createdAppointment = []
+
 
     if (!customerId && userId) {
         let foundCustomer = await customerModel.findOne({ userId });
@@ -60,13 +60,6 @@ export const createAppointment = async (req, res, next) => {
     if(customer.userId.authProvider ==="local" && !customer.userId.confirmed) return next(new AppError("Customer must be confirmed", 401));
 
     try {
-        const reminderSettings = await reminderModel.findOne({ clientId });
-        const defaultReminders =
-            reminderSettings?.reminderTimes?.map((time, index) => ({
-                method:
-                    reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
-                minutes: Number.isFinite(time) ? time : 60,
-            })) || [{ method: "email", minutes: 60 }];
 
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
         for (const appointmentStart of appointmentDates) {
@@ -97,10 +90,13 @@ export const createAppointment = async (req, res, next) => {
                         // }
 
                        // Check external (Google Calendar) availability
+
                         const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
                         if (!isAvailable) {
                             throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
                         }
+                        console.log("Check external (Google Calendar) availability")
+
 
                         // Create Google Calendar event for sub-slot
                         const event = await createEvent(req, authClient, {
@@ -114,7 +110,6 @@ export const createAppointment = async (req, res, next) => {
                             calendarId: staffData.calendarId,
                             attendees: [{ email: customer.userId.email }],
                             sendUpdates: "all",
-                            reminders: { useDefault: false, overrides: defaultReminders },
                         });
                         createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
 
@@ -132,10 +127,11 @@ export const createAppointment = async (req, res, next) => {
                 subAppointments,
                 recurrence,
             });
-
             await appointment.save({ session });
-            createdAppointment=appointment;
-            appointmentId = appointment._id.toString();
+            createdAppointment.push(appointment)
+
+
+
         }
 
         const existingAssignment = await customerClientModel.findOne({ customerId, clientId });
@@ -143,22 +139,16 @@ export const createAppointment = async (req, res, next) => {
             const assign = new customerClientModel({ customerId, clientId });
             await assign.save({ session });
         }
-        console.log(createdAppointment)
-        // Schedule reminders
-        await scheduleReminders(
-            createdAppointment,
-            authClient,
-            defaultReminders.map((reminder) => ({
-                minutes: reminder.minutes,
-                email: customer.userId.email,
-                userName: customer.userId.userName,
-                clientId,
-            }))
-        );
+
 
 
         await session.commitTransaction();
         session.endSession();
+        console.log(createdAppointment);
+
+        for (const appointment of createdAppointment) {
+            await scheduleReminders(appointment._id,);
+        }
 
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",

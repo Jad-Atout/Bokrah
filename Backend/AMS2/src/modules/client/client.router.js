@@ -9,9 +9,10 @@ import {
 } from "./client.controller.js";
 import { asyncHandler } from "../../utils/catchError.js";
 import { auth, roles } from "../../middleware/auth.js";
+import prepareToken from "../../utils/Google/Services/refreshToken.js";
 
 const router = express.Router();
-
+router.post("/check/:clientId",asyncHandler(prepareToken()))
 router.use("/:clientId/newCustomer", customerRouter);
 
 router.get("/oauth2callback", asyncHandler(googleAuthCallback));
