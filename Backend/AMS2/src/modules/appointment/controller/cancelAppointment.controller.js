@@ -8,7 +8,6 @@ import {
     appointmentDeletedEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
-import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const cancelAppointment = async (req, res, next) => {
     const { appointmentId, clientId } = req.params;

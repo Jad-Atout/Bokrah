@@ -10,6 +10,7 @@ import appointmentModel from "../models/appointment.js";
 import clientCustomer from "../models/ClientCustomer.js";
 import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 import {initializeOAuthClient} from "../../src/utils/Google/Services/refreshToken.js";
+import UserClient from "../models/ClientCustomer.js";
 
 export const transCreateClient = async (clientData,userData,googleData) => {
     const session = await mongoose.startSession();
@@ -85,6 +86,48 @@ export const transUpdateClient = async (clientId, userData, clientData,staffData
         return new AppError(err.message || 'Internal server error', 500);
     }
 };
+
+
+
+export async function getAllClients() {
+    try {
+        const clients = await clientModel.find()
+            .populate({
+                path: 'userId',
+            });
+
+        const clientData = await Promise.all(
+            clients
+                .filter(client => client.userId) // Filter out clients where userId is null
+                .map(async (client) => {
+                    const servicesCount = await serviceModel.countDocuments({ clients: client._id });
+                    const staffCount = await staffModel.countDocuments({ clients: client._id });
+                    const customerCount = await UserClient.countDocuments({ clientId: client._id });
+
+                    return {
+                        id: client._id,
+                        name: client.userId?.userName || '',
+                        email: client.userId?.email || '',
+                        phone: client.userId?.phoneNumber || '',
+                        services: servicesCount,
+                        staff: staffCount,
+                        customers: customerCount
+                    };
+                })
+        );
+
+        return {
+            totalClients: clientData.length,
+            clients: clientData
+        };
+    } catch (error) {
+        console.error('Error retrieving clients:', error);
+        throw new Error('Failed to fetch clients');
+    }
+}
+
+
+
 
 
 export const transDeleteClient = async (clientId) => {

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const reminderSchema = new mongoose.Schema({
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
-    reminderTimes: [{ type: Number, required: true }], // Minutes before appointment
+    reminderTimes: [{ type: Number, required: true }],
     reminderMethods: [{ type: String, enum: ["email", "SMS", "popup"], required: true }]
 });
 

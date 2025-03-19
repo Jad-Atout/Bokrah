@@ -8,6 +8,7 @@ import {
 
 } from "../../../DB/Controller/client.DB.controller.js";
 
+//TODO Client Validation
 
 export const googleAuthCallback = async (req, res, next) => {
     try {
@@ -53,17 +54,13 @@ export const googleAuthCallback = async (req, res, next) => {
                 clientId: client._id,
             },
             process.env.JWT_SECRET
-        );
+        );console.log(token)
 
-        // 5) Redirect user back to your frontend:
-        //    If newClient => we want them to fill brand details => redirect to register page
-        //    Otherwise => redirect to dashboard
+
         const redirectAction = state; // "signup" or "login"
         if ((redirectAction === "signup" && newClient) || (redirectAction === "login" && newClient)) {
-            // Brand-new user => ask them for brand info
             return res.redirect(`${process.env.REDIRECT_REGISTER_BASE_URL}?token=${token}&newClient=true`);
         } else {
-            // Existing user => go to service provider area
             return res.redirect(`${process.env.REDIRECT_DASHBORD_URL}?token=${token}&newClient=false`);
         }
     } catch (error) {

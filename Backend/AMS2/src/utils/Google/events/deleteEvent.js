@@ -9,7 +9,6 @@ const deleteEvent = async (auth, calendarId, eventId) => {
     if (!calendarId || !eventId) {
         return  new AppError("Both calendar ID and event ID are required to delete the event", 400);
     }
-
     try {
         const calendar = google.calendar({ version: "v3", auth });
 
@@ -38,6 +37,7 @@ const deleteEvent = async (auth, calendarId, eventId) => {
         return  eventData ;
 
     } catch (error) {
+        console.log(error);
         return new AppError(`Failed to delete event from calendar ${calendarId}: ${error.message}`, 500);
     }
 };

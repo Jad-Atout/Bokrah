@@ -1,13 +1,13 @@
 import googleModel from "../../../../DB/models/GoogleCalendar.js";
 import {AppError} from "../../AppError.js";
 import {google} from "googleapis";
-
+import { config } from "dotenv";
+config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const CALLBACK_URL = process.env.CALLBACK_URL;
 const REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // Refresh the token 10 minutes before it expires
-
 
 
 /**
@@ -112,7 +112,6 @@ const refreshAccessTokenIfNeeded = async (googleCalendar, oauthClient) => {
     }
 
     const refreshedCredentials = refreshedData.credentials;
-    console.log(refreshedCredentials)
     const { expiry_date, access_token,refresh_token  } = refreshedCredentials;
 
     if (!expiry_date || typeof expiry_date !== "number" || expiry_date <= 0) {

@@ -67,7 +67,7 @@ export const customerRegister = async (req, res, next) => {
 
 export const getClientCustomers = async (req, res, next) => {
     try {
-        const { clientId } = req.params;
+        const { clientId } = req.authUser;
 
         const userClient = await UserClient.find({ clientId });
         if (!userClient || userClient.length === 0) {
@@ -125,4 +125,12 @@ export const deleteCustomer = async (req, res, next) => {
 
 }
 
-
+export const getCustomersCount = async (req, res, next) => {
+    try {
+        const customerCount = await customerModel.countDocuments();
+        return res.status(200).json({ message: "Success", count: customerCount });
+    } catch (error) {
+        console.error("Error fetching customer count:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+};

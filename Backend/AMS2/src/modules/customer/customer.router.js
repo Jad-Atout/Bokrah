@@ -1,5 +1,11 @@
 import express from "express";
-import { deleteCustomer, getClientCustomers, updateCustomer,createCustomer} from "./customer.controller.js";
+import {
+    deleteCustomer,
+    getClientCustomers,
+    updateCustomer,
+    createCustomer,
+    getCustomersCount
+} from "./customer.controller.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createLocalCustomerSchema,createCustomerSchema} from "./customer.validation.js";
@@ -25,5 +31,7 @@ router.delete('/:customerID',
 )
 
 router.get('/',auth(roles.Client,roles.Staff),asyncHandler(getClientCustomers))
+
+router.get('/count',auth([roles.Admin]), getCustomersCount);
 
 export default router
