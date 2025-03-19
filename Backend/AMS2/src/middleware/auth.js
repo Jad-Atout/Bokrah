@@ -36,6 +36,7 @@ export const auth = (...requiredRole) => {
             }
             req.authUser = decoded;
             const userRoles =decoded.role
+
             const hasRole = requiredRole.some(role=>userRoles??[role]===true)
             if(!hasRole) return next(new AppError("User is not authorized", 401));
             next();

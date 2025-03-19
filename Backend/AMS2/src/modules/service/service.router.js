@@ -25,7 +25,7 @@ router.post('/',
     , asyncHandler(createService)
 );
 
-router.put('/:serviceId',
+router.patch('/:serviceId',
     auth(roles.Client),
     asyncHandler(verifyOwnership()),
     asyncHandler(updateService)

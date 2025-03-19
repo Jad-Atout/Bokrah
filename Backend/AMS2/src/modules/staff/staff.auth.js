@@ -9,7 +9,6 @@ export const verifyOwnership =  ()=>{
         if(!staff){
             return next(new AppError("Staff isn't found."))
         }
-
         if(staff.clientId?.toString() === clientId?.toString()){
             req.staff = staff
             return next()

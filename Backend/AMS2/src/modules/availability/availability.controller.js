@@ -1,5 +1,6 @@
 import availabilityModel from "../../../DB/models/availability.js"
 import staffModel from "../../../DB/models/staff.js"
+import {AppError} from "../../utils/AppError.js";
 export const setAvailability = async (req, res, next) => {
     const {staffId,timeZone,availability} = req.body
 
