@@ -8,7 +8,8 @@ import {
     updateStaff,
     deleteStaff,
     deleteAllAppointmentsForStaff
-} from "./staff.controler.js";
+} from "./staff.controller.js";
+
 import {auth,roles} from "../../middleware/auth.js"
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
 import {verifyOwnership} from "./staff.auth.js";

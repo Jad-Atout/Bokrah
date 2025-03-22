@@ -65,13 +65,17 @@ function filterStaffData(data) {
 }
 
 
-
-
-export const getClientStaff = async (req, res) => {
+/*export const getClientStaff = async (req, res) => {
     const { clientId } = req.params
     const {skip, limit} = pagination(req.query.page,req.query.limit);
     const staffs = await staffModel.find({clientId: clientId}).populate(populateStaff).skip(skip)
         .limit(limit);
+    return res.json({message:"success",staffs:filterStaffData(staffs)},200)
+}*/
+
+export const getClientStaff = async (req, res) => {
+    const { clientId } = req.params
+    const staffs = await staffModel.find({clientId: clientId}).populate(populateStaff);
     return res.json({message:"success",staffs:filterStaffData(staffs)},200)
 }
 
