@@ -30,6 +30,7 @@ const formatService = (data) => {
         serviceDescription: service.serviceDescription,
         price: service.price,
         duration: service.duration,
+        visible:service.visible,
         client: {
             userName: service.clientId.userId.userName,  // Extract userName
             businessName: service.clientId.businessName,
