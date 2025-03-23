@@ -131,7 +131,6 @@ export async function cancelScheduledSubAppointments(appointmentId) {
     for (const subAppointment of appointment.subAppointments) {
         const jobsToDelete = await scheduledJob.find({referenceId: subAppointment._id});
         for (const job of jobsToDelete) {
-            delete jobs[job._id];
             await deleteJob(job._id);
         }
 

@@ -13,7 +13,7 @@ import reminderModel from "../../../../DB/models/reminder.js"
 import staffModel from "../../../../DB/models/staff.js"
 import mongoose from "mongoose";
 import {checkAvailability} from "../../../utils/Google/Services/checkAvailability.js";
-
+//TODO edit the structure of this update
 export const updateAppointment = async (req, res, next) => {
     const { appointmentId, recurrence, slot } = req.body;
     const { clientId } = req.params;
@@ -39,12 +39,6 @@ export const updateAppointment = async (req, res, next) => {
             const eventData = await deleteEvent(authClient, subAppointment.staffId.calendarId, subAppointment.eventId);
             deletedEvents.push({ eventId: subAppointment.eventId, calendarId: subAppointment.staffId.calendarId, eventData });
         }
-
-        const reminderSettings = await reminderModel.findOne({ clientId });
-        const defaultReminders = reminderSettings?.reminderTimes?.map((time, index) => ({
-            method: reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
-            minutes: Number.isFinite(time) ? time : 60, // Default to 60 minutes if invalid
-        })) || [{ method: "email", minutes: 60 }];
 
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
 
@@ -131,19 +125,6 @@ export const updateAppointment = async (req, res, next) => {
         }
 
 
-
-        // const staffNames = updatedAppointments.flatMap(appointment => appointment.subAppointments.map(sub => sub.staffId.userId.userName)).join(", ");
-        // const allServices = updatedAppointments.flatMap(appointment => appointment.subAppointments.flatMap(sub => sub.services.map(service => service.serviceName)));
-
-        // Schedule reminders
-        // await scheduleReminders(
-        //     newCustomer.userId.userName,
-        //     updatedAppointments,
-        //     newCustomer.userId.email,
-        //     defaultReminders,
-        //     staffNames,
-        //     allServices
-        // );
 
         await session.commitTransaction();
         session.endSession();

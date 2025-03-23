@@ -1,6 +1,7 @@
 import serviceModel from '../../../DB/models/service.js';
 import {AppError} from '../../utils/AppError.js';
 import {transDeleteService, transUpdateService} from "../../../DB/Controller/service.DB.controller.js";
+//TODO add buffer time to the service
 export const createService = async (req, res, next) => {
         const user = req.authUser
         const { serviceName, serviceDescription, price, duration,} = req.body;
@@ -72,7 +73,14 @@ export const getClientServices = async (req, res) => {
     return res.json({message: "success", formattedServices});
 }
 
+export const setVisibility = async (req, res) => {
+       const service = req.service;
+       const {visible} = req.body;
+       service.visible = visible;
+       service.save()
+       return res.status(200).json({message: "Service visibility updated successfully", visible});
 
+}
 export const updateService = async (req, res,next) => {
         const service = req.service
         const {...serviceData } = req.body;

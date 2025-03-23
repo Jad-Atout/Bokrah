@@ -119,7 +119,6 @@ export async function cancelReminders(appointmentId) {
     const jobRecords = await scheduledJob.find({ referenceId: appointmentId });
 
     for (const job of jobRecords) {
-        delete jobs[(await job)._id];
         await deleteJob(job._id);
     }
 

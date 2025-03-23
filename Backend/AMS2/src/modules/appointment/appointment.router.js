@@ -27,7 +27,7 @@ router.patch('/:clientId/:appointmentId/cancel',
     asyncHandler(prepareToken()),
     asyncHandler(cancelAppointment)
 )
-router.delete('/:clientId',
+router.delete('/:clientId/:appointmentId',
     auth(role),
     asyncHandler(verifyAppointmentOwnership()),
     asyncHandler(prepareToken()),

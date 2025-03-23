@@ -29,7 +29,8 @@ export async function deleteJob(jobId) {
         if (!job) {
             console.log(`No job found with ID: ${jobId}`);
         } else {
-            jobs[jobId].cancel();//TODO delete from memory
+            jobs[jobId].cancel();
+            delete jobs[jobId]
             console.log(`Job with ID ${jobId} deleted successfully.`);
         }
     } catch (err) {

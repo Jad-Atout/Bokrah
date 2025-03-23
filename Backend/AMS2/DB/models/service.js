@@ -21,9 +21,11 @@ const ServiceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Client"
     },
-    staff: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Staff' }] // Array of staff
-
+    staff: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Staff' }],
+    visible: {
+        type: Boolean,
+        default: true // default value for publiclyAvailable
+    }
 }, { timestamps: true });
 
 export default mongoose.models.Service || mongoose.model("Service", ServiceSchema);
-

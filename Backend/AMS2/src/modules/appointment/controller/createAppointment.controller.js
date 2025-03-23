@@ -13,7 +13,6 @@ import {
     eventCreateRollback
 } from "./helpers.js";
 
-import reminderModel from "../../../../DB/models/reminder.js";
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
 import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
@@ -44,7 +43,7 @@ export const createAppointment = async (req, res, next) => {
         let foundCustomer = await customerModel.findOne({ userId });
         if (!foundCustomer) {
             const {customer} = await transCreateCustomer({ userId });
-            if (customer) {
+            if (!customer) {
                 throw new AppError("Failed to create newCustomer", 500);
             }
             customerId = customer;

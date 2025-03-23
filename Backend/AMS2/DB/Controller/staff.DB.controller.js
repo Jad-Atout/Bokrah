@@ -7,6 +7,7 @@ import roleModel from "../models/role.js";
 import getOrCreateSubCalendar, {deleteCalendar} from "../../src/utils/Google/Services/calendarManagement.js";
 import serviceModel from "../models/service.js";
 import appointmentModel from "../models/appointment.js";
+import availabilityModel from "../models/availability.js";
 export const populateStaff = [
     {
         path:"userId",
@@ -28,7 +29,7 @@ export const populateStaff = [
         select: "serviceName"
     },
 ]
-
+//TODO the problem Razan mentioned can be solved if we return that the user exists to the client and ask him if he wants to include him
 export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
 
     const session = await mongoose.startSession(); // Start a session
@@ -59,8 +60,10 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
             role.staff = true
             await role.save({session});
         }
-
+        const availability =  new availabilityModel();
+        await availability.save({session});
         staffData.userId = user._id
+        staffData.availability = availability._id
 
         let staff= new staffModel(staffData);
         await staff.save({session})
@@ -103,6 +106,7 @@ export const transDeleteStaff = async (staff,oauth2Client) => {
 
         staff=await staffModel.findByIdAndDelete(staff._id, { session }).populate(populateStaff);
         await serviceModel.updateMany({staff:staff._id},{$pull:{staff:staff._id}},{session});
+        await availabilityModel.findByIdAndDelete(staff.availability,{session});
         await deleteCalendar(oauth2Client,staff.calendarId)
 
         await session.commitTransaction();

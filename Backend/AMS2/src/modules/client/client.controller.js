@@ -7,7 +7,8 @@ import {
     transUpdateClient,
 
 } from "../../../DB/Controller/client.DB.controller.js";
-
+import {config} from "dotenv";
+config()
 //TODO Client Validation
 
 export const googleAuthCallback = async (req, res, next) => {
@@ -16,7 +17,7 @@ export const googleAuthCallback = async (req, res, next) => {
         const { code, state } = req.query;
 
         if (!code) {
-            return next(new AppError("Authorization code is missing.", 400));
+            return res.redirect(process.env.FRONTEND_BASE_URL)
         }
 
         const { idToken, access_token, refresh_token } = await authService.handleOAuthRedirect(code);
@@ -37,11 +38,14 @@ export const googleAuthCallback = async (req, res, next) => {
             refreshToken: refresh_token,
         };
 
-        const { client, role, user, newClient } = await transCreateClient(
+        const { client, role, user, newClient,appError } = await transCreateClient(
             clientData,
             userData,
             googleData
         );
+        if(appError){
+            throw appError;
+        }
 
         const token = jwt.sign(
             {

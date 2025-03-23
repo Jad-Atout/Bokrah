@@ -1,5 +1,20 @@
 import Joi from 'joi';
-
+export const visibilitySchema = Joi.object({
+    visible: Joi.boolean()
+        .required()
+        .messages({
+            'any.required': 'Visibility status is required.',
+            'boolean.base': 'Visibility must be a boolean value (true or false).'
+        }),
+    serviceId: Joi.string()
+        .hex()
+        .length(24)
+        .required()
+        .messages({
+            'any.required': 'Service ID is required.',
+            'string.hex': 'Service ID must be a valid hexadecimal string.',
+            'string.length': 'Service ID must be exactly 24 characters long.'
+        }),});
 export const createServiceSchema = Joi.object({
     serviceName: Joi.string()
         .min(3)

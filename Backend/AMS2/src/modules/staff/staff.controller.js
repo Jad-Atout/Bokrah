@@ -78,7 +78,6 @@ export const getClientStaff = async (req, res) => {
 export const deleteStaff = async (req, res, next) => {
         const staffObject  = req.staff;
         const {appError,staff,appointmentIds} = await transDeleteStaff(staffObject,req.oauth2Client);
-    console.log("staff",staff)
 
     if (appError) {
             return next(appError);

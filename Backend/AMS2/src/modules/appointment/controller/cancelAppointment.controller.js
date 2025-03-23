@@ -8,6 +8,7 @@ import {
     appointmentDeletedEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
+import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const cancelAppointment = async (req, res, next) => {
     const { appointmentId, clientId } = req.params;
@@ -17,7 +18,7 @@ export const cancelAppointment = async (req, res, next) => {
     session.startTransaction();
 
     let deletedEvents = [];
-    let appointment;
+    let appointment = null;
 
     try {
         appointment = await appointmentModel
@@ -68,11 +69,13 @@ export const cancelAppointment = async (req, res, next) => {
                 });
             }
         }
+        req.deletedEvents = deletedEvents;
 
         appointment.status = "Cancelled";
         await appointment.save({ session });
 
         await cancelReminders(appointmentId);
+        console.log(staffMap.jad.f)
 
         await session.commitTransaction();
         session.endSession();
@@ -156,7 +159,7 @@ export const cancelAppointment = async (req, res, next) => {
         await session.abortTransaction();
         session.endSession();
 
-        await eventDeleteRollback(deletedEvents, appointment);
+        await eventDeleteRollback(req,authClient,deletedEvents, appointment);
 
         return next(
             new AppError(`Failed to cancel the appointment: ${error.message}`, 500)

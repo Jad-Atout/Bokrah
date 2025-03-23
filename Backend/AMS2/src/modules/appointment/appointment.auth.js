@@ -235,7 +235,7 @@ export const authSlots = () => {
 
 export const verifyAppointmentOwnership = () => {
     return async (req, res, next) => {
-        const {appointmentId} = req.body;
+        const {appointmentId} = req.params;
         const {clientId} = req.params;
         const {authUser} = req;
 

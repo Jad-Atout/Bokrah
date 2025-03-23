@@ -11,14 +11,13 @@ import clientCustomer from "../models/ClientCustomer.js";
 import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 import {initializeOAuthClient} from "../../src/utils/Google/Services/refreshToken.js";
 import UserClient from "../models/ClientCustomer.js";
-
 export const transCreateClient = async (clientData,userData,googleData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
         let user = await userModel.findOne({email: userData.email}).session(session);
         let role = (user)?await roleModel.findById(user.roleId).session(session):null
-
+        if(role?.staff && !role?.client) return {appError:new AppError("user is a staff and can't become a client")}
         if (!role?.client) {
             if(!user){
                 role = new roleModel({client: true,staff:true})
@@ -61,7 +60,7 @@ export const transCreateClient = async (clientData,userData,googleData) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        return  new AppError(error.message || "Internal server error", 500);
+        return {appError: new AppError(error.message || "Internal server error", 500)}
     }
 }
 

@@ -3,10 +3,10 @@ import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import mongoose from "mongoose";
 import {eventDeleteRollback} from "./helpers.js";
+import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const deleteAppointment = async (req, res, next) => {
-    const { appointmentId } = req.body;
-    const { clientId } = req.params;
+    const { appointmentId } = req.params;
     const authClient = req.oauth2Client;
 
     const session = (req.session) ? req.session : await mongoose.startSession();
@@ -38,6 +38,8 @@ export const deleteAppointment = async (req, res, next) => {
             const eventData = await deleteEvent(authClient, subAppointment.staffId.calendarId,subAppointment.eventId);
             deletedEvents.push({eventId:subAppointment.eventId, calendarId:subAppointment.staffId.calendarId,eventData})
         }
+        req.deletedEvents = deletedEvents;
+        await cancelReminders(appointmentId);
 
         await session.commitTransaction();
         session.endSession();

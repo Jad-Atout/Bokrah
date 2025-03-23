@@ -1,17 +1,17 @@
-import express from 'express';
 import {
     createService,
     updateService,
     deleteService,
-    getClientServices
+    getClientServices, setVisibility
 } from './service.controller.js';
 import {auth,roles} from '../../middleware/auth.js'
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
-import {createServiceSchema} from "./services.validation.js";
+import {createServiceSchema, visibilitySchema} from "./services.validation.js";
 import {verifyOwnership} from "./service.auth.js";
+import {Router} from "express";
 
-const router = express.Router();
+const router = Router();
 
 // Public routes
 router.get('/:clientId',
@@ -24,7 +24,12 @@ router.post('/',
     asyncHandler(validationHandler(createServiceSchema))
     , asyncHandler(createService)
 );
-
+router.patch('/visible/:serviceId',
+    auth(roles.Client),
+    asyncHandler(validationHandler(visibilitySchema)),
+    asyncHandler(verifyOwnership()),
+    asyncHandler(setVisibility)
+    )
 router.patch('/:serviceId',
     auth(roles.Client),
     asyncHandler(verifyOwnership()),
