@@ -47,7 +47,7 @@ const parseTime = (timeStr) => {
     return hours * 60 + minutes;
 };
 export const calculateEndTime = (startTime, services) => {
-    let totalDuration = services.reduce((acc, service) => acc + service.duration, 0);
+    let totalDuration = services.reduce((acc, service) => acc + service.duration + (service.bufferTime ?? 0), 0);
     return new Date(new Date(startTime).getTime() + totalDuration * 60000).toISOString();
 };
 

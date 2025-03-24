@@ -60,4 +60,13 @@ export const createServiceSchema = Joi.object({
             'number.max': 'Duration must be no more than 12 hours (720 minutes).',
             'any.required': 'Duration is required.',
         }),
+    bufferTime: Joi.number()
+        .integer()
+        .min(0)
+        .default(0)
+        .messages({
+            'number.base': 'Buffer time must be a number.',
+            'number.integer': 'Buffer time must be an integer.',
+            'number.min': 'Buffer time cannot be negative.',
+        })
 });

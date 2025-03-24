@@ -25,6 +25,10 @@ const ServiceSchema = new mongoose.Schema({
     visible: {
         type: Boolean,
         default: true // default value for publiclyAvailable
+    },
+    bufferTime:{
+        type: Number,
+        default: 0
     }
 }, { timestamps: true });
 

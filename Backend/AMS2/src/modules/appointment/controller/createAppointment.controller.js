@@ -94,7 +94,6 @@ export const createAppointment = async (req, res, next) => {
                         if (!isAvailable) {
                             throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
                         }
-                        console.log("Check external (Google Calendar) availability")
 
 
                         // Create Google Calendar event for sub-slot
@@ -143,7 +142,6 @@ export const createAppointment = async (req, res, next) => {
 
         await session.commitTransaction();
         session.endSession();
-        console.log(createdAppointment);
 
         for (const appointment of createdAppointment) {
             await scheduleReminders(appointment._id,);

@@ -4,7 +4,7 @@ import {transDeleteService, transUpdateService} from "../../../DB/Controller/ser
 //TODO add buffer time to the service
 export const createService = async (req, res, next) => {
         const user = req.authUser
-        const { serviceName, serviceDescription, price, duration,} = req.body;
+        const { serviceName, serviceDescription, price, duration,bufferTime} = req.body;
 
     if (!user.role['client']) {
             return next(new AppError("Unauthorized: Only clients can create services", 403));
@@ -16,6 +16,7 @@ export const createService = async (req, res, next) => {
             price,
             duration,
             clientId: user.clientId,
+            bufferTime
         });
         await service.save();
        return res.status(201).json({ message: "Service created successfully", service });
@@ -31,6 +32,7 @@ const formatService = (data) => {
         price: service.price,
         duration: service.duration,
         visible:service.visible,
+        bufferTime:service.bufferTime,
         client: {
             userName: service.clientId.userId.userName,  // Extract userName
             businessName: service.clientId.businessName,
