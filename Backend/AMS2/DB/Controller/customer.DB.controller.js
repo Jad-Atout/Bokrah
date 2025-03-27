@@ -21,7 +21,7 @@ export const transCreateCustomer = async (customerData) => {
             await role.save({session})
             customerData.roleId = role._id;
             user = new userModel(customerData)
-            user.save({session})
+            await user.save({session})
 
         }
         const customer = new customerModel({userId: user._id})
@@ -35,7 +35,7 @@ export const transCreateCustomer = async (customerData) => {
         await session.abortTransaction();
         session.endSession();
 
-        throw new AppError(err.message || "Internal server error", 500);
+        return  new AppError(err.message || "Internal server error", 500);
     }
 };
 
@@ -48,8 +48,11 @@ export const transUpdateCustomer =async (userData,customerData=null) => {
     try {
         const user = await userModel.findByIdAndUpdate(userData._id, userData,{ session, new: true });
         if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData,{ session, new: true })
-        return {user,customer:null,appError:null}
 
+        await session.commitTransaction();
+        session.endSession();
+
+        return {user,customer:null,appError:null}
     }catch (err){
         await session.abortTransaction();
         session.endSession();
@@ -64,6 +67,9 @@ export const transDeleteCustomer = async (customerId) => {
         if(!customer) return new AppError("Customer doesn't exists", 401);
         const user =await userModel.findByIdAndDelete(customer.userId,{ session, new: true })
         await roleModel.findByIdAndDelete(user.roleId,{ session, new: true })
+
+        await session.commitTransaction();
+        session.endSession();
         return {user,customer,appError:null}
     }catch (err){
 

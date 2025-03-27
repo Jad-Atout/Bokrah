@@ -30,7 +30,7 @@ export const auth = (...requiredRole) => {
             if (!decoded) {
                 return next(new AppError("Invalid token", 401));
             }
-            const checkUserExistence = await userModel.findById(decoded.userId)
+            const checkUserExistence = await userModel.findById(decoded.id)
             if(!checkUserExistence) {
                 return next(new AppError("User does not exist", 401));
             }

@@ -20,12 +20,11 @@ router.post('/create',
 );
 
 
-router.put('/:customerID',
+router.patch('/:customerId',
     auth(roles.Client),
-    validationHandler(createLocalCustomerSchema),
     asyncHandler(updateCustomer)
 )
-router.delete('/:customerID',
+router.delete('/:customerId',
     auth(roles.Customer),
     asyncHandler(deleteCustomer)
 )

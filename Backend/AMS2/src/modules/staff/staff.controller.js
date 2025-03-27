@@ -107,7 +107,7 @@ export const updateStaff = async (req, res, next) => {
 
 };
 
-
+//TODO
 export const deleteAllAppointmentsForStaff = async (req, res, next) => {
     const { staffId } = req.params;
     const authClient = req.oauth2Client;

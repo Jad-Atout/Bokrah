@@ -28,7 +28,9 @@ export const createCustomer = async (req, res, next) => {
     if(user){
         if(customer) return res.status(400).json({ message: "User already exists", user,customer });
     }
-    let {newUser,newCustomer,appError} = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
+
+    let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
+    console.log(newUser,newCustomer,appError)
     if(appError) return next(appError);
     const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
@@ -37,7 +39,7 @@ export const createCustomer = async (req, res, next) => {
     );
     await sendEmail(newUser.email,  "Set Your Password & Confirm Your Email",
         await setPasswordEmailTemplate( newUser.userName, token))
-    return res.status(201).json({ message: "Successfully created", user,newCustomer});
+    return res.status(201).json({ message: "Successfully created", newUser,newCustomer});
 };
 
 
@@ -53,10 +55,10 @@ export const customerRegister = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
-    let {newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
+    let {user:newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(appError) return next(appError);
 
-    const tokenData={id:user._id, email:user.email,}
+    const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
     await sendEmail(newUser.email,  "Welcome",
@@ -105,7 +107,7 @@ export const updateCustomer = async (req, res, next) => {
     const userData = {userName, email, phoneNumber,_id:customer.userId}
     if(password) userData.password = await bcrypt.hash(password, 8);
 
-    let {newUser,newCustomer,appError} = await transUpdateCustomer( userData);
+    let {user:newUser,customer:newCustomer,appError} = await transUpdateCustomer( userData);
     if (appError) {
         return next(appError);
     }
@@ -115,9 +117,11 @@ export const updateCustomer = async (req, res, next) => {
 
 export const deleteCustomer = async (req, res, next) => {
     const { customerId } = req.params
-    const id = req.authUser.id
+    const id = req.authUser.customerId
+    console.log(id,customerId)
     if(customerId !==id) return next( new AppError("User is not authorized for this action", 401));
-    let {deletedUser,deletedCustomer,appError} = await transDeleteCustomer(id)
+    let {user:deletedUser,customer:deletedCustomer,appError} = await transDeleteCustomer(id)
+    console.log(deletedCustomer,deletedUser);
     if (appError) {
         return next(appError);
     }
