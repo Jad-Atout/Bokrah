@@ -15,6 +15,7 @@ import {
 
 import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
 import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+import UserClient from "../../../../DB/models/ClientCustomer.js";
 
 
 /*
@@ -169,5 +170,52 @@ export const getAppointmentsCount = async (req, res, next) => {
     } catch (error) {
         console.error("Error fetching appointment count:", error);
         return res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+export const getAppointmentsByCustomer = async (req, res, next) => {
+    try {
+        const { clientId } = req.authUser;     // from the token
+        const { customerId } = req.params;     // from the route, e.g. GET /appointment/customer/:customerId ?
+
+        // 1) Ensure that this customer is actually linked to this client
+        const link = await UserClient.findOne({ clientId, customerId });
+        if (!link) {
+            return next(new AppError("This customer does not belong to the current client", 404));
+        }
+
+        // 2) Find all appointments with that customerId + clientId
+        //    You can expand 'subAppointments' with .populate if you want staff details or services
+        const appointments = await appointmentModel
+            .find({ customerId, clientId })
+            .populate({
+                path: "subAppointments",
+                populate: [
+                    {
+                        path: "staffId",
+                        select: "roleDescription calendarId",
+                        populate: {
+                            path: "userId",
+                            select: "userName email",
+                        },
+                    },
+                    {
+                        path: "services._id", // or if your field is "services.serviceId"
+                        model: "Service",
+                        select: "serviceName price duration",
+                    },
+                ],
+            })
+            .exec();
+
+        // 3) Return them
+        return res.status(200).json({
+            message: "success",
+            appointments,
+        });
+    } catch (error) {
+        console.error("Error fetching appointments by customer:", error);
+        return next(new AppError(`Failed to retrieve appointments: ${error.message}`, 500));
     }
 };

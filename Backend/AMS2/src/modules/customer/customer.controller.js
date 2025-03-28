@@ -32,6 +32,13 @@ export const createCustomer = async (req, res, next) => {
     let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
     console.log(newUser,newCustomer,appError)
     if(appError) return next(appError);
+
+    const clientId = req.authUser.clientId;
+    await UserClient.create({
+        clientId: clientId,
+        customerId: newCustomer._id
+    });
+
     const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
     await sendEmail(newUser.email,  "Welcome",

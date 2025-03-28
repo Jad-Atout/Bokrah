@@ -30,10 +30,14 @@ export const auth = (...requiredRole) => {
             if (!decoded) {
                 return next(new AppError("Invalid token", 401));
             }
-            const checkUserExistence = await userModel.findById(decoded.id)
-            if(!checkUserExistence) {
+
+            const checkUserExistence = await userModel.find({
+                $or: [{ _id: decoded.id }, { userId: decoded.userId }]
+            });
+            if (!checkUserExistence) {
                 return next(new AppError("User does not exist", 401));
             }
+
             req.authUser = decoded;
             const userRoles =decoded.role
 
