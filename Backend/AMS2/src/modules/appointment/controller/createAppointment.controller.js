@@ -147,7 +147,6 @@ export const createAppointment = async (req, res, next) => {
         for (const appointment of createdAppointment) {
             await scheduleReminders(appointment._id,);
         }
-
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointment,

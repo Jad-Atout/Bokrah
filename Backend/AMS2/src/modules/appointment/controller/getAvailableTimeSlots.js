@@ -130,6 +130,7 @@ export const generateAvailableSlots = async (req, res, next) => {
                     .populate('availability')
                     .lean();
                 if (!staffData || !staffData.availability) continue;
+                console.log(staffData)
 
                 const workingDays = staffData.availability.availability;
                 const dayAvail = workingDays.find(a => a.day.toLowerCase() === dayName.toLowerCase());
@@ -190,6 +191,7 @@ export const generateAvailableSlots = async (req, res, next) => {
         });
 
     } catch (error) {
+        console.log(error)
         return next(new AppError(`Failed to generate available slots: ${error.message}`, 500));
     }
 };
