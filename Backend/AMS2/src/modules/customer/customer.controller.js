@@ -1,7 +1,7 @@
 import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
 import  userModel from "../../../DB/models/user.js";
-import UserClient from "../../../DB/models/ClientCustomer.js";
+import clientCustomerModel from "../../../DB/models/ClientCustomer.js";
 import customerModel from "../../../DB/models/customer.js";
 import dotenv from "dotenv";
 import {
@@ -30,11 +30,10 @@ export const createCustomer = async (req, res, next) => {
     }
 
     let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
-    console.log(newUser,newCustomer,appError)
     if(appError) return next(appError);
 
     const clientId = req.authUser.clientId;
-    await UserClient.create({
+    await clientCustomerModel.create({
         clientId: clientId,
         customerId: newCustomer._id
     });
@@ -78,15 +77,9 @@ export const getClientCustomers = async (req, res, next) => {
     try {
         const { clientId } = req.authUser;
 
-        const userClient = await UserClient.find({ clientId });
-        if (!userClient || userClient.length === 0) {
-            return res.status(404).json({
-                message: "No customers found for this client",
-                customers: [],
-            });
-        }
+        const clientCustomers = await clientCustomerModel.find({ clientId });
 
-        const customerIds = userClient.map((uc) => uc.customerId);
+        const customerIds = clientCustomers.map((cc) => cc.customerId);
 
         const customers = await customerModel.find({ _id: { $in: customerIds } })
             .populate({
@@ -94,15 +87,24 @@ export const getClientCustomers = async (req, res, next) => {
                 select: "userName email phoneNumber",
             });
 
+        const customersWithStatus = customers.map((customer) => {
+            const relationship = clientCustomers.find(cc => cc.customerId.toString() === customer._id.toString());
+            return {
+                ...customer.toObject(),
+                isActive: relationship ? relationship.isActive : false, // Default to false if no relationship exists
+            };
+        });
+
         return res.status(200).json({
             message: "success",
-            customers,
+            customers: customersWithStatus,
         });
+
     } catch (error) {
-        console.error(error);
         return res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
 
 export const updateCustomer = async (req, res, next) => {
     const { userName, email, password, phoneNumber } = req.body;
@@ -134,6 +136,16 @@ export const deleteCustomer = async (req, res, next) => {
     }
     return res.status(200).json({message:"Successfully deleted", deletedCustomer,deletedUser});
 
+}
+
+export const toggleBlockCustomer = async (req, res, next) => {
+    const { customerId } = req.params
+    const {clientId} = req.authUser
+    const relation =  await clientCustomerModel.findOne({clientId,customerId})
+    if(!relation) return next(new AppError("Relation does not exists", 401));
+    relation.isActive = !relation.isActive
+    await relation.save()
+    return res.status(200).json({message:"success"})
 }
 
 export const getCustomersCount = async (req, res, next) => {

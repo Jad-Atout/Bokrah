@@ -4,7 +4,7 @@ import {
     getClientCustomers,
     updateCustomer,
     createCustomer,
-    getCustomersCount
+    getCustomersCount, toggleBlockCustomer
 } from "./customer.controller.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
@@ -19,6 +19,10 @@ router.post('/create',
     ,asyncHandler(createCustomer)
 );
 
+router.patch('/block/:customerId',
+    auth(roles.Client),
+    asyncHandler(toggleBlockCustomer)
+)
 
 router.patch('/:customerId',
     auth(roles.Client),
