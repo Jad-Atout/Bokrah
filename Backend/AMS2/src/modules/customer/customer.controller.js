@@ -30,13 +30,16 @@ export const createCustomer = async (req, res, next) => {
     }
 
     let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
+    console.log(newUser,newCustomer,appError)
     if(appError) return next(appError);
 
     const clientId = req.authUser.clientId;
-    await clientCustomerModel.create({
-        clientId: clientId,
-        customerId: newCustomer._id
-    });
+
+    const existingAssignment = await UserClient.findOne({  customerId: newCustomer._id, clientId });
+    if (!existingAssignment) {
+        const assign = new UserClient({ customerId: newCustomer._id, clientId });
+        await assign.save();
+    }
 
     const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
@@ -47,6 +50,7 @@ export const createCustomer = async (req, res, next) => {
         await setPasswordEmailTemplate( newUser.userName, token))
     return res.status(201).json({ message: "Successfully created", newUser,newCustomer});
 };
+
 
 
 
