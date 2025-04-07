@@ -6,7 +6,7 @@ import {eventDeleteRollback} from "./helpers.js";
 import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const deleteAppointment = async (req, res, next) => {
-    const { appointmentId } = req.params;
+    const { appointmentId } = req.body;
     const authClient = req.oauth2Client;
 
     const session = (req.session) ? req.session : await mongoose.startSession();

@@ -25,18 +25,6 @@ router.post('/:clientId',
     asyncHandler(prepareToken()),
     asyncHandler(createAppointment)
 )
-router.patch('/:clientId/:appointmentId/cancel',
-    auth(role),
-    asyncHandler(verifyAppointmentOwnership()),
-    asyncHandler(prepareToken()),
-    asyncHandler(cancelAppointment)
-)
-router.delete('/:clientId/:appointmentId',
-    auth(role),
-    asyncHandler(verifyAppointmentOwnership()),
-    asyncHandler(prepareToken()),
-    asyncHandler(deleteAppointment)
-)
 router.patch('/:clientId',
     auth(role),
     validationHandler(updateAppointmentSchema),
@@ -44,6 +32,18 @@ router.patch('/:clientId',
     asyncHandler(authServices()),
     asyncHandler(prepareToken()),
     asyncHandler(updateAppointment)
+)
+router.patch('/:clientId/cancel',
+    auth(role),
+    asyncHandler(verifyAppointmentOwnership()),
+    asyncHandler(prepareToken()),
+    asyncHandler(cancelAppointment)
+)
+router.delete('/:clientId/',
+    auth(role),
+    asyncHandler(verifyAppointmentOwnership()),
+    asyncHandler(prepareToken()),
+    asyncHandler(deleteAppointment)
 )
 router.post('/slots/:clientId',
     validationHandler(timeSlotSchema),

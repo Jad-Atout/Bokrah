@@ -11,7 +11,8 @@ import {
 import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const cancelAppointment = async (req, res, next) => {
-    const { appointmentId, clientId } = req.params;
+    const {clientId } = req.params;
+    const {appointmentId} = req.body
     const authClient = req.oauth2Client;
 
     const session = await mongoose.startSession();
@@ -75,7 +76,6 @@ export const cancelAppointment = async (req, res, next) => {
         await appointment.save({ session });
 
         await cancelReminders(appointmentId);
-        console.log(staffMap.jad.f)
 
         await session.commitTransaction();
         session.endSession();

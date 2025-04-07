@@ -40,7 +40,7 @@ const recurrenceSchema = Joi.object({
         'number.min': 'Count must be at least 1.',
         'any.required': 'Count is required.'
     }),
-    endDate: Joi.date().greater('now').optional().messages({
+    endDate: Joi.date().greater(Date.now()).optional().messages({
         'date.base': 'End date must be a valid date.',
         'date.greater': 'End date must be in the future.'
     })

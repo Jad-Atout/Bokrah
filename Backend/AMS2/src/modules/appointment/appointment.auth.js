@@ -239,6 +239,7 @@ export const verifyAppointmentOwnership = () => {
         const {authUser} = req;
 
         const appointment = await appointmentModel.findOne({_id: appointmentId, clientId: clientId});
+        console.log(appointment,clientId,appointmentId)
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
