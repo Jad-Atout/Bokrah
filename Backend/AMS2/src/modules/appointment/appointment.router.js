@@ -37,7 +37,7 @@ router.delete('/:clientId/:appointmentId',
     asyncHandler(prepareToken()),
     asyncHandler(deleteAppointment)
 )
-router.put('/:clientId',
+router.patch('/:clientId',
     auth(role),
     validationHandler(updateAppointmentSchema),
     asyncHandler(verifyAppointmentOwnership()),
