@@ -13,6 +13,7 @@ import reminderModel from "../../../../DB/models/reminder.js"
 import staffModel from "../../../../DB/models/staff.js"
 import mongoose from "mongoose";
 import {checkAvailability} from "../../../utils/Google/Services/checkAvailability.js";
+import {cancelReminders, scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 //TODO edit the structure of this update
 export const updateAppointment = async (req, res, next) => {
     const { appointmentId, recurrence, slot } = req.body;
@@ -23,10 +24,14 @@ export const updateAppointment = async (req, res, next) => {
     let updatedEvents = [];
     let deletedEvents = [];
     let updatedAppointments = [];
+    const reminderSettings = [
+        { method: "email", minutes: 24 * 60 },
+        { method: "popup", minutes: 10 },
+    ];
 
     const appointment = await appointmentModel.findById(appointmentId).populate([
-            {path: "customerId", ref: "Customer", populate: {path: "userId", model: "User",}},
-            {path: "subAppointments.staffId", ref: "Staff",}]).session(session);
+        {path: "customerId", ref: "Customer", populate: {path: "userId", model: "User",}},
+        {path: "subAppointments.staffId", ref: "Staff",}]).session(session);
     try {
 
         if (!appointment) return next(new AppError("Appointment not found", 404));
@@ -47,50 +52,50 @@ export const updateAppointment = async (req, res, next) => {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
 
-                for (const subSlot of slot.subSlots) {
-                    let { staffServices, startTime, endTime } = subSlot;
+            for (const subSlot of slot.subSlots) {
+                let { staffServices, startTime, endTime } = subSlot;
 
-                    if (startTime >= endTime) {
-                        throw new AppError("End time must be later than start time", 400);
-                    }
-
-                    for (const staffService of staffServices) {
-                        const { staffId, services } = staffService;
-
-                        const staffData = await staffModel.findById(staffId)
-                            .populate([{ path: "userId", ref: "User", select: "userName email" }])
-                            .session(session);
-
-                        const endTimeCalculated = calculateEndTime(startTime, services);
-
-                        const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
-                        if (!isInternalAvailable) {
-                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
-                        }
-
-                        // Check external (Google Calendar) availability
-                        const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
-                        if (!isAvailable) {
-                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
-                        }
-
-                        // Create Google Calendar event for sub-slot
-                        const event = await createEvent(req, authClient, {
-                            customerName: customer.userId.userName,
-                            staffName: staffData.userId.userName,
-                            serviceNames: services.map(service => service.serviceName),
-                            startTime: startTime,
-                            endTime: endTimeCalculated,
-                            calendarId: staffData.calendarId,
-                            attendees: [{ email: customer.userId.email }],
-                            sendUpdates: "all",
-                            reminders: { useDefault: false, overrides: reminderSettings },
-                        });
-                        updatedEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
-                        subAppointments.push({ staffId, services, startTime, endTime: endTimeCalculated, eventId: event.id });
-                        currentStartTime = new Date(endTimeCalculated);
-                    }
+                if (startTime >= endTime) {
+                    throw new AppError("End time must be later than start time", 400);
                 }
+
+                for (const staffService of staffServices) {
+                    const { staffId, services } = staffService;
+
+                    const staffData = await staffModel.findById(staffId)
+                        .populate([{ path: "userId", ref: "User", select: "userName email" }])
+                        .session(session);
+
+                    const endTimeCalculated = calculateEndTime(startTime, services);
+
+                    const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
+                    if (!isInternalAvailable) {
+                        throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
+                    }
+
+                    // Check external (Google Calendar) availability
+                    const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
+                    if (!isAvailable) {
+                        throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
+                    }
+
+                    // Create Google Calendar event for sub-slot
+                    const event = await createEvent(req, authClient, {
+                        customerName: customer.userId.userName,
+                        staffName: staffData.userId.userName,
+                        serviceNames: services.map(service => service.serviceName),
+                        startTime: startTime,
+                        endTime: endTimeCalculated,
+                        calendarId: staffData.calendarId,
+                        attendees: [{ email: customer.userId.email }],
+                        sendUpdates: "all",
+                        reminders: { useDefault: false, overrides: reminderSettings },
+                    });
+                    updatedEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
+                    subAppointments.push({ staffId, services, startTime, endTime: endTimeCalculated, eventId: event.id });
+                    currentStartTime = new Date(endTimeCalculated);
+                }
+            }
 
 
 
@@ -128,7 +133,8 @@ export const updateAppointment = async (req, res, next) => {
 
         await session.commitTransaction();
         session.endSession();
-
+        await cancelReminders(appointment._id)
+        await scheduleReminders(updatedAppointments)
         return res.status(200).json({
             message: "Appointment updated and calendar events created successfully",
             appointments: updatedAppointments,
