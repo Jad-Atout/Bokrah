@@ -25,7 +25,7 @@ const staffServiceSchema = Joi.object({
 const recurrenceSchema = Joi.object({
     type: Joi.string().valid('daily', 'weekly', 'monthly').required().messages({
         'string.base': 'Recurrence type must be a string.',
-        'string.valid': 'Recurrence type must be one of "daily", "weekly", or "monthly".',
+        'any.only': 'Recurrence type must be one of "daily", "weekly", or "monthly".',
         'any.required': 'Recurrence type is required.'
     }),
     interval: Joi.number().integer().min(1).required().messages({
@@ -39,6 +39,10 @@ const recurrenceSchema = Joi.object({
         'number.integer': 'Count must be an integer.',
         'number.min': 'Count must be at least 1.',
         'any.required': 'Count is required.'
+    }),
+    endDate: Joi.date().greater('now').optional().messages({
+        'date.base': 'End date must be a valid date.',
+        'date.greater': 'End date must be in the future.'
     })
 }).optional();
 
