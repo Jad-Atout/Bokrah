@@ -27,7 +27,6 @@ router.post('/:clientId',
 )
 router.patch('/:clientId',
     auth(role),
-    validationHandler(updateAppointmentSchema),
     asyncHandler(verifyAppointmentOwnership()),
     asyncHandler(authServices()),
     asyncHandler(prepareToken()),

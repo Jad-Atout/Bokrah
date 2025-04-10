@@ -140,3 +140,60 @@ export const updateAvailability = async (req, res, next) => {
         return next(new Error(`Failed to update availability: ${error.message}`));
     }
 };
+
+export const clearAvailability = async (req, res, next) => {
+    try {
+        const { staffId } = req.body;
+
+        // 1) Find the staff by ID
+        const staff = await staffModel.findById(staffId);
+        if (!staff) {
+            return next(new AppError("Staff not found", 404));
+        }
+
+        // 2) If staff.availability is null, there's no doc to clear
+        if (!staff.availability) {
+            return res.status(404).json({
+                message: "This staff has no assigned availability to clear"
+            });
+        }
+
+        // 3) Update the existing availability document, setting "availability" to []
+        const updatedAvailability = await availabilityModel.findByIdAndUpdate(
+            staff.availability,
+            {
+                availability: [],   // empty array => no day/slot data
+                timeZone: ""        // optionally clear timeZone as well
+            },
+            { new: true }
+        );
+
+        // 4) Optionally re-populate staff to return updated data
+        const data = await staff.populate([
+            {
+                path: "availability",
+                ref: "Availability",
+                select: "-_id"
+            },
+            {
+                path: "userId",
+                ref: "User",
+                select: "userName email phoneNumber"
+            }
+        ]);
+
+        if (!updatedAvailability) {
+            return res.status(404).json({
+                message: "Failed to clear availability: No availability doc found"
+            });
+        }
+
+        // 5) Return success
+        return res.status(200).json({
+            message: "Availability cleared successfully",
+            data: data
+        });
+    } catch (error) {
+        return next(new AppError(`Failed to clear availability: ${error.message}`, 500));
+    }
+};
