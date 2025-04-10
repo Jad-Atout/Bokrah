@@ -35,9 +35,9 @@ export const createCustomer = async (req, res, next) => {
 
     const clientId = req.authUser.clientId;
 
-    const existingAssignment = await UserClient.findOne({  customerId: newCustomer._id, clientId });
+    const existingAssignment = await clientCustomerModel.findOne({  customerId: newCustomer._id, clientId });
     if (!existingAssignment) {
-        const assign = new UserClient({ customerId: newCustomer._id, clientId });
+        const assign = new clientCustomerModel({ customerId: newCustomer._id, clientId });
         await assign.save();
     }
 
