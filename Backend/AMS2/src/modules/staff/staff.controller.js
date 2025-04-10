@@ -37,33 +37,29 @@ export const createStaff = async (req, res, next) => {
     return res.json({message: "Staff successfully created", staffs:filterStaffData([staff])});
 }
 
-
 function filterStaffData(data) {
     return data.map(staff => ({
-            staff: {
-                userName: staff.userId.userName,
-                email: staff.userId.email,
-                phoneNumber: staff.userId.phoneNumber,
-                roleDescription: staff.roleDescription,
-                availabilityId: staff.availability,
-                staffId:staff._id
-            },
-            client: {
-                userName: staff.clientId.userId.userName,
-                email: staff.clientId.userId.email,
-                industry: staff.clientId.industry,
-                businessName: staff.clientId.businessName,
-                clientId: staff.clientId.clientId,
-            },
-            services: staff.services.map(service => ({
-                serviceId: service._id,
-                serviceName: service.serviceName
-            })),
-
-        }))
-
+        staff: {
+            userName:       staff.userId?.userName       || 'N/A',
+            email:          staff.userId?.email          || 'N/A',
+            phoneNumber:    staff.userId?.phoneNumber    || 'N/A',
+            roleDescription: staff.roleDescription,
+            availabilityId: staff.availability,
+            staffId:        staff._id
+        },
+        client: {
+            userName:    staff.clientId?.userId?.userName || 'N/A',
+            email:       staff.clientId?.userId?.email    || 'N/A',
+            industry:    staff.clientId?.industry         || '',
+            businessName:staff.clientId?.businessName     || '',
+            clientId:    staff.clientId?.clientId         || ''
+        },
+        services: staff.services?.map(service => ({
+            serviceId:   service?._id,
+            serviceName: service?.serviceName
+        })) || []
+    }));
 }
-
 
 /*export const getClientStaff = async (req, res) => {
     const { clientId } = req.params

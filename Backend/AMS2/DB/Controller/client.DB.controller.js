@@ -15,27 +15,36 @@ export const transCreateClient = async (clientData,userData,googleData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        let user = await userModel.findOne({email: userData.email}).session(session);
-        let role = (user)?await roleModel.findById(user.roleId).session(session):null
-        if(role?.staff && !role?.client) return {appError:new AppError("user is a staff and can't become a client")}
-        if (!role?.client) {
-            if(!user){
-                role = new roleModel({client: true,staff:true})
-                await role.save({session})
-                userData.roleId = role._id;
-                user = new userModel(userData)
-                await user.save({session})
-                clientData.userId = user._id
-            }else {
-                role.client = true
-                role.staff = true
-                await role.save({session})
+        let user = await userModel.findOne({ email: userData.email }).session(session);
+        let role = (user && user.roleId) ? await roleModel.findById(user.roleId).session(session) : null;
 
+        if (role?.staff && !role?.client) {
+            return { appError: new AppError("user is a staff and can't become a client") };
+        }
+
+        if (!role?.client) {
+            if (!role) {
+                role = new roleModel({ client: true, staff: true });
+                await role.save({ session });
+
+                if (!user) {
+                    userData.roleId = role._id;
+                    user = new userModel(userData);
+                    await user.save({ session });
+                } else {
+                    user.roleId = role._id;
+                    await user.save({ session });
+                }
+            } else {
+                role.client = true;
+                role.staff = true;
+                await role.save({ session });
             }
-            clientData.userId = user._id
-            const client = new clientModel(clientData)
-            await client.save({session})
-            googleData.clientId = client._id
+
+            clientData.userId = user._id;
+            const client = new clientModel(clientData);
+            await client.save({ session });
+            googleData.clientId = client._id;
 
             const staff = new staffModel({userId:user._id,clientId:client._id})
             await staff.save({session})
