@@ -16,11 +16,11 @@ import {updateAppointment} from "./controller/updateAppointment.controller.js";
 import {cancelSubAppointment} from "./controller/subappointments.controller.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createAppointmentSchema, timeSlotSchema, updateAppointmentSchema} from "./appointment.validation.js";
+import {getAppointments} from "./controller/getAppointment.controller.js";
 
 const role = [roles.Client,roles.Staff,roles.Customer]
 router.post('/:clientId',
     auth(role),
-    validationHandler(createAppointmentSchema),
     asyncHandler(authServices()),
     asyncHandler(prepareToken()),
     asyncHandler(createAppointment)
@@ -59,9 +59,13 @@ router.delete('/:clientId/:appointmentId/:subAppointmentId',
 router.get('/count', auth([roles.Admin]),
     asyncHandler(getAppointmentsCount));
 
+router.get('/:clientId', getAppointments);
+
+
 router.get(
     "/customer/:customerId",
     auth([roles.Client]),
     getAppointmentsByCustomer
 );
+
 export default router;

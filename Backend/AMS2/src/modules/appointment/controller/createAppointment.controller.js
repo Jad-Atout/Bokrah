@@ -91,11 +91,11 @@ export const createAppointment = async (req, res, next) => {
 
                        // Check external (Google Calendar) availability
 
-                        const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
+                     /*   const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
                         if (!isAvailable) {
                             throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
                         }
-
+*/
 
                         // Create Google Calendar event for sub-slot
                         const event = await createEvent(req, authClient, {
