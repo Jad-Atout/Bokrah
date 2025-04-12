@@ -139,33 +139,46 @@ export async function getAllClients() {
 
 
 export const transDeleteClient = async (clientId) => {
-    //TODO delete the instance of client not the appointment and the user instance
     const session = await mongoose.startSession();
     session.startTransaction();
+//TODO delete reminders and cancell appointments  to be improved
     try {
-
         const client = await staffModel.findById(clientId).session(session);
-        if (!client) return  new AppError('Client not found', 404);
+        if (!client) return new AppError('Client not found', 404);
 
         const user = await userModel.findById(client.userId).session(session);
+        const role = await roleModel.findById(user.roleId).session(session);
 
-        await roleModel.findByIdAndDelete(user.roleId, { session });
-        await userModel.findByIdAndDelete(clientId.userId, { session });
-        await serviceModel.deleteMany({ clientId: client._id },{ session });
-        await staffModel.deleteMany({clientId: client._id},{ session })
-        await googleModel.deleteOne({clientId: client._id},{ session })
-        await appointmentModel.deleteMany({clientId: client._id},{ session })
-        await clientCustomer.deleteMany({clientId: client._id},{ session })
-        await clientModel.deleteOne(clientId, { session });
+        // Delete associated records
+        await serviceModel.deleteMany({ clientId: client._id }, { session });
+        await staffModel.deleteMany({ clientId: client._id }, { session });
+        await googleModel.deleteOne({ clientId: client._id }, { session });
+        await appointmentModel.deleteMany({ clientId: client._id }, { session });
+        await clientCustomer.deleteMany({ clientId: client._id }, { session });
+        await clientModel.deleteOne({ _id: clientId }, { session });
+
+
+        const isOnlyClient = role.client && !role.admin && !role.customer;
+
+        if (isOnlyClient) {
+            await roleModel.findByIdAndDelete(role._id, { session });
+            await userModel.findByIdAndDelete(user._id, { session });
+        } else {
+            await roleModel.updateOne(
+                { _id: role._id },
+                { $unset: { client: "" } },
+                { session }
+            );
+        }
 
         await session.commitTransaction();
         session.endSession();
 
-        return { message: "Deleted and related records successfully deleted" };
+        return { message: "Client and related records deleted successfully." };
+
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
-        return  new AppError(err.message || 'Internal server error', 500);
-
+        return new AppError(err.message || 'Internal server error', 500);
     }
 };

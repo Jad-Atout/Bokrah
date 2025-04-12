@@ -63,18 +63,41 @@ export const transDeleteCustomer = async (customerId) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const customer = await customerModel.findByIdAndDelete(customerId)
-        if(!customer) return new AppError("Customer doesn't exists", 401);
-        const user =await userModel.findByIdAndDelete(customer.userId,{ session, new: true })
-        await roleModel.findByIdAndDelete(user.roleId,{ session, new: true })
+        let user = null;
+        let customer = null;
+
+        customer = await customerModel.findById(customerId).populate({
+            path: "userId",
+            ref: "user"
+        });
+
+        if (!customer) return new AppError("Customer doesn't exist", 401);
+
+        const role = await roleModel.findById(customer.userId.roleId);
+
+        if (!role.staff && !role.client && !role.admin) {
+            user = await userModel.findByIdAndDelete(customer.userId._id, { session });
+            await roleModel.updateOne(
+                { _id: role._id },
+                { $unset: { customer: "" } },
+                { session });
+        } else {
+            await customerModel.findByIdAndDelete(customer._id, { session });
+            role.customer = false;
+            await role.save({ session });
+        }
 
         await session.commitTransaction();
         session.endSession();
-        return {user,customer,appError:null}
-    }catch (err){
+        return { user, customer, appError: null };
 
+    } catch (err) {
         await session.abortTransaction();
         session.endSession();
-        return {user:null,customer:null,appError:new AppError(err.message || 'Internal server error', 500)}
+        return {
+            user: null,
+            customer: null,
+            appError: new AppError(err.message || 'Internal server error', 500)
+        };
     }
-}
+};

@@ -62,64 +62,60 @@ export const createAppointment = async (req, res, next) => {
     try {
 
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
+        console.log(appointmentDates)
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
 
 
-                for (const subSlot of slot.subSlots) {
-                    let { staffServices, startTime, endTime } = subSlot;
+            for (const subSlot of slot.subSlots) {
+                let { staffServices, startTime, endTime } = subSlot;
 
-                    if (startTime >= endTime) {
-                        throw new AppError("End time must be later than start time", 400);
-                    }
+                let adjustedStartTime = new Date(appointmentStart);
+                adjustedStartTime.setHours(new Date(startTime).getHours(), new Date(startTime).getMinutes(), 0, 0);
 
-                    for (const staffService of staffServices) {
-                        const { staffId, services } = staffService;
+                let adjustedEndTime = new Date(appointmentStart);
+                adjustedEndTime.setHours(new Date(endTime).getHours(), new Date(endTime).getMinutes(), 0, 0);
 
-                        const staffData = await staffModel.findById(staffId)
-                            .populate([{ path: "userId", ref: "User", select: "userName email" }])
-                            .session(session);
-
-                        const endTimeCalculated = calculateEndTime(startTime, services);
-                        if (endTime !== endTimeCalculated) throw new AppError("Slot end time is invalid", 404);
-
-                        // const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
-                        // if (!isInternalAvailable) {
-                        //     throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
-                        // }
-
-                       // Check external (Google Calendar) availability
-
-                     /*   const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
-                        if (!isAvailable) {
-                            throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
-                        }
-*/
-
-                        // Create Google Calendar event for sub-slot
-                        const event = await createEvent(req, authClient, {
-                            summary: `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
-                            description: `Service: ${services.map(service => service.serviceName).join(", ")}`,
-                            customerName: customer.userId.userName,
-                            staffName: staffData.userId.userName,
-                            serviceNames: services.map(service => service.serviceName),
-                            startTime: startTime,
-                            endTime: endTimeCalculated,
-                            calendarId: staffData.calendarId,
-                            attendees: [{ email: customer.userId.email }],
-                            sendUpdates: "all",
-                        });
-                        createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
-
-                        subAppointments.push({ staffId, services, startTime, endTime: endTimeCalculated, eventId: event.id });
-                        currentStartTime = new Date(endTimeCalculated);
-                    }
+                if (adjustedStartTime >= adjustedEndTime) {
+                    throw new AppError("End time must be later than start time", 400);
                 }
+
+                for (const staffService of staffServices) {
+                    const { staffId, services } = staffService;
+
+                    const staffData = await staffModel.findById(staffId)
+                        .populate([{ path: "userId", ref: "User", select: "userName email" }])
+                        .session(session);
+
+                    const endTimeCalculated = calculateEndTime(adjustedStartTime, services);
+                    console.log(endTimeCalculated)
+                    if (adjustedEndTime.getTime() !== new Date(endTimeCalculated).getTime()) {
+                        throw new AppError("Slot end time is invalid", 404);
+                    }
+
+                    const event = await createEvent(req, authClient, {
+                        summary: `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
+                        description: `Service: ${services.map(service => service.serviceName).join(", ")}`,
+                        customerName: customer.userId.userName,
+                        staffName: staffData.userId.userName,
+                        serviceNames: services.map(service => service.serviceName),
+                        startTime: adjustedStartTime,
+                        endTime: endTimeCalculated,
+                        calendarId: staffData.calendarId,
+                        attendees: [{ email: customer.userId.email }],
+                        sendUpdates: "all",
+                    });
+
+                    createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
+
+                    subAppointments.push({ staffId, services, startTime: adjustedStartTime, endTime: endTimeCalculated, eventId: event.id });
+                }
+            }
+                console.log(appointmentStart)
 
 
             const appointment = new appointmentModel({
-                startTime: appointmentStart,
                 clientId,
                 customerId,
                 status: APPOINTMENT_STATUS,
