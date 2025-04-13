@@ -38,6 +38,10 @@ const AppointmentSchema = new mongoose.Schema({
         enum: ["Booked", "Cancelled", "completed","Updated"],
         default: "Booked"
     },
+    notes: {
+        type: String,
+        default: ""
+    },
     recurrence: {
         type: { type: String, enum: ["daily", "weekly", "monthly"], default: null },
         interval: { type: Number, default: 1 },
