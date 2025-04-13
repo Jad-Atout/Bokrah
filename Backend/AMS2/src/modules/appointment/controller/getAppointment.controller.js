@@ -24,7 +24,7 @@ export const getAppointments = async (req, res, next) => {
                         populate: { path: "userId", select: "userName email" },
                     },
                     {
-                        path: "services.serviceId", // make sure to match your field name
+                        path: "services.serviceId",
                         model: "Service",
                         select: "serviceName price duration",
                     },
@@ -32,12 +32,8 @@ export const getAppointments = async (req, res, next) => {
             })
             .exec();
 
-        // 2) Build an array of "calendarEvents"
-        //    (flatten subAppointments for each appointment)
+        // We'll flatten subAppointments for "calendarEvents" usage
         const calendarEvents = [];
-
-        // Also build a "detailedAppointments" array
-        // so front-end can see the entire structure if needed
         const detailedAppointments = [];
 
         appointments.forEach((appt) => {
@@ -49,21 +45,21 @@ export const getAppointments = async (req, res, next) => {
                 recurrence,
                 createdAt,
                 updatedAt,
+                notes
             } = appt;
 
-            // Build a "detail" object that keeps the entire appointment data
             const detailObj = {
                 _id: appointmentId,
                 clientId: appt.clientId,
                 customerId: appt.customerId,
                 status,
                 recurrence,
+                notes,
                 createdAt,
                 updatedAt,
                 subAppointments: [],
             };
 
-            // Loop over each subAppointment
             subAppointments.forEach((sub) => {
                 const {
                     staffId,
@@ -73,22 +69,18 @@ export const getAppointments = async (req, res, next) => {
                     status: subStatus,
                 } = sub;
 
-                // Collect staff info
                 const staffUser = staffId?.userId;
                 const staffName = staffUser?.userName || "Unknown Staff";
                 const staffMongoId = staffId?._id?.toString() || null;
 
-                // Collect service names
                 const serviceNames = services
                     .map((srv) => srv.serviceId?.serviceName || "")
                     .join(", ");
 
-                // We'll use a simple color for all events or map staff -> color if you want
                 const eventColor = "#007BFF";
 
-                // 2a) Push a "calendar event"
                 calendarEvents.push({
-                    id: `${appointmentId}-${staffMongoId}`, // unique ID for this subAppt
+                    id: `${appointmentId}-${staffMongoId}`,
                     appointmentId,
                     start: subStart,
                     end: subEnd,
@@ -100,10 +92,8 @@ export const getAppointments = async (req, res, next) => {
                     staffId: staffMongoId,
                     staffName,
                     status: subStatus || status,
-                    // if sub doesn't have its own status, fallback to the main "status"
                 });
 
-                // 2b) Also push subAppointment details into "detailObj"
                 detailObj.subAppointments.push({
                     _id: sub._id,
                     staffId: staffMongoId,
@@ -122,16 +112,14 @@ export const getAppointments = async (req, res, next) => {
                 });
             });
 
-            // 2c) Add the detailObj to "detailedAppointments"
             detailedAppointments.push(detailObj);
         });
 
-        // 3) Return both flattened events (for calendar) and full appointments (for details)
         return res.status(200).json({
             message: "Success",
             data: {
-                calendarEvents,        // array of events
-                detailedAppointments,  // full data, if needed
+                calendarEvents,
+                detailedAppointments,
             },
         });
     } catch (error) {
