@@ -3,11 +3,13 @@ import { AppError } from "../../../utils/AppError.js";
 
 export const getAppointments = async (req, res, next) => {
     try {
+        // 1) read clientId from token
         const { clientId } = req.authUser;
         if (!clientId) {
-            return next(new AppError("No clientId provided in params", 400));
+            return next(new AppError("No clientId provided in auth", 400));
         }
 
+        // 2) fetch all appointments for that client
         const appointments = await appointmentModel
             .find({ clientId })
             .populate({
@@ -24,20 +26,22 @@ export const getAppointments = async (req, res, next) => {
                         populate: { path: "userId", select: "userName email" },
                     },
                     {
+                        // We'll also fetch the "serviceColor" from the Service model
                         path: "services._id",
                         model: "Service",
-                        select: "price duration serviceName"
+                        select: "price duration serviceName serviceColor"
                     },
                 ],
             })
             .exec();
 
-        console.log(JSON.stringify(appointments, null, 2));
+        // debug
+        console.log("Full appointments =>", JSON.stringify(appointments, null, 2));
 
-        // 1) Build an array of "calendarEvents" (flattened subAppointments)
+        // We'll build:
+        // 1) calendarEvents (flattened for calendar)
+        // 2) detailedAppointments (the original structure, but with some extra info)
         const calendarEvents = [];
-
-        // 2) Also build a "detailedAppointments" array
         const detailedAppointments = [];
 
         appointments.forEach((appt) => {
@@ -47,27 +51,28 @@ export const getAppointments = async (req, res, next) => {
                 customerId,
                 subAppointments,
                 recurrence,
-                notes,         // <--- RETRIEVE NOTES FROM DB
+                notes,
                 createdAt,
                 updatedAt,
             } = appt;
 
-            // Build a "detail" object that keeps the entire appointment data
+            // We'll store everything in a detailObj
             const detailObj = {
                 _id: appointmentId,
                 clientId: appt.clientId,
                 customerId: appt.customerId,
                 status,
                 recurrence,
-                notes,        // <--- INCLUDE NOTES IN THE RESPONSE
+                notes,
                 createdAt,
                 updatedAt,
-                subAppointments: [],
+                subAppointments: [], // we fill it below
             };
 
-            // Loop over each subAppointment
+            // Loop each subAppointment
             subAppointments.forEach((sub) => {
                 const {
+                    _id: subApptId,
                     staffId,
                     services,
                     startTime: subStart,
@@ -75,25 +80,30 @@ export const getAppointments = async (req, res, next) => {
                     status: subStatus,
                 } = sub;
 
-                // Collect staff info
+                // Staff info
                 const staffUser = staffId?.userId;
                 const staffName = staffUser?.userName || "Unknown Staff";
                 const staffMongoId = staffId?._id?.toString() || null;
 
-                // Collect service names
+                // Extract service info
+                // We collect each service's color, but if there's at least one, we pick the first's color for the event
+                // or default #007BFF
+                let subServiceColor = "#007BFF";
+                if (services?.length > 0) {
+                    const firstSrv = services[0]?._id;
+                    if (firstSrv?.serviceColor) {
+                        subServiceColor = firstSrv.serviceColor;
+                    }
+                }
+
+                // e.g. "Haircut, Coloring"
                 const serviceNames = services
-                    .map((srv) => {
-                        if (!srv._id) return "Unknown Service";
-                        return srv._id.serviceName || "Unknown";
-                    })
+                    .map((srv) => srv._id?.serviceName || "Unknown")
                     .join(", ");
 
-                // We'll use a simple color for all events (or map staff -> color if you prefer)
-                const eventColor = "#007BFF";
-
-                // 2a) Push a "calendar event"
+                // *** Flattened calendar event
                 calendarEvents.push({
-                    id: `${appointmentId}-${staffMongoId}`, // unique ID for this subAppt
+                    id: `${appointmentId}-${staffMongoId}`,
                     appointmentId,
                     start: subStart,
                     end: subEnd,
@@ -101,23 +111,26 @@ export const getAppointments = async (req, res, next) => {
                     customerName: customerId?.userId?.userName || "Unknown Customer",
                     customerEmail: customerId?.userId?.email || "",
                     customerPhone: customerId?.userId?.phoneNumber || "",
-                    color: eventColor,
+                    color: subServiceColor, // use that color
                     staffId: staffMongoId,
                     staffName,
                     status: subStatus || status,
                 });
 
-                // 2b) Also push subAppointment details into "detailObj"
+                // build subAppt details for the "detailedAppointments"
+                const mappedServices = services.map((service) => ({
+                    serviceId: service._id?._id,
+                    serviceName: service._id?.serviceName || "Unknown Service",
+                    duration: service._id?.duration,
+                    price: service._id?.price,
+                    serviceColor: service._id?.serviceColor || "#808080"
+                }));
+
                 detailObj.subAppointments.push({
-                    _id: sub._id,
+                    _id: subApptId,
                     staffId: staffMongoId,
                     staffName,
-                    services: services.map((service) => ({
-                        serviceId: service._id?._id,
-                        serviceName: service._id?.serviceName || "Unknown Service",
-                        duration: service._id?.duration,
-                        price: service._id?.price
-                    })),
+                    services: mappedServices,
                     startTime: subStart,
                     endTime: subEnd,
                     status: subStatus,
@@ -126,16 +139,14 @@ export const getAppointments = async (req, res, next) => {
                 });
             });
 
-            // 2c) Add the detailObj to "detailedAppointments"
             detailedAppointments.push(detailObj);
         });
 
-        // 3) Return both flattened events (for calendar) and full appointments (for details)
         return res.status(200).json({
             message: "Success",
             data: {
-                calendarEvents,        // array of events
-                detailedAppointments,  // full data, if needed
+                calendarEvents,
+                detailedAppointments,
             },
         });
     } catch (error) {
@@ -150,11 +161,9 @@ export const getStaffAppointments = async (req, res, next) => {
         const { staffId } = req.params;
 
         const appointments = await appointmentModel.find({
-            clientId: clientId,
+            clientId,
             subAppointments: {
-                $elemMatch: {
-                    staffId: staffId
-                }
+                $elemMatch: { staffId }
             }
         })
             .populate([
@@ -167,9 +176,10 @@ export const getStaffAppointments = async (req, res, next) => {
                     }
                 },
                 {
+                    // select serviceColor here too
                     path: "subAppointments.services._id",
                     model: "Service",
-                    select: "price duration serviceName"
+                    select: "price duration serviceName serviceColor"
                 },
                 {
                     path: "customerId",
@@ -181,19 +191,18 @@ export const getStaffAppointments = async (req, res, next) => {
                 }
             ]);
 
-        console.log(JSON.stringify(appointments, null, 2));
+        console.log("Staff appointments =>", JSON.stringify(appointments, null, 2));
 
         // Filter subAppointments for this specific staffId
         const filteredAppointments = appointments.map(app => {
             const filteredSubs = app.subAppointments.filter(
-                sub => sub.staffId._id.toString() === staffId
+                sub => sub.staffId?._id?.toString() === staffId
             );
 
             return {
                 _id: app._id,
                 clientId: app.clientId,
-                // INCLUDE NOTES HERE AS WELL
-                notes: app.notes || "",    // <--- ADDED NOTES
+                notes: app.notes || "",
                 customer: {
                     customerId: app.customerId._id,
                     userId: app.customerId.userId._id,
@@ -201,24 +210,29 @@ export const getStaffAppointments = async (req, res, next) => {
                     email: app.customerId.userId.email,
                     phoneNumber: app.customerId.userId.phoneNumber,
                 },
-                subAppointments: filteredSubs.map(sub => ({
-                    subAppointmentId: sub._id,
-                    startTime: sub.startTime,
-                    endTime: sub.endTime,
-                    eventId: sub.eventId,
-                    status: sub.status,
-                    staff: {
-                        staffId: sub.staffId._id,
-                        userId: sub.staffId.userId._id,
-                        userName: sub.staffId.userId.userName
-                    },
-                    services: sub.services.map(service => ({
-                        serviceId: service._id._id,
+                subAppointments: filteredSubs.map(sub => {
+                    const mappedServices = sub.services.map(service => ({
+                        serviceId: service._id?._id,
                         serviceName: service._id?.serviceName || "Unknown Service",
-                        duration: service._id.duration,
-                        price: service._id.price
-                    }))
-                }))
+                        duration: service._id?.duration,
+                        price: service._id?.price,
+                        serviceColor: service._id?.serviceColor || "#808080"
+                    }));
+
+                    return {
+                        subAppointmentId: sub._id,
+                        startTime: sub.startTime,
+                        endTime: sub.endTime,
+                        eventId: sub.eventId,
+                        status: sub.status,
+                        staff: {
+                            staffId: sub.staffId?._id,
+                            userId: sub.staffId?.userId?._id,
+                            userName: sub.staffId?.userId?.userName
+                        },
+                        services: mappedServices
+                    };
+                })
             };
         });
 
