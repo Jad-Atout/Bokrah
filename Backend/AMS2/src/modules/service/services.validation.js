@@ -1,4 +1,5 @@
 import Joi from 'joi';
+
 export const visibilitySchema = Joi.object({
     visible: Joi.boolean()
         .required()
@@ -15,6 +16,7 @@ export const visibilitySchema = Joi.object({
             'string.hex': 'Service ID must be a valid hexadecimal string.',
             'string.length': 'Service ID must be exactly 24 characters long.'
         }),});
+
 export const createServiceSchema = Joi.object({
     serviceId: Joi.string()
         .hex()

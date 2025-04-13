@@ -62,7 +62,6 @@ export const createAppointment = async (req, res, next) => {
     try {
 
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
-        console.log(appointmentDates)
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
             let currentStartTime = new Date(appointmentStart);
@@ -89,10 +88,24 @@ export const createAppointment = async (req, res, next) => {
                         .session(session);
 
                     const endTimeCalculated = calculateEndTime(adjustedStartTime, services);
-                    console.log(endTimeCalculated)
                     if (adjustedEndTime.getTime() !== new Date(endTimeCalculated).getTime()) {
                         throw new AppError("Slot end time is invalid", 404);
                     }
+
+
+                    // const isInternalAvailable = await checkInternalAvailability(staffId, startTime, endTimeCalculated);
+                    // if (!isInternalAvailable) {
+                    //     throw new AppError(`Staff ${staffData.userId.userName} is unavailable internally at ${startTime}`, 400);
+                    // }
+
+                    // Check external (Google Calendar) availability
+
+                    const isAvailable = await checkAvailability(authClient, staffId, startTime, endTimeCalculated);
+                    console.log(isAvailable)
+                    if (!isAvailable) {
+                        throw new AppError(`Staff ${staffData.userId.userName} is unavailable externally at ${startTime}`, 400);
+                    }
+
 
                     const event = await createEvent(req, authClient, {
                         summary: `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
