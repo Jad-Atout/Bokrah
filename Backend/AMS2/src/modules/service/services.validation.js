@@ -16,6 +16,16 @@ export const visibilitySchema = Joi.object({
             'string.length': 'Service ID must be exactly 24 characters long.'
         }),});
 export const createServiceSchema = Joi.object({
+    serviceId: Joi.string()
+        .hex()
+        .length(24)
+        .optional()
+        .messages({
+            'any.required': 'Service ID is required.',
+            'string.hex': 'Service ID must be a valid hexadecimal string.',
+            'string.length': 'Service ID must be exactly 24 characters long.'
+        }),
+
     serviceName: Joi.string()
         .min(3)
         .max(50)
@@ -27,6 +37,7 @@ export const createServiceSchema = Joi.object({
             'string.max': 'Service name must be no more than 50 characters long.',
             'any.required': 'Service name is required.',
         }),
+
     serviceDescription: Joi.string()
         .min(10)
         .max(500)
@@ -60,6 +71,7 @@ export const createServiceSchema = Joi.object({
             'number.max': 'Duration must be no more than 12 hours (720 minutes).',
             'any.required': 'Duration is required.',
         }),
+
     bufferTime: Joi.number()
         .integer()
         .min(0)
@@ -68,5 +80,14 @@ export const createServiceSchema = Joi.object({
             'number.base': 'Buffer time must be a number.',
             'number.integer': 'Buffer time must be an integer.',
             'number.min': 'Buffer time cannot be negative.',
-        })
+        }),
+
+    serviceColor: Joi.string()
+        .pattern(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+        .required()
+        .messages({
+            'string.base': 'Color must be a string.',
+            'string.pattern.base': 'Color must be a valid hex code (e.g., #FF5733 or #FFF).',
+            'any.required': 'Color is required.',
+        }),
 });

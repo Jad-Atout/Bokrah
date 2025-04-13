@@ -3,7 +3,7 @@ import { AppError } from "../../../utils/AppError.js";
 
 export const getAppointments = async (req, res, next) => {
     try {
-        const { clientId } = req.params;
+        const { clientId } = req.authUser;
         if (!clientId) {
             return next(new AppError("No clientId provided in params", 400));
         }
@@ -24,14 +24,14 @@ export const getAppointments = async (req, res, next) => {
                         populate: { path: "userId", select: "userName email" },
                     },
                     {
-                        path: "services.serviceId", // make sure to match your field name
+                        path: "services._id",
                         model: "Service",
-                        select: "serviceName price duration",
+                        select:"price duration serviceName"
                     },
                 ],
             })
             .exec();
-
+            console.log(JSON.stringify(appointments,null,2));
         // 2) Build an array of "calendarEvents"
         //    (flatten subAppointments for each appointment)
         const calendarEvents = [];
@@ -80,7 +80,7 @@ export const getAppointments = async (req, res, next) => {
 
                 // Collect service names
                 const serviceNames = services
-                    .map((srv) => srv.serviceId?.serviceName || "")
+                    .map((srv) => srv._id.serviceName || "")
                     .join(", ");
 
                 // We'll use a simple color for all events or map staff -> color if you want
@@ -108,11 +108,11 @@ export const getAppointments = async (req, res, next) => {
                     _id: sub._id,
                     staffId: staffMongoId,
                     staffName,
-                    services: services.map((srv) => ({
-                        serviceId: srv.serviceId?._id,
-                        serviceName: srv.serviceId?.serviceName,
-                        price: srv.serviceId?.price,
-                        duration: srv.duration,
+                    services: services.map((service) => ({
+                        serviceId: service._id._id,
+                        serviceName: service._id.serviceName,
+                        duration: service._id.duration,
+                        price: service._id.price
                     })),
                     startTime: subStart,
                     endTime: subEnd,
@@ -138,4 +138,77 @@ export const getAppointments = async (req, res, next) => {
         console.error("Error in getAppointments:", error);
         return next(new AppError(`Failed to retrieve appointments: ${error.message}`, 500));
     }
+};
+
+export const getStaffAppointments = async (req, res, next) => {
+    const { clientId } = req.authUser;
+    const { staffId } = req.params;
+
+    const appointments = await appointmentModel.find({
+        clientId: clientId,
+        subAppointments: {
+            $elemMatch: {
+                staffId: staffId
+            }
+        }
+    })
+        .populate([
+            {
+                path: "subAppointments.staffId",
+                populate: {
+                    path: "userId",
+                    model: "User",
+                    select: "userName"
+                }
+            },
+            {
+                path: "subAppointments.services._id",
+                model: "Service",
+                select:"price duration serviceName"
+            },
+            {
+                path: "customerId",
+                populate: {
+                    path: "userId",
+                    model: "User",
+                    select: "userName phoneNumber email"
+                }
+            }
+        ]);
+    console.log(JSON.stringify(appointments,null,2))
+
+    const filteredAppointments = appointments.map(app => {
+        const filteredSubs = app.subAppointments.filter(sub => sub.staffId._id.toString() === staffId);
+        return {
+            _id: app._id,
+            clientId: app.clientId,
+            customer: {
+                customerId: app.customerId._id,
+                userId: app.customerId.userId._id,
+                userName: app.customerId.userId.userName,
+                email: app.customerId.userId.email,
+                phoneNumber: app.customerId.userId.phoneNumber,
+            },
+            subAppointments: filteredSubs.map(sub => ({
+                subAppointmentId: sub._id,
+                startTime: sub.startTime,
+                endTime: sub.endTime,
+                eventId: sub.eventId,
+                status: sub.status,
+                staff: {
+                    staffId: sub.staffId._id,
+                    userId: sub.staffId.userId._id,
+                    userName: sub.staffId.userId.userName
+                },
+                services: sub.services.map(service => ({
+                    serviceId: service._id._id,
+                    serviceName: service._id.serviceName,
+                    duration: service._id.duration,
+                    price: service._id.price
+                }))
+            }))
+        };
+    });
+
+    res.status(200).json({ appointments: filteredAppointments });
 };

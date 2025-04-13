@@ -23,6 +23,7 @@ async function scheduleJob(jobType, referenceId, scheduledTime, jobFunction) {
     });
 }
 
+
 export async function deleteJob(jobId) {
     try {
         const job = await scheduledJob.findByIdAndDelete(jobId);

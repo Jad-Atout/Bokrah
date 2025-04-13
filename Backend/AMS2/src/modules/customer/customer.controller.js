@@ -12,6 +12,9 @@ import {
 import {sendEmail} from "../../utils/email.js";
 import {setPasswordEmailTemplate, welcomeEmailTemplate} from "../../utils/emailTemplete.js";
 import jwt from "jsonwebtoken";
+import appointment from "../../../DB/models/appointment.js";
+import prepareToken from "../../utils/Google/Services/refreshToken.js";
+import {cancelAppointment} from "../appointment/controller/cancelAppointment.controller.js";
 dotenv.config()
 
 // login directry after confirmation
@@ -148,9 +151,40 @@ export const toggleBlockCustomer = async (req, res, next) => {
     const relation =  await clientCustomerModel.findOne({clientId,customerId})
     if(!relation) return next(new AppError("Relation does not exists", 401));
     relation.isActive = !relation.isActive
+    if(!relation.isActive){
+        const appointments = await appointment.find({customerId:customerId})
+        for (appoint of appointments) {
+            await cancelBlockedCustomerAppointments(appoint._id,clientId)
+        }
+    }
     await relation.save()
     return res.status(200).json({message:"success"})
 }
+const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
+    let auth;
+    const req = {
+        authUser: { clientId },
+        params: {},
+        body: { appointmentId }
+    };
+
+    const res = {
+        status: () => res,
+        json: (data) => console.log("Response JSON:", data)
+    };
+
+    const next = (err) => {
+        if (err) console.error("Error:", err);
+        auth = req.oauth2Client;
+    };
+
+    const middleware1 = prepareToken();
+    await middleware1(req, res, next);
+
+    const middleware2 = cancelAppointment();
+    await middleware2(req, res, next);
+};
+
 
 export const getCustomersCount = async (req, res, next) => {
     try {
