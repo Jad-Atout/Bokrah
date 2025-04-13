@@ -26,18 +26,18 @@ export const getAppointments = async (req, res, next) => {
                     {
                         path: "services._id",
                         model: "Service",
-                        select:"price duration serviceName"
+                        select: "price duration serviceName"
                     },
                 ],
             })
             .exec();
-            console.log(JSON.stringify(appointments,null,2));
-        // 2) Build an array of "calendarEvents"
-        //    (flatten subAppointments for each appointment)
+
+        console.log(JSON.stringify(appointments, null, 2));
+
+        // 1) Build an array of "calendarEvents" (flattened subAppointments)
         const calendarEvents = [];
 
-        // Also build a "detailedAppointments" array
-        // so front-end can see the entire structure if needed
+        // 2) Also build a "detailedAppointments" array
         const detailedAppointments = [];
 
         appointments.forEach((appt) => {
@@ -47,6 +47,7 @@ export const getAppointments = async (req, res, next) => {
                 customerId,
                 subAppointments,
                 recurrence,
+                notes,         // <--- RETRIEVE NOTES FROM DB
                 createdAt,
                 updatedAt,
             } = appt;
@@ -58,6 +59,7 @@ export const getAppointments = async (req, res, next) => {
                 customerId: appt.customerId,
                 status,
                 recurrence,
+                notes,        // <--- INCLUDE NOTES IN THE RESPONSE
                 createdAt,
                 updatedAt,
                 subAppointments: [],
@@ -80,10 +82,13 @@ export const getAppointments = async (req, res, next) => {
 
                 // Collect service names
                 const serviceNames = services
-                    .map((srv) => srv._id.serviceName || "")
+                    .map((srv) => {
+                        if (!srv._id) return "Unknown Service";
+                        return srv._id.serviceName || "Unknown";
+                    })
                     .join(", ");
 
-                // We'll use a simple color for all events or map staff -> color if you want
+                // We'll use a simple color for all events (or map staff -> color if you prefer)
                 const eventColor = "#007BFF";
 
                 // 2a) Push a "calendar event"
@@ -100,7 +105,6 @@ export const getAppointments = async (req, res, next) => {
                     staffId: staffMongoId,
                     staffName,
                     status: subStatus || status,
-                    // if sub doesn't have its own status, fallback to the main "status"
                 });
 
                 // 2b) Also push subAppointment details into "detailObj"
@@ -109,10 +113,10 @@ export const getAppointments = async (req, res, next) => {
                     staffId: staffMongoId,
                     staffName,
                     services: services.map((service) => ({
-                        serviceId: service._id._id,
-                        serviceName: service._id.serviceName,
-                        duration: service._id.duration,
-                        price: service._id.price
+                        serviceId: service._id?._id,
+                        serviceName: service._id?.serviceName || "Unknown Service",
+                        duration: service._id?.duration,
+                        price: service._id?.price
                     })),
                     startTime: subStart,
                     endTime: subEnd,
@@ -141,74 +145,88 @@ export const getAppointments = async (req, res, next) => {
 };
 
 export const getStaffAppointments = async (req, res, next) => {
-    const { clientId } = req.authUser;
-    const { staffId } = req.params;
+    try {
+        const { clientId } = req.authUser;
+        const { staffId } = req.params;
 
-    const appointments = await appointmentModel.find({
-        clientId: clientId,
-        subAppointments: {
-            $elemMatch: {
-                staffId: staffId
-            }
-        }
-    })
-        .populate([
-            {
-                path: "subAppointments.staffId",
-                populate: {
-                    path: "userId",
-                    model: "User",
-                    select: "userName"
-                }
-            },
-            {
-                path: "subAppointments.services._id",
-                model: "Service",
-                select:"price duration serviceName"
-            },
-            {
-                path: "customerId",
-                populate: {
-                    path: "userId",
-                    model: "User",
-                    select: "userName phoneNumber email"
+        const appointments = await appointmentModel.find({
+            clientId: clientId,
+            subAppointments: {
+                $elemMatch: {
+                    staffId: staffId
                 }
             }
-        ]);
-    console.log(JSON.stringify(appointments,null,2))
-
-    const filteredAppointments = appointments.map(app => {
-        const filteredSubs = app.subAppointments.filter(sub => sub.staffId._id.toString() === staffId);
-        return {
-            _id: app._id,
-            clientId: app.clientId,
-            customer: {
-                customerId: app.customerId._id,
-                userId: app.customerId.userId._id,
-                userName: app.customerId.userId.userName,
-                email: app.customerId.userId.email,
-                phoneNumber: app.customerId.userId.phoneNumber,
-            },
-            subAppointments: filteredSubs.map(sub => ({
-                subAppointmentId: sub._id,
-                startTime: sub.startTime,
-                endTime: sub.endTime,
-                eventId: sub.eventId,
-                status: sub.status,
-                staff: {
-                    staffId: sub.staffId._id,
-                    userId: sub.staffId.userId._id,
-                    userName: sub.staffId.userId.userName
+        })
+            .populate([
+                {
+                    path: "subAppointments.staffId",
+                    populate: {
+                        path: "userId",
+                        model: "User",
+                        select: "userName"
+                    }
                 },
-                services: sub.services.map(service => ({
-                    serviceId: service._id._id,
-                    serviceName: service._id.serviceName,
-                    duration: service._id.duration,
-                    price: service._id.price
-                }))
-            }))
-        };
-    });
+                {
+                    path: "subAppointments.services._id",
+                    model: "Service",
+                    select: "price duration serviceName"
+                },
+                {
+                    path: "customerId",
+                    populate: {
+                        path: "userId",
+                        model: "User",
+                        select: "userName phoneNumber email"
+                    }
+                }
+            ]);
 
-    res.status(200).json({ appointments: filteredAppointments });
+        console.log(JSON.stringify(appointments, null, 2));
+
+        // Filter subAppointments for this specific staffId
+        const filteredAppointments = appointments.map(app => {
+            const filteredSubs = app.subAppointments.filter(
+                sub => sub.staffId._id.toString() === staffId
+            );
+
+            return {
+                _id: app._id,
+                clientId: app.clientId,
+                // INCLUDE NOTES HERE AS WELL
+                notes: app.notes || "",    // <--- ADDED NOTES
+                customer: {
+                    customerId: app.customerId._id,
+                    userId: app.customerId.userId._id,
+                    userName: app.customerId.userId.userName,
+                    email: app.customerId.userId.email,
+                    phoneNumber: app.customerId.userId.phoneNumber,
+                },
+                subAppointments: filteredSubs.map(sub => ({
+                    subAppointmentId: sub._id,
+                    startTime: sub.startTime,
+                    endTime: sub.endTime,
+                    eventId: sub.eventId,
+                    status: sub.status,
+                    staff: {
+                        staffId: sub.staffId._id,
+                        userId: sub.staffId.userId._id,
+                        userName: sub.staffId.userId.userName
+                    },
+                    services: sub.services.map(service => ({
+                        serviceId: service._id._id,
+                        serviceName: service._id?.serviceName || "Unknown Service",
+                        duration: service._id.duration,
+                        price: service._id.price
+                    }))
+                }))
+            };
+        });
+
+        return res.status(200).json({
+            appointments: filteredAppointments
+        });
+    } catch (error) {
+        console.error("Error in getStaffAppointments:", error);
+        return next(new AppError(`Failed to retrieve staff appointments: ${error.message}`, 500));
+    }
 };
