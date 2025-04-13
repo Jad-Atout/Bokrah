@@ -29,6 +29,10 @@ const ServiceSchema = new mongoose.Schema({
     bufferTime:{
         type: Number,
         default: 0
+    },
+    serviceColor:{
+        type: String,
+        default: "#808080"
     }
 }, { timestamps: true });
 

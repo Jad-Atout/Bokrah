@@ -32,6 +32,7 @@ router.patch('/visible/:serviceId',
     )
 router.patch('/:serviceId',
     auth(roles.Client),
+    asyncHandler(validationHandler(createServiceSchema)),
     asyncHandler(verifyOwnership()),
     asyncHandler(updateService)
 );

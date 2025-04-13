@@ -16,7 +16,7 @@ import {updateAppointment} from "./controller/updateAppointment.controller.js";
 import {cancelSubAppointment} from "./controller/subappointments.controller.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createAppointmentSchema, timeSlotSchema, updateAppointmentSchema} from "./appointment.validation.js";
-import {getAppointments} from "./controller/getAppointment.controller.js";
+import {getAppointments, getStaffAppointments} from "./controller/getAppointment.controller.js";
 
 const role = [roles.Client,roles.Staff,roles.Customer]
 router.post('/:clientId',
@@ -59,8 +59,13 @@ router.delete('/:clientId/:appointmentId/:subAppointmentId',
 router.get('/count', auth([roles.Admin]),
     asyncHandler(getAppointmentsCount));
 
-router.get('/:clientId', getAppointments);
+router.get('/',
+    auth([roles.Client])
+    ,asyncHandler(getAppointments));
 
+router.get('/staff/:staffId',
+    auth([roles.Client]),
+    asyncHandler(getStaffAppointments))
 
 router.get(
     "/customer/:customerId",
