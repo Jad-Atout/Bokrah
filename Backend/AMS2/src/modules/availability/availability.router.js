@@ -10,7 +10,7 @@ import {auth, roles} from "../../middleware/auth.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {staffAvailabilitySchema} from "./availabilty.validation.js";
 import {validationHandler} from "../../middleware/validation.js";
-
+//TODO add holidays
 const router = Router();
 
 router.post("/",auth(roles.Client),

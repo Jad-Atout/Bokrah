@@ -17,7 +17,7 @@ import {cancelSubAppointment} from "./controller/subappointments.controller.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createAppointmentSchema, timeSlotSchema, updateAppointmentSchema} from "./appointment.validation.js";
 import {getAppointments, getStaffAppointments} from "./controller/getAppointment.controller.js";
-
+//TODO: apply the filteration from the frontend
 const role = [roles.Client,roles.Staff,roles.Customer]
 router.post('/:clientId',
     auth(role),

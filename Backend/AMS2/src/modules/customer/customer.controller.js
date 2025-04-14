@@ -1,6 +1,6 @@
 import {AppError} from "../../utils/AppError.js";
 import bcrypt from "bcrypt";
-import  userModel from "../../../DB/models/user.js";
+import userModel from "../../../DB/models/user.js";
 import clientCustomerModel from "../../../DB/models/ClientCustomer.js";
 import customerModel from "../../../DB/models/customer.js";
 import dotenv from "dotenv";
@@ -15,6 +15,7 @@ import jwt from "jsonwebtoken";
 import appointment from "../../../DB/models/appointment.js";
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
 import {cancelAppointment} from "../appointment/controller/cancelAppointment.controller.js";
+
 dotenv.config()
 
 // login directry after confirmation
@@ -153,7 +154,7 @@ export const toggleBlockCustomer = async (req, res, next) => {
     relation.isActive = !relation.isActive
     if(!relation.isActive){
         const appointments = await appointment.find({customerId:customerId})
-        for (appoint of appointments) {
+        for (const appoint of appointments) {
             await cancelBlockedCustomerAppointments(appoint._id,clientId)
         }
     }
@@ -164,7 +165,7 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
     let auth;
     const req = {
         authUser: { clientId },
-        params: {},
+        params: {clientId},
         body: { appointmentId }
     };
 
@@ -181,8 +182,7 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
     const middleware1 = prepareToken();
     await middleware1(req, res, next);
 
-    const middleware2 = cancelAppointment();
-    await middleware2(req, res, next);
+    await cancelAppointment(req, res, next);
 };
 
 
