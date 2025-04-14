@@ -153,7 +153,7 @@ export const toggleBlockCustomer = async (req, res, next) => {
     relation.isActive = !relation.isActive
     if(!relation.isActive){
         const appointments = await appointment.find({customerId:customerId})
-        for (appoint of appointments) {
+        for (const appoint of appointments) {
             await cancelBlockedCustomerAppointments(appoint._id,clientId)
         }
     }
@@ -164,7 +164,7 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
     let auth;
     const req = {
         authUser: { clientId },
-        params: {},
+        params: {clientId},
         body: { appointmentId }
     };
 
@@ -181,11 +181,8 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
     const middleware1 = prepareToken();
     await middleware1(req, res, next);
 
-    const middleware2 = cancelAppointment();
-    await middleware2(req, res, next);
+    await cancelAppointment(req, res, next);
 };
-
-
 export const getCustomersCount = async (req, res, next) => {
     try {
         const customerCount = await customerModel.countDocuments();

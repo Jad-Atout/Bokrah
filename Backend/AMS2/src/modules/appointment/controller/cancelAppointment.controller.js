@@ -99,18 +99,18 @@ export const cancelAppointment = async (req, res, next) => {
 
 
         if (customerEmail) {
-          await sendEmail(
-            customerEmail,
-            "Your Appointment Has Been Canceled",
-            await appointmentDeletedEmail(
-              userName,
-              staffNames,
-              allServices,
-              appointment.subAppointments
-            )
-          );
+            await sendEmail(
+                customerEmail,
+                "Your Appointment Has Been Canceled",
+                await appointmentDeletedEmail(
+                    userName,
+                    staffNames,
+                    allServices,
+                    appointment.subAppointments
+                )
+            );
         } else {
-          console.warn("No newCustomer email found. Cannot send cancellation email.");
+            console.warn("No newCustomer email found. Cannot send cancellation email.");
         }
 
 
