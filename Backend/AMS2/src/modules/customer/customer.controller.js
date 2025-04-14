@@ -184,8 +184,6 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
 
     await cancelAppointment(req, res, next);
 };
-
-
 export const getCustomersCount = async (req, res, next) => {
     try {
         const customerCount = await customerModel.countDocuments();
