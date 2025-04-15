@@ -16,7 +16,9 @@ import {
 import { transCreateCustomer } from "../../../../DB/Controller/customer.DB.controller.js";
 import { scheduleReminders } from "../../../utils/Scheduler/reminderSchedules.js";
 import UserClient from "../../../../DB/models/ClientCustomer.js";
-
+import {createNotification} from "../../notification/notification.controller.js";
+import {appointmentTemplates} from "../../notification/notification.templet.js";
+import clientModel from "../../../../DB/models/client.js";
 export const createAppointment = async (req, res, next) => {
     // ADDED NOTES FIELD in destructuring
     let { customerId, recurrence, slot, userId, notes } = req.body;
@@ -27,6 +29,7 @@ export const createAppointment = async (req, res, next) => {
     session.startTransaction();
     let createdEvents = [];
     let createdAppointment = [];
+    let notificationServices = []
 
     try {
         // If no customerId is provided but userId is given, create or find the Customer
@@ -85,7 +88,7 @@ export const createAppointment = async (req, res, next) => {
 
                 for (const staffService of staffServices) {
                     const { staffId, services } = staffService;
-
+                    notificationServices = [...services];
                     const staffData = await staffModel
                         .findById(staffId)
                         .populate([{ path: "userId", ref: "User", select: "userName email" }])
@@ -160,6 +163,18 @@ export const createAppointment = async (req, res, next) => {
         for (const appointment of createdAppointment) {
             await scheduleReminders(appointment._id);
         }
+
+
+        const client = await clientModel.findById(clientId)
+        await createNotification([customer.userId._id,client.userId],
+            appointmentTemplates.booked({
+                customerName:customer.userId.userName,
+                serviceNames:notificationServices.map(service => service.serviceName),
+                date: new Date(createdAppointment[0].subAppointments[0].startTime).toString(),
+            }))
+
+
+
 
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
