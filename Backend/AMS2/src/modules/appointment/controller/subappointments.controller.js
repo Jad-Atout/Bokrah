@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import { AppError } from "../../../utils/AppError.js";
-
+//TODO to be deleted
 // This cancels one subAppointment from an appointment, not the entire thing
 export const cancelSubAppointment = async (req, res, next) => {
     const { appointmentId, subAppointmentId, clientId } = req.params;

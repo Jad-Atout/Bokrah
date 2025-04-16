@@ -29,7 +29,6 @@ const notificationSchema = new mongoose.Schema({
     // Who/what triggered this notification: Customer, Provider, System, etc.
     triggeredBy: {
         type: String,
-        default: ""
     }
 }, { timestamps: true });
 

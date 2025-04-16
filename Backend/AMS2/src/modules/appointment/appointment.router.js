@@ -1,8 +1,4 @@
-import {
-    createAppointment,
-    getAppointmentsByCustomer,
-    getAppointmentsCount
-} from "./controller/createAppointment.controller.js";
+import {createAppointment,} from "./controller/createAppointment.controller.js";
 import { Router } from 'express';
 import {authServices, authSlots, verifyAppointmentOwnership} from "./appointment.auth.js";
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
@@ -10,13 +6,17 @@ import {asyncHandler} from "../../utils/catchError.js";
 const router = Router();
 import {auth, roles} from "../../middleware/auth.js";
 import {cancelAppointment} from "./controller/cancelAppointment.controller.js";
-import {generateAvailableSlots} from "./controller/getAvailableTimeSlots.js";
+import {generateAvailableSlots} from "./controller/utils/getAvailableTimeSlots.js";
 import {deleteAppointment} from "./controller/deleteAppointment.controller.js";
 import {updateAppointment} from "./controller/updateAppointment.controller.js";
 import {cancelSubAppointment} from "./controller/subappointments.controller.js";
 import {validationHandler} from "../../middleware/validation.js";
 import {createAppointmentSchema, timeSlotSchema, updateAppointmentSchema} from "./appointment.validation.js";
-import {getAppointments, getStaffAppointments} from "./controller/getAppointment.controller.js";
+import {
+    getAppointments,
+    getAppointmentsByCustomer, getAppointmentsCount,
+    getStaffAppointments
+} from "./controller/getAppointment.controller.js";
 //TODO: apply the filteration from the frontend
 const role = [roles.Client,roles.Staff,roles.Customer]
 router.post('/:clientId',
@@ -58,7 +58,6 @@ router.delete('/:clientId/:appointmentId/:subAppointmentId',
 
 router.get('/count', auth([roles.Admin]),
     asyncHandler(getAppointmentsCount));
-
 router.get('/',
     auth([roles.Client])
     ,asyncHandler(getAppointments));

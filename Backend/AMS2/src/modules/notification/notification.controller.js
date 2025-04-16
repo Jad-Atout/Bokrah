@@ -1,14 +1,16 @@
 import {AppError} from "../../utils/AppError.js";
-import Notification from "../../../DB/models/notification.js";
+import Notification from "../../../DB/models/notifications/notification.js";
+import UserNotificationPreference from "../../../DB/models/notifications/UserNotificationPreference.js";
 export const getNotifications = async (req, res, next) => {
     try {
         const {userId} = req.authUser;
+        const us = req.authUser
         const notifications = await Notification.find({ userId })
             .sort({ createdAt: -1 }); // newest first
 
         return res.status(200).json({
             message: "Success",
-            notifications
+            notifications,
         });
     } catch (error) {
         return next(new AppError(`Failed to get notifications: ${error.message}`, 500));
@@ -68,15 +70,23 @@ export const sendNotification = async (req, res, next) => {
 
 
 
-export const createNotification = async (userId, template,triggeredBy="System") => {
+export const createNotification = async (userIds, template,triggeredBy="System") => {
     try {
-        const userIds = Array.isArray(userId) ? userId : [userId];
+        const users = Array.isArray(userIds) ? userIds : [userIds];
+        const notifications = [];
 
-        const notifications = userIds.map((uid) => ({
-            userId: uid,
-            triggeredBy,
-            ...template,
-        }));
+        for (const uid of users) {
+            const userPrefs = await UserNotificationPreference.findOne({ userId: uid });
+
+            const allowed = userPrefs?.preferences?.[template.type];
+            if (allowed && !Object.values(allowed).some(Boolean)) continue;
+
+            notifications.push({
+                userId: uid,
+                ...template,
+                triggeredBy,
+            });
+        }
 
         return await Notification.insertMany(notifications);
     } catch (err) {
