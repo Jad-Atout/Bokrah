@@ -1,7 +1,13 @@
 import mongoose from "mongoose";
 
 const scheduledJobSchema = new mongoose.Schema({
-    jobType: { type: String, required: true, enum: ["appointmentReminder", "subscriptionCheck", "subAppointmentEnd"] },
+    jobType: { type: String, required: true, enum: [
+            "appointmentReminder-email",
+            "appointmentReminder-sms",
+            "appointmentReminder-push",
+            "subscriptionCheck",
+            "subAppointmentEnd"]
+    },
     referenceId: { type: String, required: true },
     scheduledTime: { type: Date, required: true },
 });

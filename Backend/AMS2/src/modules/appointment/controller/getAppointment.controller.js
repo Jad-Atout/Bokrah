@@ -1,5 +1,6 @@
 import appointmentModel from "../../../../DB/models/appointment.js";
 import { AppError } from "../../../utils/AppError.js";
+import UserClient from "../../../../DB/models/ClientCustomer.js";
 
 export const getAppointments = async (req, res, next) => {
     try {
@@ -242,5 +243,70 @@ export const getStaffAppointments = async (req, res, next) => {
     } catch (error) {
         console.error("Error in getStaffAppointments:", error);
         return next(new AppError(`Failed to retrieve staff appointments: ${error.message}`, 500));
+    }
+};
+
+export const getAppointmentsCount = async (req, res, next) => {
+    try {
+        const appointmentCount = await appointmentModel.countDocuments();
+        return res
+            .status(200)
+            .json({ message: "Success", count: appointmentCount });
+    } catch (error) {
+        console.error("Error fetching appointment count:", error);
+        return res
+            .status(500)
+            .json({ message: "Server error", error: error.message });
+    }
+};
+
+export const getAppointmentsByCustomer = async (req, res, next) => {
+    try {
+        const { clientId } = req.authUser; // from the token
+        const { customerId } = req.params; // from the route
+
+        // Ensure that this customer is linked to this client
+        const link = await UserClient.findOne({ clientId, customerId });
+        if (!link) {
+            return next(
+                new AppError(
+                    "This customer does not belong to the current client",
+                    404
+                )
+            );
+        }
+
+        // Find all appointments with that customerId + clientId
+        const appointments = await appointmentModel
+            .find({ customerId, clientId })
+            .populate({
+                path: "subAppointments",
+                populate: [
+                    {
+                        path: "staffId",
+                        select: "roleDescription calendarId",
+                        populate: {
+                            path: "userId",
+                            select: "userName email"
+                        }
+                    },
+                    {
+                        path: "services._id",
+                        model: "Service",
+                        select: "serviceName price duration"
+                    }
+                ]
+            })
+            .exec();
+
+        return res.status(200).json({
+            message: "success",
+            appointments
+        });
+    } catch (error) {
+        console.error("Error fetching appointments by customer:", error);
+        return next(
+            new AppError(`Failed to retrieve appointments: ${error.message}`, 500)
+        );
     }
 };

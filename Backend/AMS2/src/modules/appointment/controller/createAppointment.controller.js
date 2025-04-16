@@ -1,45 +1,51 @@
-import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
-import { AppError } from "../../../utils/AppError.js";
+// ================================
+// 📦 Imports
+// ================================
 import mongoose from "mongoose";
+import { AppError } from "../../../utils/AppError.js";
+
 import appointmentModel from "../../../../DB/models/appointment.js";
-import createEvent from "../../../utils/Google/events/createEvent.js";
+import clientModel from "../../../../DB/models/client.js";
 import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
-import {
-    calculateEndTime,
-    checkInternalAvailability,
-    generateRecurringDates,
-    eventCreateRollback
-} from "./helpers.js";
 
 import { transCreateCustomer } from "../../../../DB/Controller/customer.DB.controller.js";
+import createEvent from "../../../utils/Google/events/createEvent.js";
 import { scheduleReminders } from "../../../utils/Scheduler/reminderSchedules.js";
-import UserClient from "../../../../DB/models/ClientCustomer.js";
-import {createNotification} from "../../notification/notification.controller.js";
-import {appointmentTemplates} from "../../notification/notification.templet.js";
-import clientModel from "../../../../DB/models/client.js";
+import { createNotification } from "../../notification/notification.controller.js";
+import { appointmentTemplates } from "../../notification/notificationTemplate.js";
+
+import {
+    calculateEndTime,
+    generateRecurringDates,
+    eventCreateRollback,
+    resolveTriggeredBy
+} from "./utils/helpers.js";
+
+
+// ================================
+// 📅 Create Appointment Controller
+// ================================
 export const createAppointment = async (req, res, next) => {
-    // ADDED NOTES FIELD in destructuring
     let { customerId, recurrence, slot, userId, notes } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
     const APPOINTMENT_STATUS = "Booked";
     const session = await mongoose.startSession();
     session.startTransaction();
+
     let createdEvents = [];
     let createdAppointment = [];
-    let notificationServices = []
+    let notificationServices = [];
 
     try {
-        // If no customerId is provided but userId is given, create or find the Customer
+        // 1. Ensure customer exists or create new
         if (!customerId && userId) {
             let foundCustomer = await customerModel.findOne({ userId });
             if (!foundCustomer) {
                 const { customer } = await transCreateCustomer({ userId });
-                if (!customer) {
-                    throw new AppError("Failed to create newCustomer", 500);
-                }
+                if (!customer) throw new AppError("Failed to create newCustomer", 500);
                 customerId = customer;
             } else {
                 customerId = foundCustomer;
@@ -50,14 +56,11 @@ export const createAppointment = async (req, res, next) => {
             .populate([{ path: "userId", ref: "User" }]);
 
         if (!customer?.userId) return next(new AppError("Customer not found", 404));
-        if (
-            customer.userId.authProvider === "local" &&
-            !customer.userId.confirmed
-        ) {
+        if (customer.userId.authProvider === "local" && !customer.userId.confirmed) {
             return next(new AppError("Customer must be confirmed", 401));
         }
 
-        // Generate all recurrence dates
+        // 2. Generate recurring dates
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
 
         for (const appointmentStart of appointmentDates) {
@@ -70,16 +73,14 @@ export const createAppointment = async (req, res, next) => {
                 adjustedStartTime.setHours(
                     new Date(startTime).getHours(),
                     new Date(startTime).getMinutes(),
-                    0,
-                    0
+                    0, 0
                 );
 
                 let adjustedEndTime = new Date(appointmentStart);
                 adjustedEndTime.setHours(
                     new Date(endTime).getHours(),
                     new Date(endTime).getMinutes(),
-                    0,
-                    0
+                    0, 0
                 );
 
                 if (adjustedStartTime >= adjustedEndTime) {
@@ -89,6 +90,7 @@ export const createAppointment = async (req, res, next) => {
                 for (const staffService of staffServices) {
                     const { staffId, services } = staffService;
                     notificationServices = [...services];
+
                     const staffData = await staffModel
                         .findById(staffId)
                         .populate([{ path: "userId", ref: "User", select: "userName email" }])
@@ -96,20 +98,17 @@ export const createAppointment = async (req, res, next) => {
 
                     const endTimeCalculated = calculateEndTime(adjustedStartTime, services);
 
-                    if (
-                        adjustedEndTime.getTime() !==
-                        new Date(endTimeCalculated).getTime()
-                    ) {
+                    if (adjustedEndTime.getTime() !== new Date(endTimeCalculated).getTime()) {
                         throw new AppError("Slot end time is invalid", 404);
                     }
 
-                    // Create Google Calendar event
+                    // 3. Create Google Calendar Event
                     const event = await createEvent(req, authClient, {
                         summary: `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
-                        description: `Service: ${services.map(service => service.serviceName).join(", ")}`,
+                        description: `Service: ${services.map(s => s.serviceName).join(", ")}`,
                         customerName: customer.userId.userName,
                         staffName: staffData.userId.userName,
-                        serviceNames: services.map(service => service.serviceName),
+                        serviceNames: services.map(s => s.serviceName),
                         startTime: adjustedStartTime,
                         endTime: endTimeCalculated,
                         calendarId: staffData.calendarId,
@@ -117,10 +116,7 @@ export const createAppointment = async (req, res, next) => {
                         sendUpdates: "all",
                     });
 
-                    createdEvents.push({
-                        eventId: event.id,
-                        calendarId: staffData.calendarId
-                    });
+                    createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
 
                     subAppointments.push({
                         staffId,
@@ -131,7 +127,6 @@ export const createAppointment = async (req, res, next) => {
                     });
                 }
             }
-
 
             const appointment = new appointmentModel({
                 clientId,
@@ -146,11 +141,8 @@ export const createAppointment = async (req, res, next) => {
             createdAppointment.push(appointment);
         }
 
-        // If the customer-client link does not exist, create it
-        const existingAssignment = await customerClientModel.findOne({
-            customerId,
-            clientId
-        });
+        // 4. Link customer to a client if not already
+        const existingAssignment = await customerClientModel.findOne({ customerId, clientId });
         if (!existingAssignment) {
             const assign = new customerClientModel({ customerId, clientId });
             await assign.save({ session });
@@ -159,102 +151,29 @@ export const createAppointment = async (req, res, next) => {
         await session.commitTransaction();
         session.endSession();
 
-        // Schedule reminders for each created appointment
+        // 5. Schedule reminders and notifications
         for (const appointment of createdAppointment) {
             await scheduleReminders(appointment._id);
         }
 
-
-        const client = await clientModel.findById(clientId)
-        await createNotification([customer.userId._id,client.userId],
-            appointmentTemplates.booked({
-                customerName:customer.userId.userName,
-                serviceNames:notificationServices.map(service => service.serviceName),
-                date: new Date(createdAppointment[0].subAppointments[0].startTime).toString(),
-            }))
-
-
-
+        await sendAppointmentBookedNotifications({
+            appointments: createdAppointment,
+            customer,
+            clientId,
+            notificationServices,
+            authUser: req.authUser
+        });
 
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointment
         });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-
-        // Roll back any Google events created
         await eventCreateRollback(createdEvents, authClient);
 
-        return next(
-            new AppError(`Failed to create appointment(s): ${error.message}`, 500)
-        );
-    }
-};
-
-export const getAppointmentsCount = async (req, res, next) => {
-    try {
-        const appointmentCount = await appointmentModel.countDocuments();
-        return res
-            .status(200)
-            .json({ message: "Success", count: appointmentCount });
-    } catch (error) {
-        console.error("Error fetching appointment count:", error);
-        return res
-            .status(500)
-            .json({ message: "Server error", error: error.message });
-    }
-};
-
-export const getAppointmentsByCustomer = async (req, res, next) => {
-    try {
-        const { clientId } = req.authUser; // from the token
-        const { customerId } = req.params; // from the route
-
-        // Ensure that this customer is linked to this client
-        const link = await UserClient.findOne({ clientId, customerId });
-        if (!link) {
-            return next(
-                new AppError(
-                    "This customer does not belong to the current client",
-                    404
-                )
-            );
-        }
-
-        // Find all appointments with that customerId + clientId
-        const appointments = await appointmentModel
-            .find({ customerId, clientId })
-            .populate({
-                path: "subAppointments",
-                populate: [
-                    {
-                        path: "staffId",
-                        select: "roleDescription calendarId",
-                        populate: {
-                            path: "userId",
-                            select: "userName email"
-                        }
-                    },
-                    {
-                        path: "services._id",
-                        model: "Service",
-                        select: "serviceName price duration"
-                    }
-                ]
-            })
-            .exec();
-
-        return res.status(200).json({
-            message: "success",
-            appointments
-        });
-    } catch (error) {
-        console.error("Error fetching appointments by customer:", error);
-        return next(
-            new AppError(`Failed to retrieve appointments: ${error.message}`, 500)
-        );
+        return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
     }
 };

@@ -1,6 +1,6 @@
-import { AppError } from '../../../utils/AppError.js';
-import staffModel from '../../../../DB/models/staff.js';
-import { getEvents } from '../../../utils/Google/events/getEvents.js';
+import { AppError } from '../../../../utils/AppError.js';
+import staffModel from '../../../../../DB/models/staff.js';
+import { getEvents } from '../../../../utils/Google/events/getEvents.js';
 import { generateRecurringDates } from "./helpers.js";
 
 const parseTimeAMPM = (timeStr, date) => {

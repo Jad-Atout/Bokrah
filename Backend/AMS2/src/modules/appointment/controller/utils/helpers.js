@@ -1,6 +1,6 @@
-import staffModel from "../../../../DB/models/staff.js";
-import createEvent from "../../../utils/Google/events/createEvent.js";
-import deleteEvent from "../../../utils/Google/events/deleteEvent.js"; // Assuming the availability model is here
+import staffModel from "../../../../../DB/models/staff.js";
+import createEvent from "../../../../utils/Google/events/createEvent.js";
+import deleteEvent from "../../../../utils/Google/events/deleteEvent.js"; // Assuming the availability model is here
 
 export const checkInternalAvailability = async (staffId, startTime, endTime) => {
     const start = new Date(startTime);
@@ -87,3 +87,12 @@ export const eventDeleteRollback = async (req, authClient, deletedEvents, appoin
         }
     }
 }
+export const resolveTriggeredBy = ({ userId }, { customer, client, staffUserIds }) => {
+    const idStr = userId.toString();
+
+    if (customer?.userId?._id?.toString() === idStr) return "Customer";
+    if (client?.userId?._id?.toString() === idStr) return "Client";
+    if (staffUserIds.map(id => id.toString()).includes(idStr)) return "Staff";
+
+    return "System";
+};

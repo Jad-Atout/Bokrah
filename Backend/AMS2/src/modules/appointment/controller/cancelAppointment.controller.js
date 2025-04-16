@@ -2,17 +2,20 @@ import mongoose from "mongoose";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import { AppError } from "../../../utils/AppError.js";
-import { eventDeleteRollback } from "./helpers.js";
+import { eventDeleteRollback, resolveTriggeredBy } from "./utils/helpers.js";
 import { sendEmail } from "../../../utils/email.js";
 import {
     appointmentDeletedEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
-import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+import { cancelReminders } from "../../../utils/Scheduler/reminderSchedules.js";
+import { createNotification } from "../../notification/notification.controller.js";
+import { appointmentTemplates } from "../../notification/notificationTemplate.js";
+import clientModel from "../../../../DB/models/client.js";
 
 export const cancelAppointment = async (req, res, next) => {
-    const {clientId } = req.params;
-    const {appointmentId} = req.body
+    const { clientId } = req.params;
+    const { appointmentId } = req.body;
     const authClient = req.oauth2Client;
 
     const session = await mongoose.startSession();
@@ -48,13 +51,16 @@ export const cancelAppointment = async (req, res, next) => {
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
+
         if (appointment.clientId.toString() !== clientId) {
             return next(new AppError("Unauthorized: You cannot cancel this appointment", 403));
         }
+
         if (appointment.status === "Cancelled") {
             return next(new AppError("Appointment is already cancelled", 404));
         }
 
+        // Cancel subAppointments and remove events
         for (const subAppointment of appointment.subAppointments) {
             subAppointment.status = "Cancelled";
             if (subAppointment.eventId && subAppointment.staffId?.calendarId) {
@@ -70,8 +76,8 @@ export const cancelAppointment = async (req, res, next) => {
                 });
             }
         }
-        req.deletedEvents = deletedEvents;
 
+        req.deletedEvents = deletedEvents;
         appointment.status = "Cancelled";
         await appointment.save({ session });
 
@@ -80,12 +86,15 @@ export const cancelAppointment = async (req, res, next) => {
         await session.commitTransaction();
         session.endSession();
 
+        // ========================
+        // ✉️ Send Email Notices
+        // ========================
         const customerEmail = appointment.customerId?.userId?.email;
         const userName = appointment.customerId?.userId?.userName || "Valued Customer";
 
-        const staffNamesArr = appointment.subAppointments.map(sub => {
-            return sub.staffId?.userId?.userName || sub.staffId?.userName || "Staff";
-        });
+        const staffNamesArr = appointment.subAppointments.map(sub =>
+            sub.staffId?.userId?.userName || sub.staffId?.userName || "Staff"
+        );
         const staffNames = [...new Set(staffNamesArr)].join(", ");
 
         let allServicesArr = [];
@@ -96,7 +105,6 @@ export const cancelAppointment = async (req, res, next) => {
             }
         }
         const allServices = [...new Set(allServicesArr)];
-
 
         if (customerEmail) {
             await sendEmail(
@@ -109,16 +117,12 @@ export const cancelAppointment = async (req, res, next) => {
                     appointment.subAppointments
                 )
             );
-        } else {
-            console.warn("No newCustomer email found. Cannot send cancellation email.");
         }
-
 
         const staffMap = {};
         for (const sub of appointment.subAppointments) {
             if (!sub.staffId) continue;
             const staffDoc = sub.staffId;
-
             const staffEmail = staffDoc.userId?.email;
             if (!staffEmail) continue;
 
@@ -141,28 +145,37 @@ export const cancelAppointment = async (req, res, next) => {
                 sendEmail(
                     staffEmail,
                     "Appointment Cancelled",
-                    await staffCancellationEmail(
-                        userName,
-                        staffName,
-                        subAppointments
-                    )
+                    await staffCancellationEmail(userName, staffName, subAppointments)
                 )
             );
         }
+
         await Promise.all(staffEmailPromises);
+
+        await sendAppointmentCanceledNotifications({
+            appointment,
+            customer: appointment.customerId,
+            clientId,
+            allServices,
+            authUser: req.authUser
+        });
 
         return res.status(200).json({
             message: "Appointment cancelled successfully",
             deletedEvents,
         });
     } catch (error) {
-        await session.abortTransaction();
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
         session.endSession();
 
-        await eventDeleteRollback(req,authClient,deletedEvents, appointment);
+        await eventDeleteRollback(req, authClient, deletedEvents, appointment);
 
         return next(
             new AppError(`Failed to cancel the appointment: ${error.message}`, 500)
         );
     }
 };
+
+

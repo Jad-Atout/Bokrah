@@ -11,7 +11,7 @@ import {setPasswordEmailTemplate} from "../../utils/emailTemplete.js"
 import {pagination} from "../../utils/pagination.js";
 import appointmentModel from "../../../DB/models/appointment.js"
 import mongoose from "mongoose";
-import {eventDeleteRollback} from "../appointment/controller/helpers.js";
+import {eventDeleteRollback} from "../appointment/controller/utils/helpers.js";
 import {AppError} from "../../utils/AppError.js";
 import deleteEvent from "../../utils/Google/events/deleteEvent.js";
 //TODO get staff bu service and git service by staff

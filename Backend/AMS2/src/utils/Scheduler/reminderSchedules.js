@@ -9,6 +9,7 @@ import Staff from "../../../DB/models/staff.js";
 import appointmentModel from "../../../DB/models/appointment.js";
 import { cancelScheduledSubAppointments, scheduleSubAppointments } from "./appointmentEndSchedules.js";
 import reminderModel from "../../../DB/models/reminder.js";
+import UserNotificationPreference from "../../../DB/models/notifications/UserNotificationPreference.js";
 
 // Fetch reminder settings for the client
 const getReminder = async (clientId) => {
@@ -65,27 +66,64 @@ const getAppointmentData = async (appointmentId) => {
 };
 
 // Shared function to send reminder email
-const sendAppointmentReminder = async (appointmentData, customerEmail, customerName, staffNames, serviceNames, appointmentId, scheduledTime) => {
-    if (scheduledTime > new Date()) {
-        try {
-            await scheduleJob("appointmentReminder", appointmentId, scheduledTime, async () => {
-                await sendEmail(
-                    customerEmail,
-                    "Appointment Reminder",
-                    await appointmentFullDetailsEmail(
-                        customerName,
-                        staffNames,
-                        serviceNames,
-                        appointmentData.subAppointments,
-                        appointmentId,
-                        appointmentData.clientId
-                    )
-                );
-            });
-        } catch (error) {
-            console.error(`Error scheduling reminder for appointment ${appointmentId}:`, error);
-        }
+const sendAppointmentReminder = async (
+    appointmentData,
+    customerEmail,
+    customerName,
+    staffNames,
+    serviceNames,
+    appointmentId,
+    scheduledTime
+) => {
+    if (scheduledTime <= new Date()) return;
+
+    const userId = appointmentData.customerId.userId._id;
+    const preferences = await UserNotificationPreference.findOne({ userId });
+
+    const reminderPrefs = preferences?.preferences?.Appointment?.reminderChannels || {
+        email: true,
+        sms: false,
+        push: true,
+    };
+
+    // 📨 Email Reminder
+    if (reminderPrefs.email) {
+        await scheduleJob("appointmentReminder-email", appointmentId, scheduledTime, async () => {
+            await sendEmail(
+                customerEmail,
+                "Appointment Reminder",
+                await appointmentFullDetailsEmail(
+                    customerName,
+                    staffNames,
+                    serviceNames,
+                    appointmentData.subAppointments,
+                    appointmentId,
+                    appointmentData.clientId
+                )
+            );
+        });
     }
+
+    // 📱 SMS Reminder (placeholder function)
+    // if (reminderPrefs.sms && appointmentData.customerId.userId.phoneNumber) {
+    //     await scheduleJob("appointmentReminder-sms", appointmentId, scheduledTime, async () => {
+    //         await sendSMS(
+    //             appointmentData.customerId.userId.phoneNumber,
+    //             `Reminder: You have an appointment for ${serviceNames.join(", ")} with ${staffNames.join(", ")}`
+    //         );
+    //     });
+    // }
+
+    // 🔔 Push Reminder (placeholder function)
+    // if (reminderPrefs.push) {
+    //     await scheduleJob("appointmentReminder-push", appointmentId, scheduledTime, async () => {
+    //         await sendPushNotification(
+    //             userId,
+    //             "Appointment Reminder",
+    //             `You have an appointment for ${serviceNames.join(", ")} with ${staffNames.join(", ")}`
+    //         );
+    //     });
+    // }
 };
 
 // Schedule reminders
@@ -103,6 +141,7 @@ export async function scheduleReminders(appointmentId) {
 }
 
 // Handle executing a scheduled reminder
+//TODO enhance this one also
 export async function handleAppointmentReminder(job) {
     try {
         console.log(`📢 Executing Reminder for Appointment: ${job.referenceId}`);

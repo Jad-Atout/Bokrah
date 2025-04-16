@@ -1,24 +1,24 @@
 
 export const appointmentTemplates = {
-    booked: ({ customerName, serviceName, date, time }) => ({
+    booked: ({ customerName, serviceName, date, time,trigger }) => ({
         title: "Appointment Booked",
         message: `${customerName} booked an appointment for ${serviceName} on ${date} at ${time}.`,
         type: "Appointment",
-        triggeredBy: "Customer",
+        triggeredBy:trigger ,
     }),
 
-    canceled: ({ customerName, serviceName, date, time }) => ({
+    canceled: ({ customerName, serviceName, date, time,trigger }) => ({
         title: "Appointment Canceled",
         message: `${customerName} canceled the ${serviceName} appointment on ${date} at ${time}.`,
         type: "Appointment",
-        triggeredBy: "Customer",
+        triggeredBy: trigger,
     }),
 
-    updated: ({ customerName, serviceName, oldDate, newDate, oldTime, newTime }) => ({
+    updated: ({ customerName, serviceName, oldDate, newDate, oldTime, newTime,trigger }) => ({
         title: "Appointment Rescheduled",
         message: `${customerName} rescheduled ${serviceName} from ${oldDate} ${oldTime} to ${newDate} ${newTime}.`,
         type: "Appointment",
-        triggeredBy: "Customer",
+        triggeredBy: trigger,
     }),
 };
 

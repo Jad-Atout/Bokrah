@@ -1,5 +1,3 @@
-// services/appointment/updateAppointmentService.js
-
 import { AppError } from "../../../utils/AppError.js";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import createEvent from "../../../utils/Google/events/createEvent.js";
@@ -10,7 +8,7 @@ import {
     eventCreateRollback,
     eventDeleteRollback,
     generateRecurringDates,
-} from "./helpers.js";
+} from "./utils/helpers.js";
 import staffModel from "../../../../DB/models/staff.js";
 import mongoose from "mongoose";
 import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
@@ -18,6 +16,7 @@ import {
     cancelReminders,
     scheduleReminders,
 } from "../../../utils/Scheduler/reminderSchedules.js";
+import { sendAppointmentUpdatedNotifications } from "./utils/notificationSenders.js";
 
 export const updateAppointment = async (req, res, next) => {
     const { appointmentId, recurrence, slot, notes } = req.body;
@@ -40,6 +39,8 @@ export const updateAppointment = async (req, res, next) => {
 
         // 2) Generate new subAppointments based on the updated `slot` & `recurrence`
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
+        let notificationServices = [];
+
         for (const appointmentStart of appointmentDates) {
             const subAppointments = await buildSubAppointments(
                 slot.subSlots,
@@ -47,7 +48,8 @@ export const updateAppointment = async (req, res, next) => {
                 authClient,
                 req,
                 session,
-                updatedEvents
+                updatedEvents,
+                notificationServices
             );
 
             // if staff removed from the new request, handle them as "Cancelled"
@@ -69,10 +71,19 @@ export const updateAppointment = async (req, res, next) => {
 
         await session.commitTransaction();
         session.endSession();
-
+        console.log(updatedAppointments)
         // Cancel and re-schedule reminders for the updated appointment(s)
         await cancelReminders(appointment._id);
-        await scheduleReminders(updatedAppointments);
+        await scheduleReminders(appointment._id);
+
+        // 🔔 Send update & cancellation notifications
+        await sendAppointmentUpdatedNotifications({
+            appointments: updatedAppointments,
+            customer,
+            clientId,
+            notificationServices,
+            authUser: req.authUser
+        });
 
         return res.status(200).json({
             message: "Appointment updated and calendar events created successfully",
@@ -140,7 +151,8 @@ async function buildSubAppointments(
     authClient,
     req,
     session,
-    updatedEvents
+    updatedEvents,
+    notificationServices
 ) {
     const subAppointments = [];
     let currentStartTime = new Date();
@@ -153,6 +165,7 @@ async function buildSubAppointments(
 
         for (const staffService of staffServices) {
             const { staffId, services } = staffService;
+            notificationServices.push(...services);
 
             const staffData = await staffModel
                 .findById(staffId)
@@ -161,7 +174,6 @@ async function buildSubAppointments(
 
             const endTimeCalculated = calculateEndTime(startTime, services);
 
-            // Check internal availability
             const isInternalAvailable = await checkInternalAvailability(
                 staffId,
                 startTime,
@@ -174,7 +186,6 @@ async function buildSubAppointments(
                 );
             }
 
-            // Check external (Google Calendar) availability
             const isAvailable = await checkAvailability(
                 authClient,
                 staffId,
@@ -188,7 +199,6 @@ async function buildSubAppointments(
                 );
             }
 
-            // Create a new event
             const event = await createEvent(req, authClient, {
                 customerName: customer.userId.userName,
                 staffName: staffData.userId.userName,
@@ -224,7 +234,6 @@ function handleRemovedStaff(oldSubs, newSubs) {
         if (!newStaffIds.has(oldSub.staffId._id.toString())) {
             oldSub.status = "Cancelled";
             newSubs.push(oldSub);
-            // Optional: send notification to removed staff
         }
     }
 }
