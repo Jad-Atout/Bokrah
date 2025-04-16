@@ -78,7 +78,8 @@ export const updateAppointment = async (req, res, next) => {
 
         // 🔔 Send update & cancellation notifications
         await sendAppointmentUpdatedNotifications({
-            appointments: updatedAppointments,
+            updatedAppointment: updatedAppointments[0],
+            oldAppointment:appointment,
             customer,
             clientId,
             notificationServices,

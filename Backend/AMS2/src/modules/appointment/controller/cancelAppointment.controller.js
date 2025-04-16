@@ -12,7 +12,7 @@ import { cancelReminders } from "../../../utils/Scheduler/reminderSchedules.js";
 import { createNotification } from "../../notification/notification.controller.js";
 import { appointmentTemplates } from "../../notification/notificationTemplate.js";
 import clientModel from "../../../../DB/models/client.js";
-
+import {sendAppointmentCanceledNotifications} from "./utils/notificationSenders.js"
 export const cancelAppointment = async (req, res, next) => {
     const { clientId } = req.params;
     const { appointmentId } = req.body;

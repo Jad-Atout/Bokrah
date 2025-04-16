@@ -15,7 +15,7 @@ import createEvent from "../../../utils/Google/events/createEvent.js";
 import { scheduleReminders } from "../../../utils/Scheduler/reminderSchedules.js";
 import { createNotification } from "../../notification/notification.controller.js";
 import { appointmentTemplates } from "../../notification/notificationTemplate.js";
-
+import {sendAppointmentBookedNotifications} from "./utils/notificationSenders.js"
 import {
     calculateEndTime,
     generateRecurringDates,

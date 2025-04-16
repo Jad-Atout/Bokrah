@@ -146,15 +146,16 @@ export const sendAppointmentBookedNotifications = async ({
 
 
 /**
- * Sends update and cancellation notifications to staff + client for updated appointments.
+ * Sends update and cancellation notifications to staff + client for an updated appointment.
  *
  * @param {Object} params
- * @param {Array} params.appointments - List of updated appointment documents
+ * @param {Object} params.oldAppointment - Original appointment document before update
+ * @param {Object} params.updatedAppointment - Updated appointment document after changes
  * @param {Object} params.customer - Populated customer object
- * @param {String} params.clientId - Client ID
- * @param {Array} params.notificationServices - List of services involved
- * @param {Object} params.authUser - Authenticated user
+ * @param {String} params.clientId - ID of the client who owns the appointment
+ * @param {Object} params.authUser - Authenticated user who triggered the update
  */
+
 export const sendAppointmentUpdatedNotifications = async ({
                                                               appointments,
                                                               customer,
