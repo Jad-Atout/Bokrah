@@ -1,11 +1,11 @@
 // ================================
 // 📣 Specialized Notification Sender: Appointment Cancellation
 // ================================
-import clientModel from "../../../../../DB/models/client.js";
-import staffModel from "../../../../../DB/models/staff.js";
 import { createNotification } from "../../../notification/notification.controller.js";
 import { appointmentTemplates } from "../../../notification/notificationTemplate.js";
-import { resolveTriggeredBy } from "../utils/helpers.js";
+import clientModel from "../../../../../DB/models/client.js";
+import staffModel from "../../../../../DB/models/staff.js";
+import { resolveTriggeredBy } from "./helpers.js";
 
 /**
  * Sends cancellation notifications to the client and staff (excluding customer).
@@ -157,23 +157,24 @@ export const sendAppointmentBookedNotifications = async ({
  */
 
 export const sendAppointmentUpdatedNotifications = async ({
-                                                              appointments,
-                                                              customer,
-                                                              clientId,
-                                                              notificationServices,
-                                                              authUser
-                                                          }) => {
+    updatedAppointment,
+    oldAppointment,
+    customer,
+    clientId,
+    notificationServices,
+    authUser
+}) => {
     const client = await clientModel.findById(clientId).populate("userId");
 
     const staffUserIds = await staffModel.find({
         _id: {
-            $in: appointments.flatMap(app => app.subAppointments.map(sub => sub.staffId))
+            $in: [updatedAppointment].flatMap(app => app.subAppointments.map(sub => sub.staffId))
         }
     }).then(docs => docs.map(doc => doc.userId._id));
 
     const triggeredBy = resolveTriggeredBy(authUser, { client, staffUserIds });
 
-    const firstSub = appointments[0].subAppointments[0];
+    const firstSub = updatedAppointment.subAppointments[0];
     const mainStart = new Date(firstSub.startTime);
 
     // ✅ Notify client
@@ -192,50 +193,25 @@ export const sendAppointmentUpdatedNotifications = async ({
     );
 
     // 🔁 Notify updated staff
-    for (const appointment of appointments) {
-        for (const sub of appointment.subAppointments.filter(s => s.status !== "Cancelled")) {
-            const staffDoc = await staffModel.findById(sub.staffId).populate("userId");
-            if (!staffDoc?.userId) continue;
+    for (const sub of updatedAppointment.subAppointments.filter(s => s.status !== "Cancelled")) {
+        const staffDoc = await staffModel.findById(sub.staffId).populate("userId");
+        if (!staffDoc?.userId) continue;
 
-            const serviceName = sub.services.map(s => s.serviceName).join(", ");
-            const start = new Date(sub.startTime);
+        const serviceName = sub.services.map(s => s.serviceName).join(", ");
+        const start = new Date(sub.startTime);
 
-            await createNotification(
-                staffDoc.userId._id,
-                appointmentTemplates.updated({
-                    customerName: customer.userId.userName,
-                    serviceName,
-                    oldDate: start.toLocaleDateString(),
-                    newDate: start.toLocaleDateString(),
-                    oldTime: start.toLocaleTimeString(),
-                    newTime: start.toLocaleTimeString(),
-                    trigger: triggeredBy,
-                }),
-                triggeredBy
-            );
-        }
-    }
-
-    // ❌ Notify removed staff (cancelled subs)
-    for (const appointment of appointments) {
-        for (const sub of appointment.subAppointments.filter(s => s.status === "Cancelled")) {
-            const staffDoc = await staffModel.findById(sub.staffId).populate("userId");
-            if (!staffDoc?.userId) continue;
-
-            const serviceName = sub.services.map(s => s.serviceName).join(", ");
-            const start = new Date(sub.startTime);
-
-            await createNotification(
-                staffDoc.userId._id,
-                appointmentTemplates.canceled({
-                    customerName: customer.userId.userName,
-                    serviceName,
-                    date: start.toLocaleDateString(),
-                    time: start.toLocaleTimeString(),
-                    trigger: triggeredBy,
-                }),
-                triggeredBy
-            );
-        }
+        await createNotification(
+            staffDoc.userId._id,
+            appointmentTemplates.updated({
+                customerName: customer.userId.userName,
+                serviceName,
+                oldDate: start.toLocaleDateString(),
+                newDate: start.toLocaleDateString(),
+                oldTime: start.toLocaleTimeString(),
+                newTime: start.toLocaleTimeString(),
+                trigger: triggeredBy,
+            }),
+            triggeredBy
+        );
     }
 };

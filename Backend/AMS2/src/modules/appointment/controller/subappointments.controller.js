@@ -3,6 +3,13 @@ import mongoose from "mongoose";
 import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import { AppError } from "../../../utils/AppError.js";
+import { sendAppointmentCanceledNotifications } from "./utils/notificationSenders.js";
+import clientModel from "../../../../DB/models/client.js";
+import staffModel from "../../../../DB/models/staff.js";
+import { resolveTriggeredBy } from "./utils/helpers.js";
+import { createNotification } from "../../notification/notification.controller.js";
+import { appointmentTemplates } from "../../notification/notificationTemplate.js";
+
 //TODO to be deleted
 // This cancels one subAppointment from an appointment, not the entire thing
 export const cancelSubAppointment = async (req, res, next) => {
@@ -15,7 +22,18 @@ export const cancelSubAppointment = async (req, res, next) => {
         // 1) Find the appointment
         const appointment = await appointmentModel
             .findById(appointmentId)
-            .populate("subAppointments.staffId")
+            .populate([
+                {
+                    path: "customerId",
+                    ref: "Customer",
+                    populate: { path: "userId", model: "User" },
+                },
+                {
+                    path: "subAppointments.staffId",
+                    ref: "Staff",
+                    populate: { path: "userId", model: "User" },
+                },
+            ])
             .session(session);
 
         if (!appointment) {
@@ -60,6 +78,42 @@ export const cancelSubAppointment = async (req, res, next) => {
         await appointment.save({ session });
         await session.commitTransaction();
         session.endSession();
+
+        // Send notifications
+        const client = await clientModel.findById(clientId).populate("userId");
+        const staffUserIds = [subAppointment.staffId?.userId?._id].filter(Boolean);
+        const triggeredBy = resolveTriggeredBy(req.authUser, { client, staffUserIds });
+
+        // Get all services for the cancelled sub-appointment
+        const allServices = subAppointment.services.map(s => s.serviceName);
+
+        // Notify client
+        await createNotification(
+            client.userId._id,
+            appointmentTemplates.canceled({
+                customerName: appointment.customerId.userId.userName,
+                serviceName: allServices.join(", "),
+                date: new Date(subAppointment.startTime).toLocaleDateString(),
+                time: new Date(subAppointment.startTime).toLocaleTimeString(),
+                trigger: triggeredBy,
+            }),
+            triggeredBy
+        );
+
+        // Notify staff
+        if (subAppointment.staffId?.userId?._id) {
+            await createNotification(
+                subAppointment.staffId.userId._id,
+                appointmentTemplates.canceled({
+                    customerName: appointment.customerId.userId.userName,
+                    serviceName: allServices.join(", "),
+                    date: new Date(subAppointment.startTime).toLocaleDateString(),
+                    time: new Date(subAppointment.startTime).toLocaleTimeString(),
+                    trigger: triggeredBy,
+                }),
+                triggeredBy
+            );
+        }
 
         return res.status(200).json({
             message: "Sub-appointment cancelled successfully",
