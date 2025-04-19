@@ -106,7 +106,7 @@ export const updateAppointment = async (req, res, next) => {
             appointments: updatedAppointments,
         });
     } catch (error) {
-        console.log(error);
+        console.log("Error in updateAppointment", error);
         if (!transactionCommitted) {
             await session.abortTransaction();
         }
@@ -116,9 +116,9 @@ export const updateAppointment = async (req, res, next) => {
         await eventCreateRollback(updatedEvents, authClient);
 
         // Re-instate deleted events if needed
-        if (appointment) {
+        
             await eventDeleteRollback(req, authClient, deletedEvents, appointment);
-        }
+        
 
         return next(new AppError(`Failed to update appointment(s): ${error.message}`, 500));
     }
