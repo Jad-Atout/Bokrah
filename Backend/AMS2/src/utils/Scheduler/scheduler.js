@@ -45,11 +45,15 @@ async function loadJobsFromDatabase() {
     const pendingJobs = await scheduledJob.find();
 
     for (const job of pendingJobs) {
-        if (new Date(job.scheduledTime) > new Date()) {
+        console.log(new Date(Date.parse(job.scheduledTime)))
+        console.log(new Date(Date.now()))
+        console.log(Date.parse(job.scheduledTime) > Date.now())
+        if (Date.parse(job.scheduledTime) > Date.now()) {
             console.log(`✅ Restoring job: ${job.jobType} - ${job.referenceId}`);
 
             jobs[job._id] = schedule.scheduleJob(job.scheduledTime, async () => {
                 console.log(`⏳ Executing job: ${job.jobType} - ${job.referenceId}`);
+
 
                 const jobHandler = jobHandlers[job.jobType];
                 if (jobHandler) {

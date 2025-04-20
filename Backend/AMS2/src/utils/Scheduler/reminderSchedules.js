@@ -87,8 +87,8 @@ const sendAppointmentReminder = async (
     };
 
     // 📨 Email Reminder
-    if (reminderPrefs.email) {
-        await scheduleJob("appointmentReminder-email", appointmentId, scheduledTime, async () => {
+    //if (reminderPrefs.email) {
+        await scheduleJob("appointmentReminder", appointmentId, scheduledTime, async () => {
             await sendEmail(
                 customerEmail,
                 "Appointment Reminder",
@@ -102,7 +102,7 @@ const sendAppointmentReminder = async (
                 )
             );
         });
-    }
+    //}
 
     // 📱 SMS Reminder (placeholder function)
     // if (reminderPrefs.sms && appointmentData.customerId.userId.phoneNumber) {

@@ -2,9 +2,8 @@ import mongoose from "mongoose";
 
 const scheduledJobSchema = new mongoose.Schema({
     jobType: { type: String, required: true, enum: [
-            "appointmentReminder-email",
-            "appointmentReminder-sms",
-            "appointmentReminder-push",
+
+            "appointmentReminder",
             "subscriptionCheck",
             "subAppointmentEnd"]
     },
