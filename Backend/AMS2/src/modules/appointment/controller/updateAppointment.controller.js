@@ -23,7 +23,7 @@ export const updateAppointment = async (req, res, next) => {
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
     const session = await mongoose.startSession();
-    session.startTransaction();
+    let transactionCommitted = false;
 
     let updatedEvents = [];
     let deletedEvents = [];
@@ -31,6 +31,7 @@ export const updateAppointment = async (req, res, next) => {
     let appointment = await getAppointment(appointmentId, session);
 
     try {
+        session.startTransaction();
         const customer = appointment.customerId;
         if (!customer) throw new AppError("Customer not found", 404);
 
@@ -70,16 +71,30 @@ export const updateAppointment = async (req, res, next) => {
         }
 
         await session.commitTransaction();
+        transactionCommitted = true;
         session.endSession();
-        console.log(updatedAppointments)
+
         // Cancel and re-schedule reminders for the updated appointment(s)
         await cancelReminders(appointment._id);
         await scheduleReminders(appointment._id);
 
         // 🔔 Send update & cancellation notifications
+        const updatedAppointment = await appointmentModel.findById(appointmentId).populate([
+            {
+                path: "customerId",
+                ref: "Customer",
+                populate: { path: "userId", model: "User" },
+            },
+            {
+                path: "subAppointments.staffId",
+                ref: "Staff",
+                populate: { path: "userId", model: "User" },
+            },
+        ]);
+
         await sendAppointmentUpdatedNotifications({
-            updatedAppointment: updatedAppointments[0],
-            oldAppointment:appointment,
+            updatedAppointment,
+            oldAppointment: appointment,
             customer,
             clientId,
             notificationServices,
@@ -91,17 +106,19 @@ export const updateAppointment = async (req, res, next) => {
             appointments: updatedAppointments,
         });
     } catch (error) {
-        console.log(error);
-        await session.abortTransaction();
+        console.log("Error in updateAppointment", error);
+        if (!transactionCommitted) {
+            await session.abortTransaction();
+        }
         session.endSession();
 
         // Roll back newly created events
         await eventCreateRollback(updatedEvents, authClient);
 
         // Re-instate deleted events if needed
-        if (appointment) {
+        
             await eventDeleteRollback(req, authClient, deletedEvents, appointment);
-        }
+        
 
         return next(new AppError(`Failed to update appointment(s): ${error.message}`, 500));
     }
@@ -164,14 +181,34 @@ async function buildSubAppointments(
             throw new AppError("End time must be later than start time", 400);
         }
 
+        if (!Array.isArray(staffServices) || staffServices.length === 0) {
+            throw new AppError("No staff services provided for subSlot", 400);
+        }
+
         for (const staffService of staffServices) {
             const { staffId, services } = staffService;
+            
+            if (!Array.isArray(services) || services.length === 0) {
+                throw new AppError("No services provided for staff", 400);
+            }
+
+            // Validate each service has required properties
+            for (const service of services) {
+                if (!service || !service.serviceName || !service.duration) {
+                    throw new AppError("Invalid service data provided", 400);
+                }
+            }
+
             notificationServices.push(...services);
 
             const staffData = await staffModel
                 .findById(staffId)
                 .populate([{ path: "userId", ref: "User", select: "userName email" }])
                 .session(session);
+
+            if (!staffData) {
+                throw new AppError(`Staff with ID ${staffId} not found`, 404);
+            }
 
             const endTimeCalculated = calculateEndTime(startTime, services);
 

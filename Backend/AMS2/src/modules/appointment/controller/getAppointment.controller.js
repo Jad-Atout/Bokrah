@@ -204,12 +204,13 @@ export const getStaffAppointments = async (req, res, next) => {
                 _id: app._id,
                 clientId: app.clientId,
                 notes: app.notes || "",
+                recurrence: app.recurrence || null,
                 customer: {
                     customerId: app.customerId._id,
-                    userId: app.customerId.userId._id,
-                    userName: app.customerId.userId.userName,
-                    email: app.customerId.userId.email,
-                    phoneNumber: app.customerId.userId.phoneNumber,
+                    userId: app.customerId.userId?._id,
+                    userName: app.customerId.userId?.userName,
+                    email: app.customerId.userId?.email,
+                    phoneNumber: app.customerId.userId?.phoneNumber,
                 },
                 subAppointments: filteredSubs.map(sub => {
                     const mappedServices = sub.services.map(service => ({
