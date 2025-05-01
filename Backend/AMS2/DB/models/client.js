@@ -13,6 +13,30 @@ const ClientSchema = new mongoose.Schema({
     businessName: {
         type: String,
         required: false
+    },
+    websiteUrls: [{
+        type: String,
+        required: false
+    }],
+    about: {
+        type: String,
+        required: false
+    },
+    city: {
+        type: String,
+        required: false
+    },
+    address: {
+        type: String,
+        required: false
+    },
+    instagramUrl: {
+        type: String,
+        required: false
+    },
+    facebookUrl: {
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 

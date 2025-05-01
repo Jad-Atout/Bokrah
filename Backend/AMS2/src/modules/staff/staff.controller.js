@@ -199,3 +199,19 @@ export const deleteAllAppointmentsForStaff = async (req, res, next) => {
         return next(new AppError(`Failed to delete staff appointments: ${error}`, 500));
     }
 };
+
+export const getStaffById = async (req, res, next) => {
+    const { staffId } = req.params;
+    
+    let staff = await staffModel.findById(staffId).populate(populateStaff);
+    
+    if (!staff) {
+        staff = await staffModel.findOne({ userId: staffId }).populate(populateStaff);
+    }
+    
+    if (!staff) {
+        return next(new AppError("Staff not found", 404));
+    }
+    
+    return res.json({ message: "success", staffs: filterStaffData([staff]) });
+};

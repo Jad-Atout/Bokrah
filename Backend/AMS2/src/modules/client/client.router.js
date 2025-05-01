@@ -6,6 +6,7 @@ import {
     getClients,
     googleAuthCallback,
     updateClient,
+    getClientById,
 } from "./client.controller.js";
 import { asyncHandler } from "../../utils/catchError.js";
 import { auth, roles } from "../../middleware/auth.js";
@@ -24,5 +25,7 @@ router.get("/details", auth([roles.Admin]), asyncHandler(getClients));
 router.patch("/", auth(roles.Client), asyncHandler(updateClient));
 
 router.delete("/", auth(roles.Client), asyncHandler(deleteClient));
+
+router.get("/:clientId", auth([roles.Client]), asyncHandler(getClientById));
 
 export default router;
