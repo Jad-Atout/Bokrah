@@ -8,6 +8,8 @@ import {
 
 } from "../../../DB/Controller/client.DB.controller.js";
 import {config} from "dotenv";
+import clientModel from "../../../DB/models/client.js";
+
 config()
 //TODO Client Validation
 
@@ -88,9 +90,32 @@ export const getClients = async (req, res) => {
 export const updateClient = async (req, res, next) => {
     try {
         const { clientId } = req.authUser;
-        const { userName, phoneNumber, businessName, industry, staffData } = req.body;
+        const { 
+            userName, 
+            phoneNumber, 
+            businessName, 
+            industry, 
+            staffData,
+            websiteUrls,
+            about,
+            city,
+            address,
+            instagramUrl,
+            facebookUrl
+        } = req.body;
+        
         const userData = { userName, phoneNumber };
-        const clientData = { businessName, industry };
+        const clientData = { 
+            businessName, 
+            industry,
+            websiteUrls,
+            about,
+            city,
+            address,
+            instagramUrl,
+            facebookUrl
+        };
+        
         const result = await transUpdateClient(clientId, userData, clientData, staffData);
         if (result instanceof AppError) {
             return next(result);
@@ -110,6 +135,47 @@ export const deleteClient = async (req, res, next) => {
             return next(result);
         }
         return res.json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getClientById = async (req, res, next) => {
+    try {
+        const { clientId } = req.params;
+        
+        const client = await clientModel.findById(clientId)
+            .populate({
+                path: 'userId',
+                select: 'userName email phoneNumber confirmed'
+            })
+            .select('businessName industry staffData websiteUrls about city address instagramUrl facebookUrl');
+
+        if (!client) {
+            return next(new AppError('Client not found', 404));
+        }
+
+        return res.status(200).json({
+            message: 'success',
+            client: {
+                id: client._id,
+                businessName: client.businessName,
+                industry: client.industry,
+                staffData: client.staffData,
+                websiteUrls: client.websiteUrls,
+                about: client.about,
+                city: client.city,
+                address: client.address,
+                instagramUrl: client.instagramUrl,
+                facebookUrl: client.facebookUrl,
+                user: {
+                    userName: client.userId.userName,
+                    email: client.userId.email,
+                    phoneNumber: client.userId.phoneNumber,
+                    confirmed: client.userId.confirmed
+                }
+            }
+        });
     } catch (error) {
         next(error);
     }

@@ -1,6 +1,7 @@
 import express from 'express';
 import {
-    setReminderSettings
+    setReminderSettings,
+    getReminderSettings
 } from './reminder.controller.js';
 
 import {auth,roles} from '../../middleware/auth.js'
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.post("/:clientId",auth(roles.Client), setReminderSettings);
 
+router.get("/:clientId", auth(roles.Client), getReminderSettings);
 
 
 

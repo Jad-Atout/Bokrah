@@ -7,7 +7,8 @@ import {
     getClientStaff,
     updateStaff,
     deleteStaff,
-    deleteAllAppointmentsForStaff
+    deleteAllAppointmentsForStaff,
+    getStaffById
 } from "./staff.controller.js";
 import {auth,roles} from "../../middleware/auth.js"
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
@@ -18,6 +19,10 @@ const router = Router();
 
 router.get('/:clientId',
     asyncHandler(getClientStaff))
+
+router.get('/details/:staffId',
+    auth(roles.Client),
+    asyncHandler(getStaffById))
 
 router.post('/',
     auth(roles.Client),

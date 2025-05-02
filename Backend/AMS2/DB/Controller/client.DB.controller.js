@@ -73,24 +73,53 @@ export const transCreateClient = async (clientData,userData,googleData) => {
     }
 }
 
-export const transUpdateClient = async (clientId, userData, clientData,staffData) => {
+export const transUpdateClient = async (clientId, userData, clientData, staffData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-
         const client = await clientModel.findById(clientId).session(session);
-        if (!client) return  new AppError('Client not found', 404);
+        if (!client) return new AppError('Client not found', 404);
 
-        await userModel.findByIdAndUpdate(client.userId, userData, { session, new: true });
-        await clientModel.findByIdAndUpdate(clientId, clientData, { session, new: true });
-        await staffModel.updateOne({userId:client.userId},staffData,{ session, new: true })
+        // Update user data
+        if (Object.keys(userData).length > 0) {
+            await userModel.findByIdAndUpdate(client.userId, userData, { session, new: true });
+        }
+
+        // Update client data
+        if (Object.keys(clientData).length > 0) {
+            await clientModel.findByIdAndUpdate(
+                clientId, 
+                { 
+                    $set: {
+                        businessName: clientData.businessName,
+                        industry: clientData.industry,
+                        websiteUrls: clientData.websiteUrls || [],
+                        about: clientData.about,
+                        city: clientData.city,
+                        address: clientData.address,
+                        instagramUrl: clientData.instagramUrl,
+                        facebookUrl: clientData.facebookUrl
+                    }
+                }, 
+                { session, new: true }
+            );
+        }
+
+        // Update staff data if provided
+        if (staffData && Object.keys(staffData).length > 0) {
+            await staffModel.updateOne(
+                { userId: client.userId },
+                staffData,
+                { session, new: true }
+            );
+        }
+
         await session.commitTransaction();
         session.endSession();
         return { message: "Client successfully updated" };
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
-
         return new AppError(err.message || 'Internal server error', 500);
     }
 };
