@@ -1,7 +1,6 @@
 import serviceModel from '../../../DB/models/service.js';
 import {AppError} from '../../utils/AppError.js';
 import {transDeleteService, transUpdateService} from "../../../DB/Controller/service.DB.controller.js";
-//TODO add buffer time to the service
 export const createService = async (req, res, next) => {
         const user = req.authUser
         const { serviceName, serviceDescription, price,serviceColor, duration,bufferTime} = req.body;
