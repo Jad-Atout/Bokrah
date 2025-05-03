@@ -12,11 +12,9 @@ export const staffServiceAssignmentSchema = Joi.object({
 
     serviceIds: Joi.array()
         .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/).message('Invalid Service ID format.'))
-        .min(1)
-        .required()
+        .default([])
         .messages({
             'array.base': 'Service IDs must be an array.',
-            'array.min': 'At least one service ID is required.',
-            'any.required': 'Service IDs are required.'
+            'string.hex': 'Service ID must be a valid hexadecimal string.'
         })
 });

@@ -63,6 +63,28 @@ export const createAppointment = async (req, res, next) => {
         // 2. Generate recurring dates
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
 
+        // Check for overlapping appointments for the customer
+        for (const appointmentStart of appointmentDates) {
+            const startTime = new Date(appointmentStart);
+            const endTime = new Date(slot.endTime);
+            
+            // Find any existing appointments for this customer that overlap with the new appointment time
+            const overlappingAppointments = await appointmentModel.find({
+                customerId,
+                status: "Booked",
+                $or: [
+                    {
+                        "subAppointments.startTime": { $lt: endTime },
+                        "subAppointments.endTime": { $gt: startTime }
+                    }
+                ]
+            }).session(session);
+
+            if (overlappingAppointments.length > 0) {
+                throw new AppError("Customer already has an appointment scheduled during this time", 400);
+            }
+        }
+
         for (const appointmentStart of appointmentDates) {
             let subAppointments = [];
 

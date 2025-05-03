@@ -1,11 +1,24 @@
 import serviceModel from '../../../DB/models/service.js';
 import {AppError} from '../../utils/AppError.js';
 import {transDeleteService, transUpdateService} from "../../../DB/Controller/service.DB.controller.js";
-export const createService = async (req, res, next) => {
-        const user = req.authUser
-        const { serviceName, serviceDescription, price,serviceColor, duration,bufferTime} = req.body;
+import notificationModel from '../../../DB/models/notifications/notification.js';
 
-    if (!user.role['client']) {
+const createServiceNotification = async (userId, serviceName, action) => {
+    const notification = new notificationModel({
+        userId,
+        type: "Announcement",
+        title: `Service ${action}`,
+        message: `Service "${serviceName}" has been ${action === 'created' ? 'added' : 'removed'} from your business.`,
+        triggeredBy: "Client"
+    });
+    await notification.save();
+};
+
+export const createService = async (req, res, next) => {
+        const user = req.authUser;
+        const { serviceName, serviceDescription, price, serviceColor, duration, bufferTime } = req.body;
+
+        if (!user.role['client']) {
             return next(new AppError("Unauthorized: Only clients can create services", 403));
         }
 
@@ -19,7 +32,11 @@ export const createService = async (req, res, next) => {
             bufferTime
         });
         await service.save();
-       return res.status(201).json({ message: "Service created successfully", service });
+        
+        // Create notification for service creation
+        await createServiceNotification(user.userId, serviceName, 'created');
+        
+        return res.status(201).json({ message: "Service created successfully", service });
 };
 
 
@@ -118,9 +135,14 @@ export const updateService = async (req, res,next) => {
 };
 
 export const deleteService = async (req, res, next) => {
-        const service = req.service
+        const service = req.service;
+        const user = req.authUser;
+        
+        // Create notification before deleting the service
+        await createServiceNotification(user.userId, service.serviceName, 'deleted');
+        
         const {deletedService,appError} = await transDeleteService(service);
         if(appError) return next(appError);
-        return res.json({ message: "Service deleted successfully.",deletedService });
+        return res.status(200).json({ message: "Service deleted successfully.", deletedService });
 };
 
