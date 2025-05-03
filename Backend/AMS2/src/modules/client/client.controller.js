@@ -125,6 +125,14 @@ export const updateClient = async (req, res, next) => {
             facebookUrl
         };
 
+        // Handle logo upload if present
+        if (req.file) {
+            websiteData.logo = {
+                url: req.file.path,
+                publicId: req.file.filename
+            };
+        }
+
         const result = await transUpdateClient(clientId, userData, clientData, staffData, websiteData);
         if (result instanceof AppError) {
             return next(result);
@@ -165,8 +173,6 @@ export const getClientById = async (req, res, next) => {
         }
 
         const website = await websiteModel.findOne({ clientId });
-        console.log(client)
-        console.log(website)
         return res.status(200).json({
             message: 'success',
             client: {
@@ -180,6 +186,7 @@ export const getClientById = async (req, res, next) => {
                 address: client.address,
                 instagramUrl: website?.instagramUrl,
                 facebookUrl: website?.facebookUrl,
+                logo: website?.logo,
                 user: {
                     userName: client.userId.userName,
                     email: client.userId.email,
