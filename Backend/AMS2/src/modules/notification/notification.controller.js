@@ -70,19 +70,20 @@ export const sendNotification = async (req, res, next) => {
 
 
 
-export const createNotification = async (userIds, template,triggeredBy="System") => {
+export const createNotification = async (userIds, template, triggeredBy = "System") => {
     try {
         const users = Array.isArray(userIds) ? userIds : [userIds];
         const notifications = [];
 
-        for (const uid of users) {
-            const userPrefs = await UserNotificationPreference.findOne({ userId: uid });
+        for (const userId of users) {
+            const prefs = await UserNotificationPreference.findOne({ userId });
+            const typePrefs = prefs?.preferences?.[template.type];
 
-            const allowed = userPrefs?.preferences?.[template.type];
-            if (allowed && !Object.values(allowed).some(Boolean)) continue;
+            // If all channels are false or undefined, skip notification
+            if (typePrefs && !Object.values(typePrefs).some(Boolean)) continue;
 
             notifications.push({
-                userId: uid,
+                userId,
                 ...template,
                 triggeredBy,
             });

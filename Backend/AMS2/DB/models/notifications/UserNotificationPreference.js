@@ -1,19 +1,24 @@
 import mongoose from "mongoose";
 
-const userNotificationPreferenceSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, required: true },
+const channelPreferenceSchema = new mongoose.Schema({
+    push: { type: Boolean, default: true },
+    email: { type: Boolean, default: true },
+    sms: { type: Boolean, default: true },
+}, { _id: false });
+
+
+const notificationPreferenceSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        unique: true,
+        ref: 'User',
+    },
     preferences: {
-        Appointment: {
-            push: { type: Boolean, default: true }, // standard notifications
-            reminderChannels: {
-                email: { type: Boolean, default: true },
-                sms: { type: Boolean, default: false },
-                push: { type: Boolean, default: true },
-            }
-        },
-        Announcement: { push: { type: Boolean, default: true } },
-        Subscription: { push: { type: Boolean, default: true } },
-        System: { push: { type: Boolean, default: true } },
+        appointmentReminder: { type: channelPreferenceSchema, default: () => ({}) },
+        appointmentChange: { type: channelPreferenceSchema, default: () => ({}) }, // grouped creation/update/cancellation
     }
+}, {
+    timestamps: true,
 });
-export default mongoose.model("UserNotificationPreference", userNotificationPreferenceSchema);
+export default mongoose.model("notificationPreferenceSchema", notificationPreferenceSchema);

@@ -13,12 +13,22 @@ import UserNotificationPreference from "../../../DB/models/notifications/UserNot
 
 // Fetch reminder settings for the client
 const getReminder = async (clientId) => {
-    const reminderSettings = await reminderModel.findOne({ clientId });
-    return reminderSettings?.reminderTimes?.map((time, index) => ({
-        method: reminderSettings.reminderMethods?.[index % reminderSettings.reminderMethods.length] || "email",
+    const reminder = await reminderModel.findOne({ clientId });
+
+    if (!reminder || !Array.isArray(reminder.reminderTimes) || reminder.reminderTimes.length === 0) {
+        return [{ method: "email", minutes: 60 }];
+    }
+
+    const methods = reminder.reminderMethods?.length
+        ? reminder.reminderMethods
+        : ["email"];
+
+    return reminder.reminderTimes.map((time, index) => ({
         minutes: Number.isFinite(time) ? time : 60,
-    })) || [{ method: "email", minutes: 60 }];
+        method: methods[index % methods.length]
+    }));
 };
+
 
 // Get appointment data for reminders
 const getAppointmentData = async (appointmentId) => {
@@ -82,7 +92,7 @@ const sendAppointmentReminder = async (
 
     const reminderPrefs = preferences?.preferences?.Appointment?.reminderChannels || {
         email: true,
-        sms: false,
+        sms: true,
         push: true,
     };
 
@@ -102,26 +112,16 @@ const sendAppointmentReminder = async (
                 )
             );
         });
-    //}
-
-    // 📱 SMS Reminder (placeholder function)
     // if (reminderPrefs.sms && appointmentData.customerId.userId.phoneNumber) {
     //     await scheduleJob("appointmentReminder-sms", appointmentId, scheduledTime, async () => {
-    //         await sendSMS(
-    //             appointmentData.customerId.userId.phoneNumber,
-    //             `Reminder: You have an appointment for ${serviceNames.join(", ")} with ${staffNames.join(", ")}`
-    //         );
+    //         // await sendSMS(...)
     //     });
     // }
-
-    // 🔔 Push Reminder (placeholder function)
+    //
+    // // 🔔 Push
     // if (reminderPrefs.push) {
     //     await scheduleJob("appointmentReminder-push", appointmentId, scheduledTime, async () => {
-    //         await sendPushNotification(
-    //             userId,
-    //             "Appointment Reminder",
-    //             `You have an appointment for ${serviceNames.join(", ")} with ${staffNames.join(", ")}`
-    //         );
+    //         // await sendPushNotification(...)
     //     });
     // }
 };
