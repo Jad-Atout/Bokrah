@@ -1,14 +1,31 @@
 import mongoose from "mongoose";
 
-const websiteSchema = new mongoose.Schema({
+const WebsiteSchema = new mongoose.Schema({
     clientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Client",
-        required: true
+        required: true,
+        onDelete: "cascade"
     },
-    websiteURL: {
+    industry: {
         type: String,
-        required: true
+        required: false
+    },
+    businessName: {
+        type: String,
+        required: false
+    },
+    websiteUrls: [{
+        type: String,
+        required: false
+    }],
+    instagramUrl: {
+        type: String,
+        required: false
+    },
+    facebookUrl: {
+        type: String,
+        required: false
     },
     logo: {
         type: Object,
@@ -34,6 +51,6 @@ const websiteSchema = new mongoose.Schema({
     teamDescription: {
         type: String,
     }
-});
+}, { timestamps: true });
 
-export default mongoose.model("Website", websiteSchema);
+export default mongoose.model("Website", WebsiteSchema);

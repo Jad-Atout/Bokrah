@@ -11,120 +11,93 @@ import clientCustomer from "../models/ClientCustomer.js";
 import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarManagement.js";
 import {initializeOAuthClient} from "../../src/utils/Google/Services/refreshToken.js";
 import UserClient from "../models/ClientCustomer.js";
-export const transCreateClient = async (clientData,userData,googleData) => {
+import websiteModel from "../models/website.js";
+
+export const transCreateClient = async (clientData, userData, googleData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
+
     try {
-        let user = await userModel.findOne({ email: userData.email }).session(session);
-        let role = (user && user.roleId) ? await roleModel.findById(user.roleId).session(session) : null;
-
-        if (role?.staff && !role?.client) {
-            return { appError: new AppError("user is a staff and can't become a client") };
-        }
-
-        if (!role?.client) {
-            if (!role) {
-                role = new roleModel({ client: true, staff: true });
-                await role.save({ session });
-
-                if (!user) {
-                    userData.roleId = role._id;
-                    user = new userModel(userData);
-                    await user.save({ session });
-                } else {
-                    user.roleId = role._id;
-                    await user.save({ session });
-                }
-            } else {
-                role.client = true;
-                role.staff = true;
-                await role.save({ session });
-            }
-
-            clientData.userId = user._id;
-            const client = new clientModel(clientData);
-            await client.save({ session });
-            googleData.clientId = client._id;
-
-            const staff = new staffModel({userId:user._id,clientId:client._id})
-            await staff.save({session})
-            staff.calendarId = await getOrCreateSubCalendar(initializeOAuthClient(googleData.refreshToken),staff._id,user.userName)
-            await staff.save({session})
-
-            const google = new googleModel(googleData)
-            await google.save({session})
-
-            await session.commitTransaction();
-            session.endSession();
-
-            return {role, user, client, google,staff,newClient:true}
-        }else{
-            const role = await  roleModel.findById(user.roleId)
-            const client = await  clientModel.findOne({userId:user._id})
-            const staff = await staffModel.findOne({clientId: client._id})
-            await googleModel.findOneAndUpdate({ clientId: client._id },googleData)
-            return {role, user, client,staff,newClient:false}
-        }
-
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        return {appError: new AppError(error.message || "Internal server error", 500)}
-    }
-}
-
-export const transUpdateClient = async (clientId, userData, clientData, staffData) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-        const client = await clientModel.findById(clientId).session(session);
-        if (!client) return new AppError('Client not found', 404);
-
-        // Update user data
-        if (Object.keys(userData).length > 0) {
-            await userModel.findByIdAndUpdate(client.userId, userData, { session, new: true });
-        }
-
-        // Update client data
-        if (Object.keys(clientData).length > 0) {
-            await clientModel.findByIdAndUpdate(
-                clientId, 
-                { 
-                    $set: {
-                        businessName: clientData.businessName,
-                        industry: clientData.industry,
-                        websiteUrls: clientData.websiteUrls || [],
-                        about: clientData.about,
-                        city: clientData.city,
-                        address: clientData.address,
-                        instagramUrl: clientData.instagramUrl,
-                        facebookUrl: clientData.facebookUrl
-                    }
-                }, 
-                { session, new: true }
-            );
-        }
-
-        // Update staff data if provided
-        if (staffData && Object.keys(staffData).length > 0) {
-            await staffModel.updateOne(
-                { userId: client.userId },
-                staffData,
-                { session, new: true }
-            );
-        }
+        const user = await userModel.create([userData], { session });
+        const client = await clientModel.create([{ userId: user[0]._id, ...clientData }], { session });
+        const website = await websiteModel.create([{ clientId: client[0]._id, ...clientData }], { session });
 
         await session.commitTransaction();
-        session.endSession();
-        return { message: "Client successfully updated" };
-    } catch (err) {
+        return { client: client[0], user: user[0], website: website[0] };
+    } catch (error) {
         await session.abortTransaction();
+        throw new AppError(error.message, 500);
+    } finally {
         session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
     }
 };
 
+export const transUpdateClient = async (clientId, userData, clientData, staffData, websiteData) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
+    try {
+        const client = await clientModel.findById(clientId).session(session);
+        if (!client) {
+            throw new AppError("Client not found", 404);
+        }
+
+        const user = await userModel.findByIdAndUpdate(
+            client.userId,
+            { $set: userData },
+            { new: true, session }
+        );
+
+        const updatedClient = await clientModel.findByIdAndUpdate(
+            clientId,
+            { $set: clientData },
+            { new: true, session }
+        );
+
+        let website = await websiteModel.findOne({ clientId }).session(session);
+        if (!website) {
+            website = await websiteModel.create([{ clientId, ...websiteData }], { session });
+        } else {
+            website = await websiteModel.findByIdAndUpdate(
+                website._id,
+                { $set: websiteData },
+                { new: true, session }
+            );
+        }
+console.log("website",website)
+        await session.commitTransaction();
+        return { client: updatedClient, user, website };
+    } catch (error) {
+        await session.abortTransaction();
+        throw new AppError(error.message, 500);
+    } finally {
+        session.endSession();
+    }
+};
+
+export const transDeleteClient = async (clientId) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const client = await clientModel.findById(clientId).session(session);
+        if (!client) {
+            throw new AppError("Client not found", 404);
+        }
+
+        await userModel.findByIdAndDelete(client.userId).session(session);
+        await websiteModel.deleteMany({ clientId }).session(session);
+        await clientModel.findByIdAndDelete(clientId).session(session);
+
+        await session.commitTransaction();
+        return { message: "Client deleted successfully" };
+    } catch (error) {
+        await session.abortTransaction();
+        throw new AppError(error.message, 500);
+    } finally {
+        session.endSession();
+    }
+};
 
 export async function getAllClients() {
     try {
@@ -162,52 +135,3 @@ export async function getAllClients() {
         throw new Error('Failed to fetch clients');
     }
 }
-
-
-
-
-
-export const transDeleteClient = async (clientId) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-//TODO delete reminders and cancell appointments  to be improved
-    try {
-        const client = await staffModel.findById(clientId).session(session);
-        if (!client) return new AppError('Client not found', 404);
-
-        const user = await userModel.findById(client.userId).session(session);
-        const role = await roleModel.findById(user.roleId).session(session);
-
-        // Delete associated records
-        await serviceModel.deleteMany({ clientId: client._id }, { session });
-        await staffModel.deleteMany({ clientId: client._id }, { session });
-        await googleModel.deleteOne({ clientId: client._id }, { session });
-        await appointmentModel.deleteMany({ clientId: client._id }, { session });
-        await clientCustomer.deleteMany({ clientId: client._id }, { session });
-        await clientModel.deleteOne({ _id: clientId }, { session });
-
-
-        const isOnlyClient = role.client && !role.admin && !role.customer;
-
-        if (isOnlyClient) {
-            await roleModel.findByIdAndDelete(role._id, { session });
-            await userModel.findByIdAndDelete(user._id, { session });
-        } else {
-            await roleModel.updateOne(
-                { _id: role._id },
-                { $unset: { client: "" } },
-                { session }
-            );
-        }
-
-        await session.commitTransaction();
-        session.endSession();
-
-        return { message: "Client and related records deleted successfully." };
-
-    } catch (err) {
-        await session.abortTransaction();
-        session.endSession();
-        return new AppError(err.message || 'Internal server error', 500);
-    }
-};

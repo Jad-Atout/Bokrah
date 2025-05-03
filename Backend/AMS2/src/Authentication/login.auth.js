@@ -6,6 +6,10 @@ import roleModel from "../../DB/models/role.js";
 import clientModel from "../../DB/models/client.js";
 import customerModel from "../../DB/models/customer.js";
 import staffModel from "../../DB/models/staff.js";
+import websiteModel from "../../DB/models/website.js";
+import { config } from "dotenv";
+
+config();
 
 export const generalLogin = async (req, res,next) => {
     const { email, password,phoneNumber } = req.body;
@@ -34,8 +38,12 @@ export const generalLogin = async (req, res,next) => {
     }
     if(role.client){
         const client = await clientModel.findOne({userId: user._id});
-        tokenData.buisnessName = client.businessName
-        tokenData.industry = client.industry
+        const website = await websiteModel.findOne({ clientId: client._id });
+        if (!website) {
+            return next(new AppError("Website information not found", 404));
+        }
+        tokenData.buisnessName = website.businessName
+        tokenData.industry = website.industry
         tokenData.clientId = client._id
 
     }else if(role.customer){

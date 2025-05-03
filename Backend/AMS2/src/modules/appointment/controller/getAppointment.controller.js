@@ -4,13 +4,11 @@ import UserClient from "../../../../DB/models/ClientCustomer.js";
 
 export const getAppointments = async (req, res, next) => {
     try {
-        // 1) read clientId from token
         const { clientId } = req.authUser;
         if (!clientId) {
             return next(new AppError("No clientId provided in auth", 400));
         }
 
-        // 2) fetch all appointments for that client
         const appointments = await appointmentModel
             .find({ clientId })
             .populate({
@@ -27,7 +25,6 @@ export const getAppointments = async (req, res, next) => {
                         populate: { path: "userId", select: "userName email" },
                     },
                     {
-                        // We'll also fetch the "serviceColor" from the Service model
                         path: "services._id",
                         model: "Service",
                         select: "price duration serviceName serviceColor"
@@ -36,12 +33,7 @@ export const getAppointments = async (req, res, next) => {
             })
             .exec();
 
-        // debug
-        console.log("Full appointments =>", JSON.stringify(appointments, null, 2));
 
-        // We'll build:
-        // 1) calendarEvents (flattened for calendar)
-        // 2) detailedAppointments (the original structure, but with some extra info)
         const calendarEvents = [];
         const detailedAppointments = [];
 
@@ -57,7 +49,6 @@ export const getAppointments = async (req, res, next) => {
                 updatedAt,
             } = appt;
 
-            // We'll store everything in a detailObj
             const detailObj = {
                 _id: appointmentId,
                 clientId: appt.clientId,
@@ -67,10 +58,9 @@ export const getAppointments = async (req, res, next) => {
                 notes,
                 createdAt,
                 updatedAt,
-                subAppointments: [], // we fill it below
+                subAppointments: [], 
             };
 
-            // Loop each subAppointment
             subAppointments.forEach((sub) => {
                 const {
                     _id: subApptId,
@@ -86,9 +76,7 @@ export const getAppointments = async (req, res, next) => {
                 const staffName = staffUser?.userName || "Unknown Staff";
                 const staffMongoId = staffId?._id?.toString() || null;
 
-                // Extract service info
-                // We collect each service's color, but if there's at least one, we pick the first's color for the event
-                // or default #007BFF
+               
                 let subServiceColor = "#007BFF";
                 if (services?.length > 0) {
                     const firstSrv = services[0]?._id;
@@ -97,12 +85,10 @@ export const getAppointments = async (req, res, next) => {
                     }
                 }
 
-                // e.g. "Haircut, Coloring"
                 const serviceNames = services
                     .map((srv) => srv._id?.serviceName || "Unknown")
                     .join(", ");
 
-                // *** Flattened calendar event
                 calendarEvents.push({
                     id: `${appointmentId}-${staffMongoId}`,
                     appointmentId,
@@ -112,13 +98,12 @@ export const getAppointments = async (req, res, next) => {
                     customerName: customerId?.userId?.userName || "Unknown Customer",
                     customerEmail: customerId?.userId?.email || "",
                     customerPhone: customerId?.userId?.phoneNumber || "",
-                    color: subServiceColor, // use that color
+                    color: subServiceColor, 
                     staffId: staffMongoId,
                     staffName,
                     status: subStatus || status,
                 });
 
-                // build subAppt details for the "detailedAppointments"
                 const mappedServices = services.map((service) => ({
                     serviceId: service._id?._id,
                     serviceName: service._id?.serviceName || "Unknown Service",

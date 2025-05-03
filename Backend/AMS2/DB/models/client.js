@@ -6,18 +6,6 @@ const ClientSchema = new mongoose.Schema({
         ref: "User",
         onDelete:"cascade",
     },
-    industry: {
-        type: String,
-        required: false,
-    },
-    businessName: {
-        type: String,
-        required: false
-    },
-    websiteUrls: [{
-        type: String,
-        required: false
-    }],
     about: {
         type: String,
         required: false
@@ -27,14 +15,6 @@ const ClientSchema = new mongoose.Schema({
         required: false
     },
     address: {
-        type: String,
-        required: false
-    },
-    instagramUrl: {
-        type: String,
-        required: false
-    },
-    facebookUrl: {
         type: String,
         required: false
     }

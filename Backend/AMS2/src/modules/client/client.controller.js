@@ -9,6 +9,7 @@ import {
 } from "../../../DB/Controller/client.DB.controller.js";
 import {config} from "dotenv";
 import clientModel from "../../../DB/models/client.js";
+import websiteModel from "../../../DB/models/website.js";
 
 config()
 //TODO Client Validation
@@ -32,18 +33,24 @@ export const googleAuthCallback = async (req, res, next) => {
             confirmed: decodedIdToken?.email_verified,
         };
         const clientData = {
+            about: null,
+            city: null,
+            address: null
+        };
+        const websiteData = {
             businessName: null,
-            industry: null,
+            industry: null
         };
         const googleData = {
             accessToken: access_token,
             refreshToken: refresh_token,
         };
 
-        const { client, role, user, newClient,appError } = await transCreateClient(
+        const { client, role, user, newClient, website, appError } = await transCreateClient(
             clientData,
             userData,
-            googleData
+            googleData,
+            websiteData
         );
         if(appError){
             throw appError;
@@ -55,13 +62,12 @@ export const googleAuthCallback = async (req, res, next) => {
                 userName: user.userName,
                 email: user.email,
                 role,
-                businessName: client.businessName,
-                industry: client.industry,
+                businessName: website.businessName,
+                industry: website.industry,
                 clientId: client._id,
             },
             process.env.JWT_SECRET
-        );console.log(token)
-
+        );
 
         const redirectAction = state; // "signup" or "login"
         if ((redirectAction === "signup" && newClient) || (redirectAction === "login" && newClient)) {
@@ -106,17 +112,20 @@ export const updateClient = async (req, res, next) => {
         
         const userData = { userName, phoneNumber };
         const clientData = { 
-            businessName, 
-            industry,
-            websiteUrls,
             about,
             city,
-            address,
+            address
+        };
+        
+        const websiteData = {
+            businessName,
+            industry,
+            websiteUrls,
             instagramUrl,
             facebookUrl
         };
-        
-        const result = await transUpdateClient(clientId, userData, clientData, staffData);
+
+        const result = await transUpdateClient(clientId, userData, clientData, staffData, websiteData);
         if (result instanceof AppError) {
             return next(result);
         }
@@ -149,25 +158,28 @@ export const getClientById = async (req, res, next) => {
                 path: 'userId',
                 select: 'userName email phoneNumber confirmed'
             })
-            .select('businessName industry staffData websiteUrls about city address instagramUrl facebookUrl');
+            .select('about city address');
 
         if (!client) {
             return next(new AppError('Client not found', 404));
         }
 
+        const website = await websiteModel.findOne({ clientId });
+        console.log(client)
+        console.log(website)
         return res.status(200).json({
             message: 'success',
             client: {
                 id: client._id,
-                businessName: client.businessName,
-                industry: client.industry,
+                businessName: website?.businessName,
+                industry: website?.industry,
                 staffData: client.staffData,
-                websiteUrls: client.websiteUrls,
+                websiteUrls: website?.websiteUrls,
                 about: client.about,
                 city: client.city,
                 address: client.address,
-                instagramUrl: client.instagramUrl,
-                facebookUrl: client.facebookUrl,
+                instagramUrl: website?.instagramUrl,
+                facebookUrl: website?.facebookUrl,
                 user: {
                     userName: client.userId.userName,
                     email: client.userId.email,
