@@ -10,6 +10,7 @@ import {
 import {config} from "dotenv";
 import clientModel from "../../../DB/models/client.js";
 import websiteModel from "../../../DB/models/website.js";
+import { generateWebsiteUrl } from '../../utils/websiteUtils.js';
 
 config()
 //TODO Client Validation
@@ -107,7 +108,8 @@ export const updateClient = async (req, res, next) => {
             city,
             address,
             instagramUrl,
-            facebookUrl
+            facebookUrl,
+            customWebsiteName
         } = req.body;
         
         const userData = { userName, phoneNumber };
@@ -133,11 +135,62 @@ export const updateClient = async (req, res, next) => {
             };
         }
 
+        if (customWebsiteName) {
+            const client = await clientModel.findById(clientId);
+            if (!client) {
+                return next(new AppError('Client not found', 404));
+            }
+
+            const website = await websiteModel.findOne({ clientId });
+            if (!website) {
+                return next(new AppError('Website not found', 404));
+            }
+
+            // Use customWebsiteName if provided, otherwise use businessName
+            const websiteName = customWebsiteName ;
+            
+            // Check if the website name is already taken by another client
+            const existingClient = await clientModel.findOne({ 
+                customWebsiteName: websiteName,
+                _id: { $ne: clientId } 
+            });
+            
+            if (existingClient) {
+                return next(new AppError('This website name is already taken', 400));
+            }
+
+            // Generate new website URL
+            const { fullUrl, websitePath } = generateWebsiteUrl(client, websiteName);
+            
+            // Update client's website information
+            client.customWebsiteName = websiteName;
+            client.website = fullUrl;
+            await client.save();
+        }
+
         const result = await transUpdateClient(clientId, userData, clientData, staffData, websiteData);
         if (result instanceof AppError) {
             return next(result);
         }
-        return res.status(200).json(result);
+
+        // Get updated client and website information
+        const updatedClient = await clientModel.findById(clientId)
+            .populate({
+                path: 'userId',
+                select: 'userName email phoneNumber confirmed'
+            })
+            .select('about city address website customWebsiteName');
+
+        const updatedWebsite = await websiteModel.findOne({ clientId });
+
+        return res.status(200).json({
+            ...result,
+            website: {
+                url: updatedClient.website,
+                customName: updatedClient.customWebsiteName,
+                businessName: updatedWebsite?.businessName
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -164,9 +217,9 @@ export const getClientById = async (req, res, next) => {
         const client = await clientModel.findById(clientId)
             .populate({
                 path: 'userId',
-                select: 'userName email phoneNumber confirmed'
+                select: 'userName email phoneNumber confirmed '
             })
-            .select('about city address');
+            .select('about city address website');
 
         if (!client) {
             return next(new AppError('Client not found', 404));
@@ -180,6 +233,7 @@ export const getClientById = async (req, res, next) => {
                 businessName: website?.businessName,
                 industry: website?.industry,
                 staffData: client.staffData,
+                website: client?.website,
                 websiteUrls: website?.websiteUrls,
                 about: client.about,
                 city: client.city,

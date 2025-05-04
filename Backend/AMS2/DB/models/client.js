@@ -17,6 +17,16 @@ const ClientSchema = new mongoose.Schema({
     address: {
         type: String,
         required: false
+    },
+    customWebsiteName: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    website: {
+        type: String,
+        required: true,
+        unique: true
     }
 }, { timestamps: true });
 
