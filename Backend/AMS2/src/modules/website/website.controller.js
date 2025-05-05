@@ -15,14 +15,13 @@ export const createClientWebsite = async (req, res) => {
             return res.status(404).json({ message: "Client not found" });
         }
 
-        // Get the website details to get the businessName
-        const website = await Website.findOne({ clientId });
+        let website = await Website.findOne({ clientId });
+        
         if (!website) {
-            console.log('Website not found for client:', clientId);
-            return res.status(404).json({ message: "Website details not found" });
+            console.log('Creating new website document for client:', clientId);
+            website = await Website.create({ clientId });
         }
 
-        // Use businessName as default if customWebsiteName is not provided
         const websiteName = customWebsiteName || website.businessName;
         if (!websiteName) {
             return res.status(400).json({ message: "Business name is required" });
@@ -30,18 +29,10 @@ export const createClientWebsite = async (req, res) => {
 
         console.log('Using website name:', websiteName);
         
-        // Check if the website name is already taken
-        const existingClient = await Client.findOne({ customWebsiteName: websiteName });
-        if (existingClient && existingClient._id.toString() !== clientId) {
-            console.log('Website name already taken:', websiteName);
-            return res.status(400).json({ message: "This website name is already taken" });
-        }
 
-        // Generate a unique website URL using the website name
         const { fullUrl, websitePath } = generateWebsiteUrl(client, websiteName);
         console.log('Generated website path:', websitePath);
         
-        // Update client with website URL and custom name
         client.customWebsiteName = websiteName;
         client.website = fullUrl;
         await client.save();
