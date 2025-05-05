@@ -12,6 +12,8 @@ import getOrCreateSubCalendar from "../../src/utils/Google/Services/calendarMana
 import {initializeOAuthClient} from "../../src/utils/Google/Services/refreshToken.js";
 import UserClient from "../models/ClientCustomer.js";
 import websiteModel from "../models/website.js";
+import Availability from "../models/availability.js";
+import { generateWebsiteUrl } from '../../src/utils/websiteUtils.js';
 
 export const transCreateClient = async (clientData, userData, googleData) => {
     const session = await mongoose.startSession();
@@ -20,7 +22,61 @@ export const transCreateClient = async (clientData, userData, googleData) => {
     try {
         const user = await userModel.create([userData], { session });
         const client = await clientModel.create([{ userId: user[0]._id, ...clientData }], { session });
+        
+        // Create website
         const website = await websiteModel.create([{ clientId: client[0]._id, ...clientData }], { session });
+        
+        // Generate website URL and update client
+        const { fullUrl, websitePath } = generateWebsiteUrl(client[0], userData.userName);
+        client[0].customWebsiteName = userData.userName;
+        client[0].website = fullUrl;
+        await client[0].save({ session });
+
+        // Create default availability
+        await Availability.create([{
+            websiteId: website[0]._id,
+            timeZone: "Asia/Gaza",
+            availability: [
+                {
+                    day: "Monday",
+                    slots: [
+                        { startTime: "08:00 AM", endTime: "04:00 PM" }
+                    ]
+                },
+                {
+                    day: "Tuesday",
+                    slots: [
+                        { startTime: "08:00 AM", endTime: "04:00 PM" }
+                    ]
+                },
+                {
+                    day: "Wednesday",
+                    slots: [
+                        { startTime: "08:00 AM", endTime: "04:00 PM" }
+                    ]
+                },
+                {
+                    day: "Thursday",
+                    slots: [
+                        { startTime: "08:00 AM", endTime: "04:00 PM" }
+                    ]
+                },
+                {
+                    day: "Friday",
+                    slots: []
+                },
+                {
+                    day: "Saturday",
+                    slots: []
+                },
+                {
+                    day: "Sunday",
+                    slots: [
+                        { startTime: "08:00 AM", endTime: "04:00 PM" }
+                    ]
+                }
+            ]
+        }], { session });
 
         await session.commitTransaction();
         return { client: client[0], user: user[0], website: website[0] };
