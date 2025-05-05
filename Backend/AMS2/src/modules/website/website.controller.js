@@ -22,6 +22,52 @@ export const createClientWebsite = async (req, res) => {
         if (!website) {
             console.log('Creating new website document for client:', clientId);
             website = await Website.create({ clientId });
+            
+            // Create default availability for the website
+            await Availability.create({
+                websiteId: website._id,
+                timeZone: "Asia/Gaza",
+                availability: [
+                    {
+                        day: "Monday",
+                        slots: [
+                            { startTime: "08:00 AM", endTime: "04:00 PM" }
+                        ]
+                    },
+                    {
+                        day: "Tuesday",
+                        slots: [
+                            { startTime: "08:00 AM", endTime: "04:00 PM" }
+                        ]
+                    },
+                    {
+                        day: "Wednesday",
+                        slots: [
+                            { startTime: "08:00 AM", endTime: "04:00 PM" }
+                        ]
+                    },
+                    {
+                        day: "Thursday",
+                        slots: [
+                            { startTime: "08:00 AM", endTime: "04:00 PM" }
+                        ]
+                    },
+                    {
+                        day: "Friday",
+                        slots: []
+                    },
+                    {
+                        day: "Saturday",
+                        slots: []
+                    },
+                    {
+                        day: "Sunday",
+                        slots: [
+                            { startTime: "08:00 AM", endTime: "04:00 PM" }
+                        ]
+                    }
+                ]
+            });
         }
 
         const websiteName = customWebsiteName || website.businessName;
