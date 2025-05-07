@@ -151,6 +151,7 @@ export const getClientWebsiteById = async (req, res) => {
         businessName: website.businessName,
         industry: website.industry,
         website: client.website,
+        customWebsiteName: client.customWebsiteName,
         websiteUrls: website.websiteUrls || [],
         about: client.about,
         city: client.city,
@@ -193,7 +194,8 @@ export const updateClientWebsite = async (req, res) => {
       userName,
       phoneNumber,
       timeZone,
-      workingDays 
+      workingDays,
+      customWebsiteName 
     } = req.body;
 
     const client = await Client.findById(clientId).populate('userId');
@@ -209,6 +211,20 @@ export const updateClientWebsite = async (req, res) => {
           ...(phoneNumber && { phoneNumber })
         }
       });
+    }
+
+    // Handle custom website name and URL generation
+    if (customWebsiteName) {
+   
+      
+    
+      // Generate new website URL
+      const { fullUrl, websitePath } = generateWebsiteUrl(client, customWebsiteName);
+      
+      // Update client's website information
+      client.customWebsiteName = customWebsiteName;
+      client.website = fullUrl;
+      await client.save();
     }
 
     client.about = about;
@@ -245,7 +261,6 @@ export const updateClientWebsite = async (req, res) => {
     } catch (err) {
       console.error('Error parsing workingDays:', err);
     }
-
 
     const formattedAvailability = (parsedWorkingDays || []).map((day) => ({
       day: day.name,
@@ -296,6 +311,7 @@ export const updateClientWebsite = async (req, res) => {
         instagramUrl: updatedWebsite.instagramUrl,
         facebookUrl: updatedWebsite.facebookUrl,
         logo: updatedWebsite.logo,
+        customWebsiteName: updatedClient.customWebsiteName,
         user: {
           userName: updatedClient.userId.userName,
           email: updatedClient.userId.email,
@@ -313,6 +329,7 @@ export const updateClientWebsite = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 export const updateWorkingHours = async (req, res) => {
     try {
         const { clientId } = req.authUser; 

@@ -22,6 +22,7 @@ import {
     eventCreateRollback,
     resolveTriggeredBy
 } from "./utils/helpers.js";
+import { validateMultipleServices } from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
 
 // ================================
@@ -111,6 +112,10 @@ export const createAppointment = async (req, res, next) => {
 
                 for (const staffService of staffServices) {
                     const { staffId, services } = staffService;
+                    
+                    // Validate multiple services setting
+                    await validateMultipleServices(clientId, services);
+                    
                     notificationServices = [...services];
 
                     const staffData = await staffModel

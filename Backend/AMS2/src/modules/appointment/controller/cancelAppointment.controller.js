@@ -13,10 +13,13 @@ import { createNotification } from "../../notification/notification.controller.j
 import { appointmentTemplates } from "../../notification/notificationTemplate.js";
 import clientModel from "../../../../DB/models/client.js";
 import {sendAppointmentCanceledNotifications} from "./utils/notificationSenders.js"
+import { validateCancellationTime, validateOnlineCancellation } from "../../bookingSettings/utils/bookingSettingsUtils.js";
+
 export const cancelAppointment = async (req, res, next) => {
     const { clientId } = req.params;
     const { appointmentId } = req.body;
     const authClient = req.oauth2Client;
+    const userRole = req.authUser.role;
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -58,6 +61,15 @@ export const cancelAppointment = async (req, res, next) => {
 
         if (appointment.status === "Cancelled") {
             return next(new AppError("Appointment is already cancelled", 404));
+        }
+
+        // Validate online cancellation setting with user role
+        await validateOnlineCancellation(clientId, userRole);
+
+        // Validate cancellation time based on policy with user role
+        const firstSubAppointment = appointment.subAppointments[0];
+        if (firstSubAppointment) {
+            await validateCancellationTime(clientId, firstSubAppointment.startTime, userRole);
         }
 
         // Cancel subAppointments and remove events

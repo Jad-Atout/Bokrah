@@ -9,12 +9,14 @@ import staffModel from "../../../../DB/models/staff.js";
 import { resolveTriggeredBy } from "./utils/helpers.js";
 import { createNotification } from "../../notification/notification.controller.js";
 import { appointmentTemplates } from "../../notification/notificationTemplate.js";
+import { validateCancellationTime, validateOnlineCancellation } from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
 //TODO to be deleted
 // This cancels one subAppointment from an appointment, not the entire thing
 export const cancelSubAppointment = async (req, res, next) => {
     const { appointmentId, subAppointmentId, clientId } = req.params;
-    const authClient = req.oauth2Client; // your Google Auth
+    const authClient = req.oauth2Client;
+    const userRole = req.authUser.role; // Get user role from auth
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -55,6 +57,12 @@ export const cancelSubAppointment = async (req, res, next) => {
         if (!subAppointment) {
             return next(new AppError("Sub-appointment not found", 404));
         }
+
+        // Validate online cancellation setting with user role
+        await validateOnlineCancellation(clientId, userRole);
+
+        // Validate cancellation time based on policy with user role
+        await validateCancellationTime(clientId, subAppointment.startTime, userRole);
 
         // 3) Cancel the Google Calendar event for that subAppointment
         const eventId = subAppointment.eventId;

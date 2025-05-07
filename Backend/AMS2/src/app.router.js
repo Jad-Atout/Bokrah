@@ -15,6 +15,7 @@ import 'dotenv/config'
 import reminderRouter from "./modules/reminder/reminder.router.js";
 import notificationRouter from "./modules/notification/notification.router.js";
 import preferencesRouter from "./modules/preferences/preferences.router.js";
+import bookingSettingsRouter from "./modules/bookingSettings/bookingSettings.router.js";
 
 
 
@@ -35,6 +36,7 @@ const initApp = (app,express) => {
     app.use("/reminder", reminderRouter);
     app.use('/notification',notificationRouter)
     app.use('/notificationPreferences',preferencesRouter)
+    app.use('/bookingSettings',bookingSettingsRouter)
 
 
 

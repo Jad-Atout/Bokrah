@@ -17,11 +17,13 @@ import {
     scheduleReminders,
 } from "../../../utils/Scheduler/reminderSchedules.js";
 import { sendAppointmentUpdatedNotifications } from "./utils/notificationSenders.js";
+import { validateReschedulingTime, validateOnlineRescheduling, validateMultipleServices } from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
 export const updateAppointment = async (req, res, next) => {
     const { appointmentId, recurrence, slot, notes } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
+    const userRole = req.authUser.role;
     const session = await mongoose.startSession();
     let transactionCommitted = false;
 
@@ -34,6 +36,15 @@ export const updateAppointment = async (req, res, next) => {
         session.startTransaction();
         const customer = appointment.customerId;
         if (!customer) throw new AppError("Customer not found", 404);
+
+        // Validate online rescheduling setting with user role
+        await validateOnlineRescheduling(clientId, userRole);
+
+        // Validate rescheduling time based on policy with user role
+        const firstSubAppointment = appointment.subAppointments[0];
+        if (firstSubAppointment) {
+            await validateReschedulingTime(clientId, firstSubAppointment.startTime, userRole);
+        }
 
         // 1) Cancel existing subAppointments & delete old events
         await cancelExistingSubAppointments(appointment, authClient, deletedEvents);
@@ -116,9 +127,7 @@ export const updateAppointment = async (req, res, next) => {
         await eventCreateRollback(updatedEvents, authClient);
 
         // Re-instate deleted events if needed
-        
-            await eventDeleteRollback(req, authClient, deletedEvents, appointment);
-        
+        await eventDeleteRollback(req, authClient, deletedEvents, appointment);
 
         return next(new AppError(`Failed to update appointment(s): ${error.message}`, 500));
     }
@@ -191,6 +200,9 @@ async function buildSubAppointments(
             if (!Array.isArray(services) || services.length === 0) {
                 throw new AppError("No services provided for staff", 400);
             }
+
+            // Validate multiple services setting
+            await validateMultipleServices(req.params.clientId, services);
 
             // Validate each service has required properties
             for (const service of services) {

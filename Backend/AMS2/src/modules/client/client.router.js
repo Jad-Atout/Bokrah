@@ -24,5 +24,6 @@ router.delete("/", auth(roles.Client), asyncHandler(deleteClient));
 
 router.get("/auth/google", asyncHandler(gClientLogin));
 router.get("/auth/google/callback", asyncHandler(googleAuthCallback));
+router.get("/oauth2callback", asyncHandler(googleAuthCallback));
 
 export default router;
