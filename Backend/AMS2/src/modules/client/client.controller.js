@@ -77,6 +77,7 @@ export const googleAuthCallback = async (req, res, next) => {
             return res.redirect(`${process.env.REDIRECT_DASHBORD_URL}?token=${token}&newClient=false`);
         }
     } catch (error) {
+        console.log(error)
         return next(error);
     }
 };
