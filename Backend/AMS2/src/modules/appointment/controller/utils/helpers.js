@@ -88,11 +88,13 @@ export const eventDeleteRollback = async (req, authClient, deletedEvents, appoin
     }
 }
 export const resolveTriggeredBy = ({ userId }, { customer, client, staffUserIds }) => {
+    if (!userId) return "customer";
+    
     const idStr = userId.toString();
 
     if (customer?.userId?._id?.toString() === idStr) return "Customer";
     if (client?.userId?._id?.toString() === idStr) return "Client";
-    if (staffUserIds.map(id => id.toString()).includes(idStr)) return "Staff";
+    if (staffUserIds?.map(id => id?.toString()).includes(idStr)) return "Staff";
 
     return "System";
 };

@@ -99,8 +99,6 @@ export const getClientWebsite = async (req, res) => {
 export const getClientWebsiteById = async (req, res) => {
   try {
     const { clientId } = req.params;
-
-    // 1. Find client with partial fields populated
     const client = await Client.findById(clientId)
       .populate({
         path: 'userId',
@@ -112,7 +110,6 @@ export const getClientWebsiteById = async (req, res) => {
       return res.status(404).json({ message: 'Client not found' });
     }
 
-    // 2. Find Website
     const website = await Website.findOne({ clientId });
     if (!website) {
       return res.status(404).json({ message: 'Website not found' });

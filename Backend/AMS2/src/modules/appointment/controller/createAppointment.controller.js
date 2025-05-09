@@ -81,9 +81,9 @@ export const createAppointment = async (req, res, next) => {
                 ]
             }).session(session);
 
-            if (overlappingAppointments.length > 0) {
+         /*    if (overlappingAppointments.length > 0) {
                 throw new AppError("Customer already has an appointment scheduled during this time", 400);
-            }
+            } */
         }
 
         for (const appointmentStart of appointmentDates) {
@@ -197,7 +197,9 @@ export const createAppointment = async (req, res, next) => {
         });
     } catch (error) {
         console.error(error);
-        await session.abortTransaction();
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
         session.endSession();
         await eventCreateRollback(createdEvents, authClient);
 
