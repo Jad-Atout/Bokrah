@@ -30,12 +30,21 @@ export const createLocalCustomerSchema = Joi.object({
                 'any.required': 'Password is required.',
             }),
         phoneNumber: Joi.string()
-            .pattern(/^[0-9]{10}$/)
+            .pattern(/^\+?[0-9\s]{10,20}$/)
             .required()
+            .custom((value, helpers) => {
+                // Remove spaces and + symbol to count actual digits
+                const digitsOnly = value.replace(/[\s+]/g, '');
+                if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                    return helpers.error('string.phoneLength');
+                }
+                return value;
+            })
             .messages({
                 'string.base': 'Phone number must be a string.',
                 'string.empty': 'Phone number cannot be empty.',
-                'string.pattern.base': 'Please provide a valid 10-digit phone number.',
+                'string.pattern.base': 'Please provide a valid phone number. It may include + prefix and spaces.',
+                'string.phoneLength': 'Phone number must contain between 10 and 15 digits (excluding spaces and + symbol).',
                 'any.required': 'Phone number is required.',
             }),
     });
