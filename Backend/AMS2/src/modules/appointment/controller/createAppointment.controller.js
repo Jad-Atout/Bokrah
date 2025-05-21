@@ -163,8 +163,8 @@ export const createAppointment = async (req, res, next) => {
                     const endTimeCalculated = calculateEndTime(adjustedStartTime, services);
                     console.log("Calculated end time:", endTimeCalculated);
 
-                    if (adjustedEndTime.getTime() !== new Date(endTimeCalculated).getTime()) {
-                        throw new AppError("Slot end time is invalid", 404);
+                    if (adjustedEndTime.getTime() < new Date(endTimeCalculated).getTime()) {
+                        throw new AppError("Slot end time is too short for the selected services", 404);
                     }
 
                     // 3. Create Google Calendar Event

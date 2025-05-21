@@ -1,6 +1,7 @@
 import Client from '../../../DB/models/client.js';
 import Website from '../../../DB/models/website.js';
 import Availability from '../../../DB/models/availability.js';
+import BookingSettings from '../../../DB/models/bookingSettings.js';
 import { generateWebsiteUrl } from '../../utils/websiteUtils.js';
 import mongoose from 'mongoose';
 
@@ -115,6 +116,9 @@ export const getClientWebsiteById = async (req, res) => {
       return res.status(404).json({ message: 'Website not found' });
     }
 
+    // Fetch booking settings for the client
+    const bookingSettings = await BookingSettings.findOne({ clientId });
+
     // 3. Find Availability by website._id
     const availability = await Availability.findOne({ websiteId: website._id });
 
@@ -163,7 +167,8 @@ export const getClientWebsiteById = async (req, res) => {
           confirmed: client.userId.confirmed
         }
       },
-      workingHours
+      workingHours,
+      bookingPolicy: bookingSettings?.bookingPolicy || null
     };
 
     res.status(200).json(response);
