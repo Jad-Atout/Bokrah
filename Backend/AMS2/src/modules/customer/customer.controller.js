@@ -213,10 +213,19 @@ export const getCustomerAppointments = async (req, res, next) => {
             clientIdToBusinessName[w.clientId.toString()] = w.businessName;
         });
 
-        // Attach businessName, staffName, and serviceName to each appointment/subAppointment
+        // Fetch all client docs for website field
+        const clientModel = (await import('../../../DB/models/client.js')).default;
+        const clients = await clientModel.find({ _id: { $in: clientIds } }, { _id: 1, website: 1 });
+        const clientIdToWebsite = {};
+        clients.forEach(c => {
+            clientIdToWebsite[c._id.toString()] = c.website;
+        });
+
+        // Attach businessName, website, staffName, and serviceName to each appointment/subAppointment
         const appointmentsWithBusinessName = appointmentsList.map(app => {
             const appObj = app.toObject();
             appObj.businessName = clientIdToBusinessName[app.clientId.toString()] || null;
+            appObj.website = clientIdToWebsite[app.clientId.toString()] || null;
             // Add staffName and serviceName to each subAppointment
             if (Array.isArray(appObj.subAppointments)) {
                 appObj.subAppointments = appObj.subAppointments.map(subApp => {

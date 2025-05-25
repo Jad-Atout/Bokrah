@@ -4,6 +4,7 @@ import {asyncHandler} from "../utils/catchError.js";
 import {confirmEmail} from "./confirmEmail.auth.js";
 import {setPasswordAndConfirm} from"./resetPasswordAndConfirm.js"
 import {forgotPassword, sendCode} from "./forgotPassword.js";
+import {changePassword} from "./changePassword.js";
 import {customerRegister} from "../modules/customer/customer.controller.js";
 import {validationHandler} from "../middleware/validation.js";
 import {createLocalCustomerSchema} from "../modules/customer/customer.validation.js";
@@ -30,6 +31,12 @@ router.patch("/sendcode",
 );
 router.patch("/forgotPassword",
     asyncHandler(forgotPassword)
+);
+
+// Change Password (requires authentication)
+// You may need to add authentication middleware, e.g. requireAuth, before asyncHandler
+router.patch("/change-password",
+    asyncHandler(changePassword)
 );
 
 export default router
