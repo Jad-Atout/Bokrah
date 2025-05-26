@@ -17,13 +17,14 @@ const router = express.Router();
 router.post("/check/:clientId",asyncHandler(prepareToken()))
 router.use("/:clientId/newCustomer", customerRouter);
 
+router.get("/glogin", asyncHandler(gClientLogin));
+router.get("/oauth2callback", asyncHandler(googleAuthCallback));
+
 router.get("/", auth(roles.Admin), asyncHandler(getClients));
 router.get("/:clientId", auth([roles.Admin, roles.Client]), asyncHandler(getClientById));
 router.patch("/", auth(roles.Client), upload.single('logo'), asyncHandler(updateClient));
 router.delete("/", auth(roles.Client), asyncHandler(deleteClient));
 
-router.get("/auth/google", asyncHandler(gClientLogin));
 router.get("/auth/google/callback", asyncHandler(googleAuthCallback));
-router.get("/oauth2callback", asyncHandler(googleAuthCallback));
 
 export default router;

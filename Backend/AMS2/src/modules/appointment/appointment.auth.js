@@ -237,9 +237,7 @@ export const verifyAppointmentOwnership = () => {
         const {appointmentId} = req.body;
         const {clientId} = req.params;
         const {authUser} = req;
-
         const appointment = await appointmentModel.findOne({_id: appointmentId, clientId: clientId});
-        console.log(appointment,clientId,appointmentId)
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
@@ -253,7 +251,7 @@ export const verifyAppointmentOwnership = () => {
                 return next(new AppError("Staff can only edit appointments they are assigned to", 403));
             }
         } else if (authUser.role?.customer) {
-            if (authUser._id.toString() !== customerId.toString()) {
+            if (authUser.customerId.toString() !== customerId.toString()) {
                 return next(new AppError("Customers can only edit their own appointments", 403));
             }
         } else {

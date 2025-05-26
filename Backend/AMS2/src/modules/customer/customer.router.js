@@ -4,7 +4,10 @@ import {
     getClientCustomers,
     updateCustomer,
     createCustomer,
-    getCustomersCount, toggleBlockCustomer
+    getCustomersCount,
+    toggleBlockCustomer,
+    getCustomerById,
+    getCustomerAppointments
 } from "./customer.controller.js";
 import {asyncHandler} from "../../utils/catchError.js";
 import {validationHandler} from "../../middleware/validation.js";
@@ -25,7 +28,7 @@ router.patch('/block/:customerId',
 )
 
 router.patch('/:customerId',
-    auth(roles.Client),
+    auth(roles.Client,roles.Customer),
     asyncHandler(updateCustomer)
 )
 router.delete('/:customerId',
@@ -36,5 +39,9 @@ router.delete('/:customerId',
 router.get('/',auth(roles.Client,roles.Staff),asyncHandler(getClientCustomers))
 
 router.get('/count',auth([roles.Admin]), getCustomersCount);
+
+router.get('/:customerId/appointments', auth(roles.Client, roles.Customer), asyncHandler(getCustomerAppointments));
+
+router.get('/:customerId', auth(roles.Client, roles.Customer), asyncHandler(getCustomerById));
 
 export default router

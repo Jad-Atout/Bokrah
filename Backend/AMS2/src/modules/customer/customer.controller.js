@@ -184,6 +184,102 @@ const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
 
     await cancelAppointment(req, res, next);
 };
+import websiteModel from '../../../DB/models/website.js';
+
+export const getCustomerAppointments = async (req, res, next) => {
+    try {
+        const { customerId } = req.params;
+        // Find all appointments for this customer
+        const appointmentsList = await appointment.find({ customerId })
+            .populate({
+                path: 'subAppointments.staffId',
+                populate: {
+                    path: 'userId',
+                    select: 'userName'
+                },
+                select: 'userId email phoneNumber'
+            })
+            .populate({
+                path: 'subAppointments.services.serviceId',
+                select: 'serviceName duration price'
+            });
+
+        // Collect all unique clientIds from appointments
+        const clientIds = [...new Set(appointmentsList.map(app => app.clientId.toString()))];
+        // Query all relevant website docs
+        const websites = await websiteModel.find({ clientId: { $in: clientIds } }, { clientId: 1, businessName: 1 });
+        const clientIdToBusinessName = {};
+        websites.forEach(w => {
+            clientIdToBusinessName[w.clientId.toString()] = w.businessName;
+        });
+
+        // Fetch all client docs for website field
+        const clientModel = (await import('../../../DB/models/client.js')).default;
+        const clients = await clientModel.find({ _id: { $in: clientIds } }, { _id: 1, website: 1 });
+        const clientIdToWebsite = {};
+        clients.forEach(c => {
+            clientIdToWebsite[c._id.toString()] = c.website;
+        });
+
+        // Attach businessName, website, staffName, and serviceName to each appointment/subAppointment
+        const appointmentsWithBusinessName = appointmentsList.map(app => {
+            const appObj = app.toObject();
+            appObj.businessName = clientIdToBusinessName[app.clientId.toString()] || null;
+            appObj.website = clientIdToWebsite[app.clientId.toString()] || null;
+            // Add staffName and serviceName to each subAppointment
+            if (Array.isArray(appObj.subAppointments)) {
+                appObj.subAppointments = appObj.subAppointments.map(subApp => {
+                    // Staff name from userId
+                    subApp.staffName = subApp.staffId?.userId?.userName || null;
+                    // Add serviceName for each service
+                    if (Array.isArray(subApp.services)) {
+                        subApp.services = subApp.services.map(serv => {
+                            let serviceName = null;
+                            if (serv.serviceId && typeof serv.serviceId === 'object') {
+                                serviceName = serv.serviceId.serviceName || null;
+                            }
+                            return {
+                                ...serv,
+                                serviceName,
+                                serviceId: serv.serviceId && serv.serviceId._id ? serv.serviceId._id : serv.serviceId
+                            };
+                        });
+                    }
+                    return subApp;
+                });
+            }
+            return appObj;
+        });
+
+        return res.status(200).json({
+            message: 'success',
+            appointments: appointmentsWithBusinessName
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+export const getCustomerById = async (req, res, next) => {
+    try {
+        const { customerId } = req.params;
+        // Populate user info (name, email, phone, etc)
+        const customer = await customerModel.findById(customerId).populate({
+            path: "userId",
+            select: "userName email phoneNumber address"
+        });
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+        return res.status(200).json({
+            message: "success",
+            customer
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 export const getCustomersCount = async (req, res, next) => {
     try {
         const customerCount = await customerModel.countDocuments();
