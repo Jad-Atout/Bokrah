@@ -7,7 +7,7 @@ export const generateWebsiteUrl = (client, customWebsiteName) => {
     const websitePath = `${customWebsiteName}`;
     
     return {
-        fullUrl: `http://localhost:5173/${clientId}/${websitePath}/Bookrah.com`,
+        fullUrl: `${process.env.BASE_URL}/${clientId}/${websitePath}/Bookrah.com`,
         websitePath: websitePath
     };
 }; 
