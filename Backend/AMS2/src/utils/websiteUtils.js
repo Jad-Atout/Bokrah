@@ -7,7 +7,7 @@ export const generateWebsiteUrl = (client, customWebsiteName) => {
     const websitePath = `${customWebsiteName}`;
     
     return {
-        fullUrl: `${process.env.BASE_URL}/${clientId}/${websitePath}/Bookrah.com`,
+        fullUrl: `${process.env.FRONTEND_BASE_URL}${clientId}/${websitePath}/Bookrah.com`,
         websitePath: websitePath
     };
 }; 
