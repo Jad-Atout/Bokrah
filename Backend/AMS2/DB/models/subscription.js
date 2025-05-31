@@ -6,7 +6,6 @@ const SubscriptionSchema = new mongoose.Schema({
   status: { type: String, enum: ["Active", "Pending", "Expired"], required: true },
   joinDate: { type: Date, required: true },
   renewalDate: { type: Date, required: true },
-  lastPayment: { type: Number, default: 0 },
   lastPaymentDate: { type: Date },
   subscriptionId: { type: String, unique: true, required: true }
 }, { timestamps: true });

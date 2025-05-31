@@ -39,7 +39,8 @@
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
     "redis": "^4.7.0",
-    "sequelize": "^6.37.5"
+    "sequelize": "^6.37.5",
+    "twilio": "^5.6.1"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.26.3",
