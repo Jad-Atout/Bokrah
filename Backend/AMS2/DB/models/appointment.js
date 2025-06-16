@@ -42,6 +42,10 @@ const AppointmentSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    emailReminder: {
+        type: Boolean,
+        default: true
+    },
     recurrence: {
         type: { type: String, enum: ["daily", "weekly", "monthly"], default: null },
         interval: { type: Number, default: 1 },

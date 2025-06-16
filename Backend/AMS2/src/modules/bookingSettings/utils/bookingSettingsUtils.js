@@ -11,7 +11,7 @@ export const getBookingSettingsForClient = async (clientId) => {
 
 export const validateCancellationTime = async (clientId, appointmentTime, userRole) => {
     // Skip time validation for clients and staff
-    if (userRole === 'Client' || userRole === 'Staff') {
+    if (userRole.client === true || userRole.staff === true) {
         return;
     }
 
@@ -51,7 +51,7 @@ export const validateCancellationTime = async (clientId, appointmentTime, userRo
 
 export const validateReschedulingTime = async (clientId, appointmentTime, userRole) => {
     // Skip time validation for clients and staff
-    if (userRole === 'Client' || userRole === 'Staff') {
+    if (userRole.client === true || userRole.staff === true) {
         return;
     }
 
@@ -91,10 +91,10 @@ export const validateReschedulingTime = async (clientId, appointmentTime, userRo
 
 export const validateOnlineCancellation = async (clientId, userRole) => {
     // Skip online cancellation validation for clients and staff
-    if (userRole === 'Client' || userRole === 'Staff') {
+    if (userRole.client === true || userRole.staff === true) {
         return;
     }
-
+console.log("userRole",userRole)
     const settings = await getBookingSettingsForClient(clientId);
     if (!settings.bookingFlow.allowOnlineCancellations) {
         throw new AppError("Online cancellations are not allowed", 403);

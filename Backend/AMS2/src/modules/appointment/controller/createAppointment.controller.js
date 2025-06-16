@@ -1,6 +1,4 @@
-// ================================
-// 📦 Imports
-// ================================
+
 import mongoose from "mongoose";
 import { AppError } from "../../../utils/AppError.js";
 
@@ -25,15 +23,10 @@ import {
 import { validateMultipleServices } from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
 
-// ================================
-// 📅 Create Appointment Controller
-// ================================
+
 export const createAppointment = async (req, res, next) => {
-    console.log("=== Starting createAppointment ===");
-    console.log("Request body:", req.body);
-    console.log("Request params:", req.params);
     
-    let { customerId, recurrence, slot, userId, notes } = req.body;
+    let { customerId, recurrence, slot, userId, notes, emailReminder } = req.body;
     const { clientId } = req.params;
     const authClient = req.oauth2Client;
     const APPOINTMENT_STATUS = "Booked";
@@ -44,6 +37,7 @@ export const createAppointment = async (req, res, next) => {
         slot,
         userId,
         notes,
+        emailReminder,
         clientId
     });
 
@@ -198,6 +192,7 @@ export const createAppointment = async (req, res, next) => {
             const appointment = new appointmentModel({
                 clientId,
                 customerId,
+                emailReminder,
                 status: APPOINTMENT_STATUS,
                 notes,
                 subAppointments,
@@ -226,7 +221,9 @@ export const createAppointment = async (req, res, next) => {
         // 5. Schedule reminders and notifications
         console.log("Scheduling reminders...");
         for (const appointment of createdAppointment) {
-            await scheduleReminders(appointment._id);
+            if (appointment.emailReminder) {
+                await scheduleReminders(appointment._id);
+            }
         }
 
         console.log("Sending notifications with data:", {
