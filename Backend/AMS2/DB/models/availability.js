@@ -2,11 +2,6 @@ import mongoose from "mongoose";
 
 const AvailabilitySchema = new mongoose.Schema(
     {
-        websiteId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Website",
-            required: true
-        },
         timeZone: {
             type: String,
             default: "Asia/Gaza",  // Default time zone value

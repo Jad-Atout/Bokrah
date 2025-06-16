@@ -74,6 +74,20 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             googleData.clientId = client._id;
             const google = new googleModel(googleData);
             await google.save({ session });
+
+            // Create default availability
+            const availability =new Availability();
+            await availability.save({session})
+
+            let website = new websiteModel({ clientId: client._id, ...clientData,availabilityId:availability._id });
+            await website.save({ session });
+
+            const { fullUrl } = generateWebsiteUrl(client, userData.userName);
+            client.customWebsiteName = userData.userName;
+            client.website = fullUrl;
+            await client.save({ session });
+
+
         } else {
             // Existing client
             client = await clientModel.findOne({ userId: user._id }).session(session);
@@ -83,54 +97,6 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             await googleModel.findOneAndUpdate({ clientId: client._id }, googleData).session(session);
         }
 
-        // Check if website exists
-        let website = await websiteModel.findOne({ clientId: client._id }).session(session);
-        if (!website) {
-            website = new websiteModel({ clientId: client._id, ...clientData });
-            await website.save({ session });
-
-            const { fullUrl } = generateWebsiteUrl(client, userData.userName);
-            client.customWebsiteName = userData.userName;
-            client.website = fullUrl;
-            await client.save({ session });
-
-            // Create default availability
-            await Availability.create([{
-                websiteId: website._id,
-                timeZone: "Asia/Gaza",
-                availability: [
-                    {
-                        day: "Monday",
-                        slots: [{ startTime: "08:00 AM", endTime: "04:00 PM" }]
-                    },
-                    {
-                        day: "Tuesday",
-                        slots: [{ startTime: "08:00 AM", endTime: "04:00 PM" }]
-                    },
-                    {
-                        day: "Wednesday",
-                        slots: [{ startTime: "08:00 AM", endTime: "04:00 PM" }]
-                    },
-                    {
-                        day: "Thursday",
-                        slots: [{ startTime: "08:00 AM", endTime: "04:00 PM" }]
-                    },
-                    {
-                        day: "Friday",
-                        slots: []
-                    },
-                    {
-                        day: "Saturday",
-                        slots: []
-                    },
-                    {
-                        day: "Sunday",
-                        slots: [{ startTime: "08:00 AM", endTime: "04:00 PM" }]
-                    }
-                ]
-            }], { session });
-        }
-
         await session.commitTransaction();
         return { role, user, client, staff, website, newClient };
     } catch (error) {
@@ -138,7 +104,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
         return { appError: new AppError(error.message || "Internal server error", 500) };
     } finally {
         session.endSession();
-    }
+}
 };
 
 

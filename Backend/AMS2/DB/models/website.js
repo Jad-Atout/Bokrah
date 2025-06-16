@@ -15,6 +15,12 @@ const WebsiteSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    availability_id:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Availability",
+        required: true
+    }
+    ,
     websiteUrls: [{
         type: String,
         required: false

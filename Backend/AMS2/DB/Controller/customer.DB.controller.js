@@ -17,6 +17,7 @@ export const transCreateCustomer = async (customerData) => {
 
 
         }else {
+            delete customerData.userId;
             const role = new roleModel({customer:true})
             await role.save({session})
             customerData.roleId = role._id;

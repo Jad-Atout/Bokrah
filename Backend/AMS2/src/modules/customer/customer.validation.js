@@ -1,6 +1,5 @@
 import Joi from "joi";
 
-
 export const createLocalCustomerSchema = Joi.object({
         userName: Joi.string()
             .min(3)
@@ -83,3 +82,4 @@ export const createCustomerSchema = Joi.object({
         "object.missing": "At least one of email or phone number is required.",
     });
 
+//TODO: ensure the validation

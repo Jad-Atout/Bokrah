@@ -6,14 +6,14 @@ const userModel = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
-        unique: true
-    },   password: {
+        unique: true,
+        sparse: true,
+    },
+    password: {
         type: String,
         required: function() {
             return this.authProvider === "local";
-        },
-        default: null // Ensure non-local providers don't trigger validation errors
+        }
     }
     ,
     authProvider: {
@@ -24,7 +24,8 @@ const userModel = new mongoose.Schema({
     },
     phoneNumber: {
         type:String,
-        unique: true
+        unique: true,
+        sparse: true
     },
     roleId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +37,6 @@ const userModel = new mongoose.Schema({
         default:false
     } , sendCode:{
         type:String,
-        default:null,
     },
 }, { timestamps: true });
 userModel.virtual("clients", {

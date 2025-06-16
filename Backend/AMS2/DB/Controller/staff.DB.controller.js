@@ -38,13 +38,11 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
         const checkUserExistence = await userModel.find({
             $or: [
                 { email: userData.email },
-                { phoneNumber: userData.phoneNumber }
             ]
         }).session(session);
         let role = null
         let user = null
 
-        if(checkUserExistence.length > 1)  return {staff:null,user:null,appError:new AppError('Email or phone number belongs to different users', 409)}
         if(checkUserExistence.length ===0){
             role = await createRole({ staff: true }, session);
             userData.roleId = role._id;
@@ -56,19 +54,15 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
             user = checkUserExistence[0]
             role = await roleModel.findById(user.roleId)
             if(role.staff || role.client) return {staff:null,user:null,appError:new AppError('Staff already exists in the system', 409)}
-
             role.staff = true
             await role.save({session});
         }
-        console.log("user",user);
         const availability =  new AvailabilitySchema();
         await availability.save({session});
         staffData.userId = user._id
         staffData.availability = availability._id
         let staff= new staffModel(staffData);
-        console.log("staff1",staff);
         await staff.save({session})
-console.log("staff2",staff);
         staff.calendarId = await getOrCreateSubCalendar(oauth2Client,user.userName,user.email);
         await staff.save({session})
 
@@ -77,11 +71,9 @@ console.log("staff2",staff);
 
         await session.commitTransaction();
         session.endSession();
-console.log("staff",staff);
         return {staff:staff,user,appError:null}
 
     }catch (err){
-        console.log("err",err);
         await session.abortTransaction();
         session.endSession();
         return new AppError(err.message || 'Internal server error', 500);

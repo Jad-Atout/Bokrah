@@ -20,22 +20,34 @@ dotenv.config()
 
 // login directry after confirmation
 
-
+//Todo email lower
 
 export const createCustomer = async (req, res, next) => {
     const { userName, email, phoneNumber } = req.body;
-    const filter = {}
-    if(email) filter.email = email;
-    if(phoneNumber) filter.phoneNumber = phoneNumber;
-    let user = await userModel.findOne(filter)
-    let customer = await customerModel.find({userId:user?._id})
-    if(user){
-        if(customer) return res.status(400).json({ message: "User already exists", user,customer });
+    const filter = {};
+    if (email) filter.email = email;
+    if (phoneNumber) filter.phoneNumber = phoneNumber.toLowerCase();
+
+    let user = await userModel.findOne(filter);
+    let customer = await customerModel.find({ userId: user?._id });
+
+    if (user) {
+        if (customer) return res.status(400).json({ message: "User already exists", user, customer });
     }
 
-    let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer({userName, email, phoneNumber,userId:(user)?user._id:null,authProvider: "actor"})
-    console.log(newUser,newCustomer,appError)
-    if(appError) return next(appError);
+    const payload = {
+        userName,
+        userId: user ? user._id : null,
+        authProvider: "actor",
+        confirmed: true,
+        ...(email ? { email:email.toLowerCase()() } : {}),
+        ...(phoneNumber ? { phoneNumber:phoneNumber.toLowerCase() } : {}),
+    };
+
+    console.log(payload);
+
+    let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer(payload);
+    if (appError) return next(appError);
 
     const clientId = req.authUser.clientId;
 
@@ -59,17 +71,21 @@ export const createCustomer = async (req, res, next) => {
 
 
 export const customerRegister = async (req, res, next) => {
-    const { userName, email, password, phoneNumber } = req.body;
-    const filter = {}
-    if(email) filter.email = email;
-    if(phoneNumber) filter.phoneNumber = phoneNumber;
-    let user = await userModel.findOne(filter)
+    let { userName, email, password, phoneNumber } = req.body;
+    email= email.toLowerCase()
+    const filter = []
+    if(email) filter.push({email})
+    if(phoneNumber) filter.push({phoneNumber}) ;
+    let user = await userModel.findOne({$or:filter})
+    console.log(user)
+    console.log(filter)
+
     if(user) {
         return next(new AppError('User already exists', 401));
     }
 
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
-    let {user:newUser,customer,appError} = await transCreateCustomer({userName, email, phoneNumber, password:hashedPassword,authProvider: "local"})
+    let {user:newUser,customer,appError} = await transCreateCustomer({userName, email:email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(appError) return next(appError);
 
     const tokenData={id:newUser._id, email:newUser.email,}

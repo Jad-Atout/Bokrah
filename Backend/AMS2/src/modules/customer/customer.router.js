@@ -17,8 +17,8 @@ const router = express.Router({mergeParams: true});
 
 
 router.post('/create',
-    auth([roles.Client,roles.Staff]),
-    validationHandler(createCustomerSchema)
+    auth([roles.Client,roles.Staff])//,
+    //validationHandler(createCustomerSchema)
     ,asyncHandler(createCustomer)
 );
 

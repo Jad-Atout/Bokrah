@@ -22,7 +22,7 @@ export const createStaff = async (req, res, next) => {
     const {clientId} = req.authUser;
     const oauth2Client= req.oauth2Client
     const {staff,user,appError} = await transCreateStaff(
-        {userName, email, phoneNumber, authProvider: "actor"},
+        {userName, email:email.toLowerCase(), phoneNumber, authProvider: "actor"},
         {clientId, roleDescription},
         oauth2Client
     )
