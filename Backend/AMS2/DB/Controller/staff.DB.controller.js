@@ -8,6 +8,7 @@ import getOrCreateSubCalendar, {deleteCalendar} from "../../src/utils/Google/Ser
 import serviceModel from "../models/service.js";
 import appointmentModel from "../models/appointment.js";
 import AvailabilitySchema from "../models/availability.js";
+import customerModel from "../models/customer.js";
 export const populateStaff = [
     {
         path:"userId",
@@ -44,11 +45,13 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
         let user = null
 
         if(checkUserExistence.length ===0){
-            role = await createRole({ staff: true }, session);
+            role = await createRole({ staff: true ,customer:true}, session);
             userData.roleId = role._id;
 
             user = new userModel(userData)
             await user.save({ session });
+            const customer =  new customerModel({userId:user._id})
+            customer.save({session})
 
         }else {
             user = checkUserExistence[0]
@@ -74,6 +77,7 @@ export const transCreateStaff = async (userData,staffData,oauth2Client)=>{
         return {staff:staff,user,appError:null}
 
     }catch (err){
+        console.log(err)
         await session.abortTransaction();
         session.endSession();
         return new AppError(err.message || 'Internal server error', 500);

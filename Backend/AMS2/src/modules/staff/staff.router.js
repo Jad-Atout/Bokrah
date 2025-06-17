@@ -26,7 +26,7 @@ router.get('/details/:staffId',
 
 router.post('/',
     auth(roles.Client),
-    validationHandler(createStaffValidationSchema),
+    //validationHandler(createStaffValidationSchema),
     asyncHandler(prepareToken()),
     asyncHandler(createStaff)
 )

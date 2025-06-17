@@ -23,10 +23,11 @@ dotenv.config()
 //Todo email lower
 
 export const createCustomer = async (req, res, next) => {
-    const { userName, email, phoneNumber } = req.body;
+    let { userName, email, phoneNumber } = req.body;
+    email = email.toLowerCase();
     const filter = {};
     if (email) filter.email = email;
-    if (phoneNumber) filter.phoneNumber = phoneNumber.toLowerCase();
+    if (phoneNumber) filter.phoneNumber = phoneNumber;
 
     let user = await userModel.findOne(filter);
     let customer = await customerModel.find({ userId: user?._id });
@@ -40,11 +41,9 @@ export const createCustomer = async (req, res, next) => {
         userId: user ? user._id : null,
         authProvider: "actor",
         confirmed: true,
-        ...(email ? { email:email.toLowerCase()() } : {}),
-        ...(phoneNumber ? { phoneNumber:phoneNumber.toLowerCase() } : {}),
+        ...(email ? { email:email } : {}),
+        ...(phoneNumber ? { phoneNumber:phoneNumber} : {}),
     };
-
-    console.log(payload);
 
     let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer(payload);
     if (appError) return next(appError);
@@ -131,7 +130,9 @@ export const getClientCustomers = async (req, res, next) => {
 
 
 export const updateCustomer = async (req, res, next) => {
-    const { userName, email, password, phoneNumber } = req.body;
+    let { userName, email, password, phoneNumber } = req.body;
+    email = email.toLowerCase();
+
     const {customerId} = req.params
 
     const customer = await customerModel.findById(customerId);
@@ -147,14 +148,13 @@ export const updateCustomer = async (req, res, next) => {
     return res.json({message:"Customer updated successfully",newCustomer,newUser});
 }
 
-
+//TODO fix error here
 export const deleteCustomer = async (req, res, next) => {
     const { customerId } = req.params
     const id = req.authUser.customerId
-    console.log(id,customerId)
+    console.log(customerId,id)
     if(customerId !==id) return next( new AppError("User is not authorized for this action", 401));
     let {user:deletedUser,customer:deletedCustomer,appError} = await transDeleteCustomer(id)
-    console.log(deletedCustomer,deletedUser);
     if (appError) {
         return next(appError);
     }

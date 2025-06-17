@@ -45,16 +45,16 @@ export const generalLogin = async (req, res,next) => {
         tokenData.buisnessName = website.businessName
         tokenData.industry = website.industry
         tokenData.clientId = client._id
-
-    }else if(role.customer){
+    }
+    if(role.customer){
         const customer = await customerModel.findOne({userId: user._id})
         tokenData.customerId = customer._id
-    }else if(role.staff){
+    }
+    if(role.staff){
         const staff = await staffModel.findOne({userId:user._id})
         tokenData.roleDescription=staff.roleDescription
         tokenData.availability=staff.availability
         tokenData.staffId = staff._id
-
     }
     const token = jwt.sign(tokenData,process.env.JWT_SECRET)
 
