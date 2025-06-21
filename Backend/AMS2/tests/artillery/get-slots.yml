@@ -1,0 +1,20 @@
+config:
+  target: "http://localhost:10000"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+  defaults:
+    headers:
+      Authorization: "{{ $env.JWT_TOKEN }}"
+      Content-Type: application/json
+
+scenarios:
+  - flow:
+      - post:
+          url: "/appointment/slots/67b7bdc5e9a20e5fc52def95"
+          json:
+            startDate: "2025-07-06T00:00:00Z"
+            endDate: "2025-07-06T23:59:59Z"
+            staffsServices:
+              - staffId: "67be52e6953fc2c80fc2eb72"
+                services: ["67e08b5ff31b7f28ae9a9d77"]

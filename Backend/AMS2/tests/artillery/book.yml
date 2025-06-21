@@ -1,0 +1,27 @@
+config:
+  target: "http://localhost:10000"
+  phases:
+    - duration: 1  # seconds
+      arrivalRate: 2
+  defaults:
+    headers:
+      Authorization: "{{ $env.JWT_TOKEN }}"
+      Content-Type: application/json
+
+scenarios:
+  - name: "Race for same slot"
+    flow:
+      - post:
+          url: "/appointment/67b7bdc5e9a20e5fc52def95"
+          json:
+            customerId: "67ccc02e9e410fda8a3ada2d"
+            slot:
+              startTime: "2025-07-28T12:00:00.000Z"
+              endTime:   "2025-07-28T12:35:00.000Z"
+              subSlots:
+                - startTime: "2025-07-28T12:00:00.000Z"
+                  endTime:   "2025-07-28T12:35:00.000Z"
+                  staffServices:
+                    - staffId: "67be52e6953fc2c80fc2eb72"
+                      services:
+                        - "67e08b5ff31b7f28ae9a9d77"

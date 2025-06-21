@@ -22,6 +22,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
     try {
         let user = await userModel.findOne({ email: userData.email }).session(session);
         let role = (user && user.roleId) ? await roleModel.findById(user.roleId).session(session) : null;
+        let website
 
         if (role?.staff && !role?.client) {
             return { appError: new AppError("user is a staff and can't become a client") };
@@ -79,7 +80,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             const availability =new Availability();
             await availability.save({session})
 
-            let website = new websiteModel({ clientId: client._id, ...clientData,availabilityId:availability._id });
+            website = new websiteModel({ clientId: client._id, ...clientData,availabilityId:availability._id });
             await website.save({ session });
 
             const { fullUrl } = generateWebsiteUrl(client, userData.userName);
@@ -92,7 +93,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             // Existing client
             client = await clientModel.findOne({ userId: user._id }).session(session);
             staff = await staffModel.findOne({ clientId: client._id }).session(session);
-
+            website = websiteModel.findOne({clientId: client._id}).session(session);
             // Update Google data if needed
             await googleModel.findOneAndUpdate({ clientId: client._id }, googleData).session(session);
         }
@@ -101,6 +102,9 @@ export const transCreateClient = async (clientData, userData, googleData) => {
         return { role, user, client, staff, website, newClient };
     } catch (error) {
         await session.abortTransaction();
+        if (session.inTransaction()) {
+                    await session.abortTransaction();
+                   }
         return { appError: new AppError(error.message || "Internal server error", 500) };
     } finally {
         session.endSession();

@@ -46,5 +46,20 @@ const initApp = (app,express) => {
     app.use((err, req, res, next) => {
         return res.status(err.statusCode || 500).json({message: err.message || "Internal Server Error"})
     });
+
+    app.use((req, res, next) => {
+        res.on('finish', () => {
+            if (req._mwTimes) {
+                console.log(JSON.stringify({
+                    route: req.method + ' ' + req.originalUrl.split('?')[0],
+                    status: res.statusCode,
+                    mw: req._mwTimes,
+                    totalMs: req._mwTimes.reduce((s, m) => s + m.ms, 0)
+                }));
+            }
+        });
+        next();
+    });
+
 }
 export default initApp

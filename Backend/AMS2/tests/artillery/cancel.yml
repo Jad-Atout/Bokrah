@@ -1,0 +1,15 @@
+config:
+  target: "http://localhost:10000"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+  defaults:
+    headers:
+      Authorization: "{{ $env.JWT_TOKEN }}"
+      Content-Type: application/json
+scenarios:
+  - flow:
+      - patch:
+          url: "/appointment/67b7bdc5e9a20e5fc52def95/cancel"
+          json:
+            appointmentId: "67ffc321a0d8d8edce2e1bb3"
