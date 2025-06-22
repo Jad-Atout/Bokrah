@@ -276,7 +276,7 @@ export const updateClientWebsite = async (req, res) => {
 
     const updatedWebsite = await Website.findOne({ clientId });
     const updatedAvailability = await Availability.findOne({
-      websiteId: updatedWebsite._id
+      _id: updatedWebsite.availability_id
     });
 
     res.status(200).json({
