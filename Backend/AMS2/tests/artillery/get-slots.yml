@@ -2,7 +2,7 @@ config:
   target: "http://localhost:10000"
   phases:
     - duration: 30
-      arrivalRate: 10
+      arrivalRate: 20
   defaults:
     headers:
       Authorization: "{{ $env.JWT_TOKEN }}"

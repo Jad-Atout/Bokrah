@@ -207,7 +207,7 @@ export const createAppointment = async (req, res, next) => {
 
     } catch (error) {
         /* duplicate minute = slot already taken */
-        if (error.code === 11000) {
+        if (error.code === 112) {
             if (session.inTransaction()) await session.abortTransaction();
             session.endSession();
             await eventCreateRollback(createdEvents, authClient);

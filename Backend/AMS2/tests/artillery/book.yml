@@ -1,8 +1,8 @@
 config:
   target: "http://localhost:10000"
   phases:
-    - duration: 1  # seconds
-      arrivalRate: 2
+    - duration: 30  # seconds
+      arrivalRate: 5
   defaults:
     headers:
       Authorization: "{{ $env.JWT_TOKEN }}"
@@ -16,11 +16,11 @@ scenarios:
           json:
             customerId: "67ccc02e9e410fda8a3ada2d"
             slot:
-              startTime: "2025-07-28T12:00:00.000Z"
-              endTime:   "2025-07-28T12:35:00.000Z"
+              startTime: "2025-06-21T08:55:00.000Z"
+              endTime:   "2025-06-21T09:30:00.000Z"
               subSlots:
-                - startTime: "2025-07-28T12:00:00.000Z"
-                  endTime:   "2025-07-28T12:35:00.000Z"
+                - startTime: "2025-06-21T08:55:00.000Z"
+                  endTime:   "2025-06-21T09:30:00.000Z"
                   staffServices:
                     - staffId: "67be52e6953fc2c80fc2eb72"
                       services:
