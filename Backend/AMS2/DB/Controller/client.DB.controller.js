@@ -80,7 +80,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             const availability =new Availability();
             await availability.save({session})
 
-            website = new websiteModel({ clientId: client._id, ...clientData,availabilityId:availability._id });
+            website = new websiteModel({ clientId: client._id, ...clientData,availability_id:availability._id });
             await website.save({ session });
 
             const { fullUrl } = generateWebsiteUrl(client, userData.userName);
@@ -101,6 +101,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
         await session.commitTransaction();
         return { role, user, client, staff, website, newClient };
     } catch (error) {
+        console.log(error)
         await session.abortTransaction();
         if (session.inTransaction()) {
                     await session.abortTransaction();

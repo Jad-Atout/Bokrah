@@ -8,6 +8,7 @@ import {changePassword} from "./changePassword.js";
 import {customerRegister} from "../modules/customer/customer.controller.js";
 import {validationHandler} from "../middleware/validation.js";
 import {createLocalCustomerSchema} from "../modules/customer/customer.validation.js";
+import {generalLoginSchema} from "./auth.validation.js";
 const router = Router()
 
 
@@ -15,7 +16,8 @@ router.post('/register',
     validationHandler(createLocalCustomerSchema)
     ,asyncHandler(customerRegister)
 );
-router.post('/login'
+router.post('/login',
+    validationHandler(generalLoginSchema)
     ,asyncHandler(generalLogin)
 )
 router.post('/confirmEmail/:token'

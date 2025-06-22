@@ -20,12 +20,12 @@ const ClientSchema = new mongoose.Schema({
     },
     customWebsiteName: {
         type: String,
-        required: true,
+        required: false,
         unique: true
     },
     website: {
         type: String,
-        required: true,
+        required: false,
         unique: true
     }
 }, { timestamps: true });

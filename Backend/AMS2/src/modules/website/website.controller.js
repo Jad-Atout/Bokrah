@@ -10,19 +10,17 @@ export const createClientWebsite = async (req, res) => {
         const { clientId } = req.params;
         const { customWebsiteName } = req.body;
         
-        console.log('Creating website for client:', clientId);
-        
+
         const client = await Client.findById(clientId);
         if (!client) {
-            console.log('Client not found:', clientId);
             return res.status(404).json({ message: "Client not found" });
         }
 
         let website = await Website.findOne({ clientId });
         
         if (!website) {
-            console.log('Creating new website document for client:', clientId);
-            website = await Website.create({ clientId });
+            const availability = new Availability();
+            website = await Website.create({ clientId,availability_id:availability._id });
         }
 
         const websiteName = customWebsiteName || website.businessName;
@@ -30,17 +28,11 @@ export const createClientWebsite = async (req, res) => {
             return res.status(400).json({ message: "Business name is required" });
         }
 
-        console.log('Using website name:', websiteName);
-
         const { fullUrl, websitePath } = generateWebsiteUrl(client, websiteName);
-        console.log('Generated website path:', websitePath);
-        
+
         client.customWebsiteName = websiteName;
         client.website = fullUrl;
         await client.save();
-        
-        console.log('Website created successfully for client:', clientId);
-        console.log('Stored website URL:', client.website);
 
         res.status(200).json({
             message: "Website created successfully",
@@ -50,7 +42,6 @@ export const createClientWebsite = async (req, res) => {
             businessName: website.businessName
         });
     } catch (error) {
-        console.error('Error creating website:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -58,23 +49,18 @@ export const createClientWebsite = async (req, res) => {
 export const getClientWebsite = async (req, res) => {
     try {
         const { websiteUrl } = req.params;
-        console.log('Searching for website with path:', websiteUrl);
-        
+
         // First, let's check what's in the database
         const allClients = await Client.find({}, 'website customWebsiteName');
-        console.log('All clients in database:', allClients);
-        
+
         // Extract the custom name from the URL (everything before the first hyphen)
         const customName = websiteUrl.split('-')[0];
-        console.log('Extracted custom name:', customName);
-        
+
         // Search for the client using the custom name
         const client = await Client.findOne({ customWebsiteName: customName });
         
         if (!client) {
-            console.log('No client found with custom name:', customName);
-            console.log('Available URLs:', allClients.map(c => c.website).filter(Boolean));
-            return res.status(404).json({ 
+            return res.status(404).json({
                 message: "Website not found",
                 searchedName: customName,
                 availableUrls: allClients.map(c => c.website).filter(Boolean)
@@ -92,7 +78,6 @@ export const getClientWebsite = async (req, res) => {
             businessName: website?.businessName
         });
     } catch (error) {
-        console.error('Error in getClientWebsite:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -215,15 +200,10 @@ export const updateClientWebsite = async (req, res) => {
       });
     }
 
-    // Handle custom website name and URL generation
     if (customWebsiteName) {
    
+        const { fullUrl, websitePath } = generateWebsiteUrl(client, customWebsiteName);
       
-    
-      // Generate new website URL
-      const { fullUrl, websitePath } = generateWebsiteUrl(client, customWebsiteName);
-      
-      // Update client's website information
       client.customWebsiteName = customWebsiteName;
       client.website = fullUrl;
       await client.save();
@@ -239,19 +219,7 @@ export const updateClientWebsite = async (req, res) => {
       return res.status(404).json({ message: 'Website not found' });
     }
 
-    if (req.file) {
-      website.logo = {
-        url: req.file.path, 
-        publicId: req.file.filename
-      };
-    }
 
-    website.businessName = businessName;
-    website.industry = industry;
-    website.websiteUrls = websiteUrls;
-    website.instagramUrl = instagramUrl;
-    website.facebookUrl = facebookUrl;
-    await website.save();
 
     let parsedWorkingDays = [];
     try {
@@ -274,11 +242,10 @@ export const updateClientWebsite = async (req, res) => {
           }))
     }));
 
-    let availability = await Availability.findOne({ websiteId: website._id });
+    let availability = await Availability.findOne({_id:website.availability_id});
     if (!availability) {
       availability = new Availability({
-        websiteId: website._id,
-        timeZone: timeZone || 'Asia/Gaza', 
+        timeZone: timeZone || 'Asia/Gaza',
         availability: formattedAvailability
       });
     } else {
@@ -286,6 +253,19 @@ export const updateClientWebsite = async (req, res) => {
       availability.availability = formattedAvailability;
     }
     await availability.save();
+      if (req.file) {
+          website.logo = {
+              url: req.file.path,
+              publicId: req.file.filename
+          };
+      }
+
+      website.businessName = businessName;
+      website.industry = industry;
+      website.websiteUrls = websiteUrls;
+      website.instagramUrl = instagramUrl;
+      website.facebookUrl = facebookUrl;
+      await website.save();
 
     const updatedClient = await Client.findById(clientId)
       .populate({
