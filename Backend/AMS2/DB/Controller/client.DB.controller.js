@@ -59,8 +59,11 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             client = new clientModel(clientData);
             await client.save({ session });
 
+            const availability =new Availability();
+            await availability.save({session})
+
             // Create staff
-            staff = new staffModel({ userId: user._id, clientId: client._id });
+            staff = new staffModel({ userId: user._id, clientId: client._id,availability:availability._id });
             await staff.save({ session });
 
             // Create sub-calendar
@@ -77,8 +80,7 @@ export const transCreateClient = async (clientData, userData, googleData) => {
             await google.save({ session });
 
             // Create default availability
-            const availability =new Availability();
-            await availability.save({session})
+
 
             website = new websiteModel({ clientId: client._id, ...clientData,availability_id:availability._id });
             await website.save({ session });
