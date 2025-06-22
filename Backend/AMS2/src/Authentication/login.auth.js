@@ -32,8 +32,6 @@ export const generalLogin = async (req, res,next) => {
     let tokenData = {
         id: user.id,
         userName: user.userName,
-        email: user.email,
-        phoneNumber:user.phoneNumber,
         role: role,
     }
     if(role.client){

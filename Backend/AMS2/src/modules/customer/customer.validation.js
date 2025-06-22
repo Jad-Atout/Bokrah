@@ -14,7 +14,6 @@ export const createLocalCustomerSchema = Joi.object({
     email: Joi.string()
       .email()
       .optional()
-      .allow('')
       .messages({
         'string.base': 'Email must be a string.',
         'string.empty': 'Email cannot be empty.',
@@ -34,7 +33,6 @@ export const createLocalCustomerSchema = Joi.object({
     phoneNumber: Joi.string()
       .pattern(/^\+?[0-9\s]{10,20}$/)
       .optional()
-      .allow('')
       .custom((value, helpers) => {
         if (!value) return value;
         const digitsOnly = value.replace(/[\s+]/g, '');

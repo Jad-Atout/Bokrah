@@ -20,11 +20,12 @@ dotenv.config()
 
 // login directry after confirmation
 
-//Todo email lower
 
 export const createCustomer = async (req, res, next) => {
     let { userName, email, phoneNumber } = req.body;
-    email = email.toLowerCase();
+    if(email){
+        email = email.toLowerCase();
+    }
     const filter = {};
     if (email) filter.email = email;
     if (phoneNumber) filter.phoneNumber = phoneNumber;
@@ -71,7 +72,11 @@ export const createCustomer = async (req, res, next) => {
 
 export const customerRegister = async (req, res, next) => {
     let { userName, email, password, phoneNumber } = req.body;
-    email= email.toLowerCase()
+    console.log(email)
+    if(email){
+        email= email.toLowerCase()
+    }
+
     const filter = []
     if(email) filter.push({email})
     if(phoneNumber) filter.push({phoneNumber}) ;
@@ -84,9 +89,9 @@ export const customerRegister = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND));
-    let {user:newUser,customer,appError} = await transCreateCustomer({userName, email:email, phoneNumber, password:hashedPassword,authProvider: "local"})
+    let {newUser,customer,appError} = await transCreateCustomer({userName, email:email, phoneNumber, password:hashedPassword,authProvider: "local"})
     if(appError) return next(appError);
-
+console.log(newUser)
     const tokenData={id:newUser._id, email:newUser.email,}
     const token = jwt.sign(tokenData, process.env.JWT_CONFIRME_SECRET);
 
@@ -131,7 +136,9 @@ export const getClientCustomers = async (req, res, next) => {
 
 export const updateCustomer = async (req, res, next) => {
     let { userName, email, password, phoneNumber } = req.body;
-    email = email.toLowerCase();
+    if(email){
+        email = email.toLowerCase();
+    }
 
     const {customerId} = req.params
 
