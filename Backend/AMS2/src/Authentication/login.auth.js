@@ -1,9 +1,17 @@
-import bcrypt from "bcryptjs";
+import userModel from "../../DB/models/user.js";
+import {AppError} from "../utils/AppError.js";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import AppError from "../utils/AppError.js";
-import asyncHandler from "../utils/asyncHandler.js";
+import roleModel from "../../DB/models/role.js";
+import clientModel from "../../DB/models/client.js";
+import customerModel from "../../DB/models/customer.js";
+import staffModel from "../../DB/models/staff.js";
+import websiteModel from "../../DB/models/website.js";
+import { config } from "dotenv";
 
-export const generalLogin = asyncHandler(async (req, res) => {
+config();
+
+export const generalLogin = (async (req, res) => {
     const { identifier, password } = req.body;
 
     const isEmail = identifier.includes("@");
