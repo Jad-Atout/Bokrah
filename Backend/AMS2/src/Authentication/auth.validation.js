@@ -1,32 +1,31 @@
 import Joi from "joi";
 
 export const generalLoginSchema = Joi.object({
-    email: Joi.string()
-        .email({ tlds: { allow: false } }) // Validates email format
+    identifier: Joi.string()
+        .required()
+        .custom((value, helpers) => {
+            const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+            const isPhone = /^\+?[0-9]{10,15}$/.test(value);
+            if (!isEmail && !isPhone) {
+                return helpers.error("any.invalid");
+            }
+            return value;
+        }, "Email or Phone validation")
         .messages({
-            "string.email": "Invalid email format.",
-            "string.empty": "Email cannot be empty."
+            "string.empty": "Identifier is required.",
+            "any.invalid": "Identifier must be a valid email or phone number."
         }),
 
     password: Joi.string()
-        .min(6) // Minimum length of 8 characters
-        .max(32) // Maximum length of 32 characters
+        .min(6)
+        .max(32)
         .pattern(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
+        .required()
         .messages({
             "string.empty": "Password is required.",
-            "string.min": "Password must be at least 8 characters long.",
+            "string.min": "Password must be at least 6 characters long.",
             "string.max": "Password must not exceed 32 characters.",
-            "string.pattern.base": "Password must contain at least one uppercase letter, one number, and one special character."
-        }),
-
-    phoneNumber: Joi.string()
-        .pattern(/^\d{10,15}$/) // Validates phone numbers with 10-15 digits
-        .messages({
-            "string.pattern.base": "Phone number must be between 10 and 15 digits.",
-            "string.empty": "Phone number cannot be empty."
+            "string.pattern.base":
+                "Password must contain at least one uppercase letter, one number, and one special character."
         })
-})
-    .or("email", "password") // Ensures at least one of email or password is required
-    .messages({
-        "object.missing": "At least one of 'email' or 'password' is required."
-    });
+});

@@ -9,7 +9,10 @@ export const transCreateCustomer = async (customerData) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        let user
+        let user 
+        if(!customerData.email){
+            delete customerData.email;
+        }
         if(customerData.userId) {
             user =  await userModel.findById(customerData.userId)
             await roleModel.findByIdAndUpdate(user.roleId,{newCustomer: true},{session})
@@ -30,7 +33,7 @@ export const transCreateCustomer = async (customerData) => {
 
         await session.commitTransaction();
         session.endSession();
-            return { user, customer, appError: null };
+            return { newUser: user, customer, appError: null };
         } catch (err) {
         console.log(err)
         await session.abortTransaction();
@@ -49,7 +52,9 @@ export const transUpdateCustomer =async (userData,customerData=null) => {
     try {
         const user = await userModel.findByIdAndUpdate(userData._id, userData,{ session, new: true });
         if(customerData) await customerModel.findByIdAndUpdate(customerData._id,customerData,{ session, new: true })
-
+        if(customerData.email){
+            delete customerData.email;
+        }
         await session.commitTransaction();
         session.endSession();
 
