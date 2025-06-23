@@ -150,12 +150,24 @@ export const authServices = () => {
         req.body.slot = {
             ...slot,
             subSlots: subSlots.map((subSlot) => {
+                const grouped = {};
+
+                // Group services by staffId
+                for (const staffService of subSlot.staffServices) {
+                    const key = staffService.staffId.toString();
+                    if (!grouped[key]) {
+                        grouped[key] = {
+                            staffId: staffService.staffId,
+                            services: [...staffService.services],
+                        };
+                    } else {
+                        grouped[key].services.push(...staffService.services);
+                    }
+                }
+
                 return {
                     ...subSlot,
-                    staffServices: subSlot.staffServices.map((staffService) => {
-                        // staffService.services is already replaced with full objects
-                        return { ...staffService };
-                    }),
+                    staffServices: Object.values(grouped),
                 };
             }),
         };

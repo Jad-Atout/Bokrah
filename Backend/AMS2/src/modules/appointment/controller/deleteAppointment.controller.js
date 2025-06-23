@@ -3,7 +3,7 @@ import appointmentModel from "../../../../DB/models/appointment.js";
 import deleteEvent from "../../../utils/Google/events/deleteEvent.js";
 import mongoose from "mongoose";
 import {eventDeleteRollback} from "./utils/helpers.js";
-import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+//import {cancelReminders} from "../../../utils/Scheduler/reminderSchedules.js";
 
 export const deleteAppointment = async (req, res, next) => {
     const { appointmentId } = req.body;

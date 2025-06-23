@@ -8,7 +8,7 @@ import {
     appointmentCancellationEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
-import { cancelReminders } from "../../../utils/Scheduler/reminderSchedules.js";
+//import { cancelReminders } from "../../../utils/Scheduler/reminderSchedules.js";
 import { createNotification } from "../../notification/notification.controller.js";
 import { appointmentTemplates } from "../../notification/notificationTemplate.js";
 import clientModel from "../../../../DB/models/client.js";

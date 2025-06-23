@@ -26,7 +26,10 @@ async function scheduleJob(jobType, referenceId, scheduledTime, jobFunction) {
 
 export async function deleteJob(jobId) {
     try {
+        console.log("Job ID ====>",jobId)
         const job = await scheduledJob.findByIdAndDelete(jobId);
+        console.log("Deletion process ID ====>",job)
+
         if (!job) {
             console.log(`No job found with ID: ${jobId}`);
         } else {

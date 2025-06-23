@@ -13,7 +13,7 @@ import staffModel from "../../../../DB/models/staff.js";
 import mongoose from "mongoose";
 import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
 import {
-    cancelReminders,
+//    cancelReminders,
     scheduleReminders,
 } from "../../../utils/Scheduler/reminderSchedules.js";
 import { sendAppointmentUpdatedNotifications } from "./utils/notificationSenders.js";
@@ -86,7 +86,6 @@ export const updateAppointment = async (req, res, next) => {
         session.endSession();
 
         // Cancel and re-schedule reminders for the updated appointment(s)
-        await cancelReminders(appointment._id);
         await scheduleReminders(appointment._id);
 
         // 🔔 Send update & cancellation notifications
@@ -283,6 +282,7 @@ function handleRemovedStaff(oldSubs, newSubs) {
     for (const oldSub of oldSubs) {
         if (!newStaffIds.has(oldSub.staffId._id.toString())) {
             oldSub.status = "Cancelled";
+            cancelSubAppointmentTasks(oldSub._id)
             newSubs.push(oldSub);
         }
     }

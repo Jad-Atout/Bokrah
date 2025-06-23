@@ -153,13 +153,22 @@ export async function handleAppointmentReminder(job) {
 }
 
 // Cancel reminders
-export async function cancelReminders(appointmentId) {
-    await cancelScheduledSubAppointments(appointmentId);
-    const jobRecords = await scheduledJob.find({ referenceId: appointmentId });
+// export async function cancelReminders(appointmentId) {
+//     await cancelScheduledSubAppointments(appointmentId);
+//     const jobRecords = await scheduledJob.find({ referenceId: appointmentId });
+//
+//     for (const job of jobRecords) {
+//         await deleteJob(job._id);
+//     }
+//
+//     console.log(`🛑 Canceled all reminders for appointment: ${appointmentId}`);
+// }
 
+//this function must be fixed
+//TODO fixing the whole structure of the scheduler due to the frontend
+export async function cancelReminders(appointmentId) {
+    const jobRecords = await scheduledJob.find({ referenceId: appointmentId});
     for (const job of jobRecords) {
         await deleteJob(job._id);
     }
-
-    console.log(`🛑 Canceled all reminders for appointment: ${appointmentId}`);
 }

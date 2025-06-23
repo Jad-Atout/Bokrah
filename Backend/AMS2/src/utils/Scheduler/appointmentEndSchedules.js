@@ -208,3 +208,21 @@ export async function cancelScheduledSubAppointments(appointmentId) {
 
     console.log(`🛑 Canceled all scheduled sub-appointments for appointment: ${appointmentId}`);
 }
+
+
+
+export async function cancelSubAppointmentTasks(subAppointmentId) {
+    try {
+        const jobsToDelete = await scheduledJob
+            .find({ referenceId: subAppointmentId })
+            .exec();
+
+        await Promise.all(
+            jobsToDelete.map(({ _id }) => {
+                console.log(`🗑️ Deleting job ${_id} for sub-appointment ${subAppointmentId}`);
+                return deleteJob(_id);
+            })
+        );
+    } catch (err) {
+    }
+}

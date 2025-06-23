@@ -11,11 +11,16 @@
 export function ticks(staffId, start, end, step = 1) {
     const out = [];
     const t = new Date(start);
+
     t.setSeconds(0, 0);
+
+    if (t.getTime() === start.getTime()) {
+        t.setMinutes(t.getMinutes() + step);
+    }
+
     while (t < end) {
         out.push({ staffId, slotStart: new Date(t) });
         t.setMinutes(t.getMinutes() + step);
     }
-
     return out;
 }

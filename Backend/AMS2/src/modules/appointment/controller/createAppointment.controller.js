@@ -37,7 +37,7 @@ export const createAppointment = async (req, res, next) => {
     let   notificationServices = [];
 
     try {
-        /* ---------- 1. customer existence (unchanged) ---------- */
+
         if (!customerId && userId) {
             const found = await customerModel.findOne({ userId });
             customerId  = found ? found._id
@@ -55,7 +55,9 @@ export const createAppointment = async (req, res, next) => {
         /* ---------- 3. DATE LOOP  ------------------------------ */
         for (const appointmentStart of appointmentDates) {
             const subAppointments = [];
-            const busySlotStubs   = [];                 // ← NEW: collect locks
+            const busySlotStubs   = [];
+
+            // ← NEW: collect locks
             /* -- 3.a customer overlap check (unchanged) -- */
             const startTime = new Date(appointmentStart);
             const endTime   = new Date(slot.endTime);   // same, just date-wrapped
@@ -106,18 +108,19 @@ export const createAppointment = async (req, res, next) => {
 
 
                     try {
-                        const busyDocs = ticks(staffId, adjustedStartTime, endTimeCalculated, 1).map(
-                            ({ staffId, slotStart }) => ({
-                                clientId,
-                                staffId,
-                                slotStart,
-                                expiresAt: new Date(Date.now() +  60_000),
-                            })
-                        );
+                        let busyTicks = ticks(staffId, adjustedStartTime, endTimeCalculated, 1)
+                        busyTicks = busyTicks.slice(0, -1);
+                        const busyDocs = busyTicks.map(({ staffId, slotStart }) => ({
+                            clientId,
+                            staffId,
+                            slotStart,
+                            expiresAt: new Date(Date.now() + 60_000),
+                        }));
 
                         await BusySlot.insertMany(busyDocs, { session });
                         busySlotStubs.push(...busyDocs);
                     } catch (err) {
+                        console.error(err)
                         if (err.code === 11000) {
                             throw new AppError(`Slot already booked: staff ${staffData.userId.userName} unavailable at ${adjustedStartTime.toISOString()}`, 409);
                         }
