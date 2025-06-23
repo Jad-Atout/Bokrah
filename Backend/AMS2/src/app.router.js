@@ -38,7 +38,7 @@ const initApp = (app,express) => {
     app.use('/notificationPreferences',preferencesRouter)
     app.use('/bookingSettings',bookingSettingsRouter)
     app.use('/admin', adminRouter)
-    app.get('/health', (_, res) => res.send('ok'));
+    app.use('/health', (_, res) => res.send('ok'));
 
     app.use('*',(req,res)=>{
         res.status(404).send('Page Not Found');
