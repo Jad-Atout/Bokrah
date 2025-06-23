@@ -105,12 +105,10 @@ export const getClientWebsiteById = async (req, res) => {
     const bookingSettings = await BookingSettings.findOne({ clientId });
 
     // 3. Find Availability by website._id
-    const availability = await Availability.findOne({ websiteId: website._id });
+    const availability = await Availability.findById(website.availability_id );
 
-    // If no Availability, use defaults or return empty
     let workingHours;
     if (!availability) {
-      // Provide default or empty structure
       workingHours = {
         timeZone: 'Asia/Gaza', // or any default
         workingDays: [
@@ -126,7 +124,7 @@ export const getClientWebsiteById = async (req, res) => {
     } else {
       workingHours = {
         timeZone: availability.timeZone,
-        workingDays: availability.availability // Array of {day, slots:[{startTime,endTime}]}
+        workingDays: availability.availability
       };
     }
 
