@@ -20,6 +20,8 @@ import { validateMultipleServices } from "../../bookingSettings/utils/bookingSet
 import { ticks } from "../../../utils/ticks.js";          // minute-tick helper
 import BusySlot from "../../../../DB/models/busySlot.js";       // lock model
 import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
+import {sendEmail} from "../../../utils/email.js";
+import {appointmentConfirmationEmail, appointmentFullDetailsEmail} from "../../../utils/emailTemplete.js";
 
 export const createAppointment = async (req, res, next) => {
     let { customerId, recurrence, slot, userId, notes, emailReminder } = req.body;
@@ -199,7 +201,14 @@ export const createAppointment = async (req, res, next) => {
             notificationServices,
             authUser: req.authUser
         });
-
+        if(customer.userId.email){
+            await sendEmail(customer.userId.email,"Appointment Booked", await appointmentConfirmationEmail(
+                createdAppointments[0]._id
+            ))
+            await sendEmail(customer.userId.email,"Appointment Booked", await appointmentFullDetailsEmail(
+                createdAppointments[0]._id
+            ))
+        }
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointments

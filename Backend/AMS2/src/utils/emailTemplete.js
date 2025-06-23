@@ -1,4 +1,7 @@
 //TODO redfine the email structure so it can't be a spam email
+import appointmentModel from "../../DB/models/appointment.js";
+import websiteModel from "../../DB/models/website.js";
+
 export async function welcomeEmailTemplate( userName, token) {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -75,26 +78,46 @@ export async function setPasswordEmailTemplate( userName, token) {
 // , startTime , endTime
 
 
-export async function appointmentConfirmationEmail(
-    customerName,
-    staffNames,
-    serviceNames,
-    startTime,
-    endTime,
-) {
-    const startTimeString = startTime
-        ? new Date(startTime).toLocaleString()
+export async function appointmentConfirmationEmail(appointmentId) {
+    const { appointmentData, businessName } = await getAppointmentData(appointmentId);
+
+    const customerName =
+        appointmentData.customerId?.userId?.userName || "Valued Customer";
+
+    const firstSub = appointmentData.subAppointments[0];
+    const lastSub  = appointmentData.subAppointments.at(-1);
+
+    const startTimeString = firstSub
+        ? new Date(firstSub.startTime).toLocaleString()
         : "N/A";
-    const endTimeString = endTime
-        ? new Date(endTime).toLocaleString()
+    const endTimeString = lastSub
+        ? new Date(lastSub.endTime).toLocaleString()
         : "N/A";
+
+    const staffNames = [
+        ...new Set(
+            appointmentData.subAppointments.map(
+                sub => sub.staffId?.userId?.userName || "Staff"
+            )
+        ),
+    ].join(", ");
+
+    const serviceNames = [
+        ...new Set(
+            appointmentData.subAppointments.flatMap(sub =>
+                (sub.services || []).map(
+                    srv => srv._id?.serviceName ?? srv.serviceName ?? "Service"
+                )
+            )
+        ),
+    ];
 
     return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
       <h2 style="color: rgb(37, 99, 235);">Appointment Confirmation 📅</h2>
       <p>Dear ${customerName},</p>
-      
-      <p>Your appointment has been successfully scheduled with <strong>${staffNames}</strong>.</p>
+
+      <p>Your appointment with <strong>${businessName}</strong> has been successfully scheduled with <strong>${staffNames}</strong>.</p>
 
       <p><strong>Details:</strong></p>
       <ul>
@@ -106,9 +129,9 @@ export async function appointmentConfirmationEmail(
       <p>We look forward to seeing you! If you need to reschedule or cancel, please contact us in advance.</p>
 
       <br>
-      <img 
-        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" 
-        alt="Bokrah Logo" 
+      <img
+        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
+        alt="Bokrah Logo"
         style="max-width: 100%; border-radius: 5px;"
       />
 
@@ -124,15 +147,57 @@ export async function appointmentConfirmationEmail(
 }
 
 
-export async function appointmentFullDetailsEmail(
-    userName,
-    staffNames,
-    allServices,
-    subAppointments,
-    appointmentId,
-    clientId
-) {
-    // Format the times
+const getAppointmentData = async (appointmentId)=> {
+    let appointmentData = await appointmentModel.findById(appointmentId).populate([
+        {
+            path: "customerId",
+            select: "userId",
+            populate: {path: "userId", select: "userName email phoneNumber"}
+        },
+        {
+            path: "subAppointments",
+            populate: [
+                {
+                    path: "staffId",
+                    select: "userId",
+                    populate: {path: "userId", select: "userName email"},
+                },
+                {
+                    path: "services._id",
+                    model: "Service",
+                    select: "price duration serviceName serviceColor"
+                },
+            ]
+        }])
+    let website = await websiteModel.findOne({clientId:appointmentData.clientId})
+    let businessName = website.businessName
+    return {appointmentData, businessName}
+}
+
+
+
+export async function appointmentFullDetailsEmail(appointmentId) {
+    const { appointmentData, businessName } = await getAppointmentData(appointmentId);
+    const { customerId, clientId, subAppointments } = appointmentData;
+
+    const userName = customerId?.userId?.userName || "Valued Customer";
+
+    const staffNames = [
+        ...new Set(
+            subAppointments.map(sub => sub.staffId?.userId?.userName || "Staff")
+        ),
+    ].join(", ");
+
+    const allServices = [
+        ...new Set(
+            subAppointments.flatMap(sub =>
+                Array.isArray(sub.services)
+                    ? sub.services.map(s => s._id?.serviceName ?? s.serviceName ?? "Unknown")
+                    : []
+            )
+        ),
+    ];
+
     const formatOptions = {
         weekday: "short",
         year: "numeric",
@@ -142,19 +207,14 @@ export async function appointmentFullDetailsEmail(
         minute: "2-digit",
     };
 
-    // Build a list of sub-appointments, each with its own Cancel link
     const subAppointmentsHTML = subAppointments
         .map((sub, i) => {
-            const startStr = new Date(sub.startTime).toLocaleString(
-                "en-US",
-                formatOptions
-            );
-            const endStr = new Date(sub.endTime).toLocaleString(
-                "en-US",
-                formatOptions
-            );
+            const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
+            const endStr = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
             const serviceList = Array.isArray(sub.services)
-                ? sub.services.map((s) => s.serviceName).join(", ")
+                ? sub.services
+                    .map(s => s._id?.serviceName ?? s.serviceName ?? "Unknown")
+                    .join(", ")
                 : "No services";
 
             const subCancelLink = `${process.env.BASE_URL}/appointment/${clientId}/${appointmentId}/sub/${sub._id}/`;
@@ -166,13 +226,12 @@ export async function appointmentFullDetailsEmail(
           <strong>End:</strong>   ${endStr}<br/>
           <strong>Services:</strong> ${serviceList}
           <br/><br/>
-          <!-- Button to cancel just this sub-appointment -->
           <a 
             href="${subCancelLink}"
             style="
               display:inline-block;
               padding:8px 14px;
-              background:#f97316; /* orangeish color */
+              background:#f97316;
               color:#fff;
               text-decoration:none;
               border-radius:4px;
@@ -186,15 +245,13 @@ export async function appointmentFullDetailsEmail(
         })
         .join("");
 
-    // Single link for cancelling the entire appointment
-    // (Uses your existing PATCH /:appointmentId/cancel/:clientId route)
     const cancelAllLink = `${process.env.BASE_URL}/appointment/${appointmentId}/cancel/${clientId}`;
 
     return `
     <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:10px;">
       <h2 style="color: #2563EB;">Appointment Details 📅</h2>
       <p>Dear ${userName},</p>
-      <p>Your appointment is scheduled with <strong>${staffNames}</strong>.</p>
+      <p>Your appointment with <strong>${businessName}</strong> is scheduled with <strong>${staffNames}</strong>.</p>
       
       <p><strong>All Services:</strong> ${allServices.join(", ")}</p>
 
@@ -202,13 +259,12 @@ export async function appointmentFullDetailsEmail(
       ${subAppointmentsHTML}
 
       <br/>
-      <!-- Button to cancel the entire appointment -->
       <a 
         href="${cancelAllLink}"
         style="
           display:inline-block;
           padding:12px 18px;
-          background:#dc2626; /* red color */
+          background:#dc2626;
           color:#fff;
           text-decoration:none;
           border-radius:6px;
@@ -237,13 +293,28 @@ export async function appointmentFullDetailsEmail(
 }
 
 
-export async function appointmentDeletedEmail(
-    userName,
-    staffNames,
-    allServices,
-    subAppointments = []
-) {
-    // Format the times for any sub‑appointments you still want to display
+export async function appointmentCancellationEmail(appointmentId) {
+    const { appointmentData, businessName } = await getAppointmentData(appointmentId);
+    const { subAppointments } = appointmentData;
+
+    const userName = appointmentData.customerId?.userId?.userName || "Valued Customer";
+
+    const staffNames = [
+        ...new Set(
+            subAppointments.map(sub => sub.staffId?.userId?.userName || "Staff")
+        ),
+    ].join(", ");
+
+    const allServices = [
+        ...new Set(
+            subAppointments.flatMap(sub =>
+                (sub.services || []).map(
+                    s => s._id?.serviceName ?? s.serviceName ?? "Service"
+                )
+            )
+        ),
+    ];
+
     const formatOptions = {
         weekday: "short",
         year: "numeric",
@@ -253,42 +324,38 @@ export async function appointmentDeletedEmail(
         minute: "2-digit",
     };
 
+    const subAppointmentsHTML = subAppointments
+        .map((sub, i) => {
+            const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
+            const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
+            const serviceList = (sub.services || [])
+                .map(s => s._id?.serviceName ?? s.serviceName ?? "Service")
+                .join(", ");
 
-    // If you want to show which sub-appointments were canceled, you can build an HTML list:
-    const subAppointmentsHTML = subAppointments.map((sub, i) => {
-        const startStr = new Date(sub.startTime).toLocaleString("en-US", formatOptions);
-        const endStr   = new Date(sub.endTime).toLocaleString("en-US", formatOptions);
-
-        const serviceList = Array.isArray(sub.services)
-            ? sub.services.map(s => s.serviceName).join(", ")
-            : "No services";
-
-        return `
-      <div style="margin-bottom: 1em;">
-        <strong>Sub-Appointment #${i + 1}</strong><br/>
-        <strong>Start:</strong> ${startStr}<br/>
-        <strong>End:</strong>   ${endStr}<br/>
-        <strong>Services:</strong> ${serviceList}
-      </div>
-    `;
-    }).join("");
+            return `
+        <div style="margin-bottom: 1em;">
+          <strong>Sub-Appointment #${i + 1}</strong><br/>
+          <strong>Start:</strong> ${startStr}<br/>
+          <strong>End:</strong>   ${endStr}<br/>
+          <strong>Services:</strong> ${serviceList}
+        </div>
+      `;
+        })
+        .join("");
 
     return `
     <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:10px;">
       <h2 style="color: #e3342f;">Appointment Canceled</h2>
       <p>Dear ${userName},</p>
       
-      <p>We wanted to let you know that your appointment with <strong>${staffNames}</strong> has been 
-      <strong style="color: #e3342f;">canceled</strong>. Below are the details of the canceled appointment:</p>
+      <p>Your appointment with <strong>${businessName}</strong> (staff: <strong>${staffNames}</strong>) has been 
+      <strong style="color: #e3342f;">canceled</strong>. Below are the details:</p>
 
       <p><strong>All Services:</strong> ${allServices.join(", ")}</p>
 
       ${
-        subAppointments.length > 0
-            ? `
-            <h3>Canceled Sub-Appointments:</h3>
-            ${subAppointmentsHTML}
-          `
+        subAppointments.length
+            ? `<h3>Canceled Sub-Appointments:</h3>${subAppointmentsHTML}`
             : ""
     }
 
@@ -311,7 +378,6 @@ export async function appointmentDeletedEmail(
 
 
 export async function staffCancellationEmail(customerName, staffName, subAppointments) {
-    // Generate sub-appointment details
     const subHTML = subAppointments.map((sub, i) => {
         const start = new Date(sub.startTime).toLocaleString();
         const end   = new Date(sub.endTime).toLocaleString();

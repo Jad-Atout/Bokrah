@@ -31,6 +31,7 @@ export const createCustomer = async (req, res, next) => {
     if (phoneNumber) filter.phoneNumber = phoneNumber;
 
     let user = await userModel.findOne(filter);
+    console.log(user);
     let customer = await customerModel.find({ userId: user?._id });
 
     if (user) {

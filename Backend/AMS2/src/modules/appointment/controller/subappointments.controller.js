@@ -21,6 +21,7 @@ export const cancelSubAppointment = async (req, res, next) => {
     session.startTransaction();
 
     try {
+        console.log("Hi___________")
         // 1) Find the appointment
         const appointment = await appointmentModel
             .findById(appointmentId)

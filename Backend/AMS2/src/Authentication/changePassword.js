@@ -4,7 +4,8 @@ import { AppError } from "../utils/AppError.js";
 
 export const changePassword = async (req, res, next) => {
     try {
-        const { email, currentPassword, newPassword } = req.body;
+        let { email, currentPassword, newPassword } = req.body;
+        email= email.toLowerCase()
         const user = await userModel.findOne({ email });
 
         if (!user) {

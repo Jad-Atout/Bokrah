@@ -8,6 +8,7 @@ const userModel = new mongoose.Schema({
         type: String,
         unique: true,
         sparse: true,
+        lowercase: true,
     },
     password: {
         type: String,

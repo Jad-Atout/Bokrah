@@ -5,7 +5,7 @@ import { AppError } from "../../../utils/AppError.js";
 import { eventDeleteRollback, resolveTriggeredBy } from "./utils/helpers.js";
 import { sendEmail } from "../../../utils/email.js";
 import {
-    appointmentDeletedEmail,
+    appointmentCancellationEmail,
     staffCancellationEmail
 } from "../../../utils/emailTemplete.js";
 import { cancelReminders } from "../../../utils/Scheduler/reminderSchedules.js";
@@ -50,7 +50,7 @@ export const cancelAppointment = async (req, res, next) => {
                 },
             ])
             .session(session);
-
+        console.log(________________,appointment.status)
         if (!appointment) {
             return next(new AppError("Appointment not found", 404));
         }
@@ -122,12 +122,7 @@ export const cancelAppointment = async (req, res, next) => {
             await sendEmail(
                 customerEmail,
                 "Your Appointment Has Been Canceled",
-                await appointmentDeletedEmail(
-                    userName,
-                    staffNames,
-                    allServices,
-                    appointment.subAppointments
-                )
+                await appointmentCancellationEmail(appointmentId)
             );
         }
 
@@ -181,9 +176,7 @@ export const cancelAppointment = async (req, res, next) => {
             await session.abortTransaction();
         }
         session.endSession();
-
         await eventDeleteRollback(req, authClient, deletedEvents, appointment);
-
         return next(
             new AppError(`Failed to cancel the appointment: ${error.message}`, 500)
         );

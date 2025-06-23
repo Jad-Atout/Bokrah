@@ -8,7 +8,8 @@ import {AppError} from "../utils/AppError.js";
 
 export const forgotPassword = async (req, res, next) => {
     try {
-        const { email, password, code } = req.body;
+        let { email, password, code } = req.body;
+        email = email.toLowerCase();
         const user = await userModel.findOne({ email });
 
         if (!user) {
@@ -36,7 +37,8 @@ export const forgotPassword = async (req, res, next) => {
 
 export const sendCode = async (req, res, next) => {
     try {
-        const { email } = req.body;
+        let { email } = req.body;
+        email = email.toLowerCase();
         const generateCode = customAlphabet('1234567890', 6);
         const code = generateCode();
 
