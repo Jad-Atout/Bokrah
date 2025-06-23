@@ -35,7 +35,6 @@ export const createAppointment = async (req, res, next) => {
     const createdEvents       = [];
     const createdAppointments = [];
     let   notificationServices = [];
-
     try {
 
         if (!customerId && userId) {
@@ -43,40 +42,35 @@ export const createAppointment = async (req, res, next) => {
             customerId  = found ? found._id
                 : (await transCreateCustomer({ userId })).customer;
         }
+
         const customer = await customerModel.findById(customerId).populate("userId");
         if (!customer?.userId)              throw new AppError("Customer not found", 404);
         if (customer.userId.authProvider === "local" && !customer.userId.confirmed) {
             throw new AppError("Customer must be confirmed", 401);
         }
 
-        /* ---------- 2. recurrence dates (unchanged) ------------ */
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
-
-        /* ---------- 3. DATE LOOP  ------------------------------ */
         for (const appointmentStart of appointmentDates) {
+
             const subAppointments = [];
             const busySlotStubs   = [];
 
-            // ← NEW: collect locks
-            /* -- 3.a customer overlap check (unchanged) -- */
-            const startTime = new Date(appointmentStart);
-            const endTime   = new Date(slot.endTime);   // same, just date-wrapped
+            let mainAppointmentStart = new Date(appointmentStart);
+            let mainAppointmentEnd   = new Date(slot.endTime);   // same, just date-wrapped
             const overlap   = await appointmentModel.findOne({
                 customerId,
                 status: "Booked",
                 $or: [
-                    { "subAppointments.startTime": { $lt: endTime },
-                        "subAppointments.endTime":   { $gt: startTime } }
+                    { "subAppointments.startTime": { $lt: mainAppointmentEnd },
+                        "subAppointments.endTime":   { $gt: mainAppointmentStart } }
                 ]
             }).session(session);
+
+
             if (overlap) throw new AppError("customer already have an appointment in that slot.", 400);
-
-            /* -- 3.b sub-slot loop (mostly unchanged) -- */
-            for (const subSlot of slot.subSlots) {
-                const { staffServices, startTime, endTime } = subSlot;
-
-                const adjustedStartTime = new Date(appointmentStart);
-                adjustedStartTime.setHours(
+            const { staffServices, startTime, endTime } = slot.subSlots[0];
+            let adjustedStartTime = new Date(appointmentStart);
+            adjustedStartTime.setHours(
                     new Date(startTime).getHours(),
                     new Date(startTime).getMinutes(),
                     0, 0);
@@ -90,7 +84,6 @@ export const createAppointment = async (req, res, next) => {
                 if (adjustedStartTime >= adjustedEndTime) {
                     throw new AppError("End time must be later than start time", 400);
                 }
-
                 /* -- 3.c staffService loop (Google / event kept) -- */
                 for (const { staffId, services } of staffServices) {
                     await validateMultipleServices(clientId, services);
@@ -102,6 +95,7 @@ export const createAppointment = async (req, res, next) => {
                         .session(session);
 
                     const endTimeCalculated = new Date(calculateEndTime(adjustedStartTime, services))
+
                     if (adjustedEndTime < endTimeCalculated) {
                         throw new AppError("Slot too short for services", 400);
                     }
@@ -159,8 +153,9 @@ export const createAppointment = async (req, res, next) => {
                         endTime:   endTimeCalculated,
                         eventId:   event.id
                     });
+                    adjustedStartTime = endTimeCalculated
                 }
-            }
+
 
             /* ---------- 3.d save Appointment ONCE per date ---------- */
             const appointment = new appointmentModel({
