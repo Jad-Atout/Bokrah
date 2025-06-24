@@ -26,16 +26,13 @@ async function scheduleJob(jobType, referenceId, scheduledTime, jobFunction) {
 
 export async function deleteJob(jobId) {
     try {
-        console.log("Job ID ====>",jobId)
         const job = await scheduledJob.findByIdAndDelete(jobId);
-        console.log("Deletion process ID ====>",job)
 
         if (!job) {
             console.log(`No job found with ID: ${jobId}`);
         } else {
             jobs[jobId].cancel();
             delete jobs[jobId]
-            console.log(`Job with ID ${jobId} deleted successfully.`);
         }
     } catch (err) {
         console.error('Error deleting job:', err);
@@ -48,9 +45,6 @@ async function loadJobsFromDatabase() {
     const pendingJobs = await scheduledJob.find();
 
     for (const job of pendingJobs) {
-        console.log(new Date(Date.parse(job.scheduledTime)))
-        console.log(new Date(Date.now()))
-        console.log(Date.parse(job.scheduledTime) > Date.now())
         if (Date.parse(job.scheduledTime) > Date.now()) {
             console.log(`✅ Restoring job: ${job.jobType} - ${job.referenceId}`);
 

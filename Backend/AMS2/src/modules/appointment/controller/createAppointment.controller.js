@@ -1,42 +1,41 @@
 import mongoose from "mongoose";
-import { AppError } from "../../../utils/AppError.js";
+import {AppError} from "../../../utils/AppError.js";
 
 import appointmentModel from "../../../../DB/models/appointment.js";
 import staffModel from "../../../../DB/models/staff.js";
 import customerModel from "../../../../DB/models/customer.js";
 import customerClientModel from "../../../../DB/models/ClientCustomer.js";
 
-import { transCreateCustomer } from "../../../../DB/Controller/customer.DB.controller.js";
+import {transCreateCustomer} from "../../../../DB/Controller/customer.DB.controller.js";
 import createEvent from "../../../utils/Google/events/createEvent.js";
-import { scheduleReminders } from "../../../utils/Scheduler/reminderSchedules.js";
-import { sendAppointmentBookedNotifications } from "./utils/notificationSenders.js";
+import {scheduleReminders} from "../../../utils/Scheduler/reminderSchedules.js";
+import {sendAppointmentBookedNotifications} from "./utils/notificationSenders.js";
 import {
     calculateEndTime,
     generateRecurringDates,
     eventCreateRollback
 } from "./utils/helpers.js";
-import { validateMultipleServices } from "../../bookingSettings/utils/bookingSettingsUtils.js";
+import {validateMultipleServices} from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
-import { ticks } from "../../../utils/ticks.js";          // minute-tick helper
+import {ticks} from "../../../utils/ticks.js";          // minute-tick helper
 import BusySlot from "../../../../DB/models/busySlot.js";       // lock model
-import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
+import {checkAvailability} from "../../../utils/Google/Services/checkAvailability.js";
 import {sendEmail} from "../../../utils/email.js";
 import {appointmentConfirmationEmail, appointmentFullDetailsEmail} from "../../../utils/emailTemplete.js";
 
 export const createAppointment = async (req, res, next) => {
     console.time("Total createAppointment");
 
-    let { customerId, recurrence, slot, userId, notes, emailReminder } = req.body;
-    const { clientId } = req.params;
-    const authClient   = req.oauth2Client;
+    let {customerId, recurrence, slot, userId, notes, emailReminder} = req.body;
+    const {clientId} = req.params;
+    const authClient = req.oauth2Client;
     const APPOINTMENT_STATUS = "Booked";
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    const createdEvents       = [];
     const createdAppointments = [];
-    let   notificationServices = [];
+    let notificationServices = [];
     try {
         console.time("Find customer");
         const customer = await customerModel.findById(customerId).populate("userId");
@@ -51,24 +50,24 @@ export const createAppointment = async (req, res, next) => {
 
         for (const appointmentStart of appointmentDates) {
             const subAppointments = [];
-            const busySlotStubs   = [];
+            const busySlotStubs = [];
 
             let mainAppointmentStart = new Date(appointmentStart);
-            let mainAppointmentEnd   = new Date(slot.endTime);
+            let mainAppointmentEnd = new Date(slot.endTime);
             console.time("Check customer overlap");
             const overlap = await appointmentModel.findOne({
                 customerId,
                 status: "Booked",
                 $or: [{
-                    "subAppointments.startTime": { $lt: mainAppointmentEnd },
-                    "subAppointments.endTime":   { $gt: mainAppointmentStart }
+                    "subAppointments.startTime": {$lt: mainAppointmentEnd},
+                    "subAppointments.endTime": {$gt: mainAppointmentStart}
                 }]
             }).session(session);
             console.timeEnd("Check customer overlap");
 
             if (overlap) throw new AppError("customer already have an appointment in that slot.", 400);
 
-            const { staffServices, startTime, endTime } = slot.subSlots[0];
+            const {staffServices, startTime, endTime} = slot.subSlots[0];
 
             let adjustedStartTime = new Date(appointmentStart);
             adjustedStartTime.setHours(
@@ -79,8 +78,8 @@ export const createAppointment = async (req, res, next) => {
             adjustedEndTime.setHours(
                 new Date(endTime).getHours(),
                 new Date(endTime).getMinutes(), 0, 0);
-
-            for (const { staffId, services } of staffServices) {
+            const eventPromises = [];
+            for (const {staffId, services} of staffServices) {
                 console.time(`validateServices-${staffId}`);
                 await validateMultipleServices(clientId, services);
                 console.timeEnd(`validateServices-${staffId}`);
@@ -89,7 +88,7 @@ export const createAppointment = async (req, res, next) => {
 
                 console.time(`staffLookup-${staffId}`);
                 const staffData = await staffModel.findById(staffId)
-                    .populate({ path: "userId", ref: "User", select: "userName email" })
+                    .populate({path: "userId", ref: "User", select: "userName email"})
                     .session(session);
                 console.timeEnd(`staffLookup-${staffId}`);
 
@@ -101,14 +100,14 @@ export const createAppointment = async (req, res, next) => {
 
                 try {
                     const busyTicks = ticks(staffId, adjustedStartTime, endTimeCalculated, 1).slice(0, -1);
-                    const busyDocs = busyTicks.map(({ staffId, slotStart }) => ({
+                    const busyDocs = busyTicks.map(({staffId, slotStart}) => ({
                         clientId,
                         staffId,
                         slotStart,
                         expiresAt: new Date(Date.now() + 60_000),
                     }));
                     console.time(`insertBusy-${staffId}`);
-                    await BusySlot.insertMany(busyDocs, { session });
+                    await BusySlot.insertMany(busyDocs, {session});
                     console.timeEnd(`insertBusy-${staffId}`);
                     busySlotStubs.push(...busyDocs);
                 } catch (err) {
@@ -126,29 +125,12 @@ export const createAppointment = async (req, res, next) => {
                     throw new AppError(`Staff ${staffData.userId.userName} unavailable externally at ${adjustedStartTime}`, 400);
                 }
 
-                console.time(`createEvent-${staffId}`);
-                const event = await createEvent(req, authClient, {
-                    summary:       `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
-                    description:   services.map(s => s.serviceName).join(", "),
-                    customerName:  customer.userId.userName,
-                    staffName:     staffData.userId.userName,
-                    serviceNames:  services.map(s => s.serviceName),
-                    startTime:     adjustedStartTime,
-                    endTime:       endTimeCalculated,
-                    calendarId:    staffData.calendarId,
-                    attendees:     [{ email: customer.userId.email }],
-                    sendUpdates:   "all",
-                });
-                console.timeEnd(`createEvent-${staffId}`);
-
-                createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
 
                 subAppointments.push({
                     staffId,
                     services,
                     startTime: adjustedStartTime,
-                    endTime:   endTimeCalculated,
-                    eventId:   event.id
+                    endTime: endTimeCalculated
                 });
 
                 adjustedStartTime = endTimeCalculated;
@@ -164,16 +146,18 @@ export const createAppointment = async (req, res, next) => {
                 subAppointments,
                 recurrence
             });
-            await appointment.save({ session });
+            await appointment.save({session});
             console.timeEnd("Save appointment");
 
             createdAppointments.push(appointment);
         }
 
         console.time("Link customer-client");
-        if (!await customerClientModel.findOne({ customerId, clientId })) {
-            await new customerClientModel({ customerId, clientId }).save({ session });
-        }
+        customerClientModel.updateOne(
+            {customerId, clientId},
+            {$setOnInsert: {customerId, clientId}},
+            {upsert: true}
+        );
         console.timeEnd("Link customer-client");
 
         console.time("Commit transaction");
@@ -183,38 +167,78 @@ export const createAppointment = async (req, res, next) => {
 
         console.time("Schedule reminders + notifications");
         for (const appt of createdAppointments) {
-            if (appt.emailReminder)  scheduleReminders(appt._id);
+            if (appt.emailReminder) scheduleReminders(appt._id);
         }
-         sendAppointmentBookedNotifications({
+        sendAppointmentBookedNotifications({
             appointments: createdAppointments,
             customer,
             clientId,
             notificationServices,
             authUser: req.authUser
         });
-
-        if(customer.userId.email){
-             sendEmail(customer.userId.email,"Appointment Booked", await appointmentConfirmationEmail(
-                createdAppointments[0]._id
-            ))
-             sendEmail(customer.userId.email,"Appointment Booked", await appointmentFullDetailsEmail(
-                createdAppointments[0]._id
-            ))
+        if (customer.userId.email) {
+            appointmentConfirmationEmail(createdAppointments[0]._id)
+                .then(html => sendEmail(customer.userId.email, "Appointment Booked", html));
+            appointmentFullDetailsEmail(createdAppointments[0]._id)
+                .then(html => sendEmail(customer.userId.email, "Appointment Booked", html));
         }
         console.timeEnd("Schedule reminders + notifications");
 
         console.timeEnd("Total createAppointment");
 
-        return res.status(201).json({
-            message: "Appointments and calendar events created successfully",
+        res.status(201).json({
+            message: "Appointments created successfully",
             appointments: createdAppointments
+        });
+
+        // ✅ Background calendar sync
+        setImmediate(() => {
+            for (const appointment of createdAppointments) {
+                syncAppointmentWithCalendar({appointment, customer, authClient, req})
+                    .catch(console.error);
+            }
         });
 
     } catch (error) {
         if (session.inTransaction()) await session.abortTransaction();
         session.endSession();
-        await eventCreateRollback(createdEvents, authClient);
+        await eventCreateRollback([], authClient);
         console.error("Error in createAppointment:", error);
         return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
     }
 };
+
+
+async function syncAppointmentWithCalendar({appointment, customer, authClient, req}) {
+    const appointmentId = appointment._id;
+
+    for (const sub of appointment.subAppointments) {
+        const staff = await staffModel.findById(sub.staffId).populate({
+            path: "userId",
+            select: "userName email"
+        });
+
+        const event = await createEvent(req, authClient, {
+            summary: `Appointment with ${customer.userId.userName} and ${staff.userId.userName}`,
+            description: sub.services.map(s => s.serviceName).join(", "),
+            customerName: customer.userId.userName,
+            staffName: staff.userId.userName,
+            serviceNames: sub.services.map(s => s.serviceName),
+            startTime: sub.startTime,
+            endTime: sub.endTime,
+            calendarId: staff.calendarId,
+            attendees: [{email: customer.userId.email}],
+            sendUpdates: "all"
+        });
+
+        await appointmentModel.updateOne(
+            {_id: appointmentId, "subAppointments.startTime": sub.startTime},
+            {
+                $set: {
+                    "subAppointments.$.eventId": event.id,
+                    "subAppointments.$.calendarId": staff.calendarId
+                }
+            }
+        );
+    }
+}
