@@ -24,6 +24,8 @@ import {sendEmail} from "../../../utils/email.js";
 import {appointmentConfirmationEmail, appointmentFullDetailsEmail} from "../../../utils/emailTemplete.js";
 
 export const createAppointment = async (req, res, next) => {
+    console.time("Total createAppointment");
+
     let { customerId, recurrence, slot, userId, notes, emailReminder } = req.body;
     const { clientId } = req.params;
     const authClient   = req.oauth2Client;
@@ -36,128 +38,123 @@ export const createAppointment = async (req, res, next) => {
     const createdAppointments = [];
     let   notificationServices = [];
     try {
-
-        if (!customerId && userId) {
-            const found = await customerModel.findOne({ userId });
-            customerId  = found ? found._id
-                : (await transCreateCustomer({ userId })).customer;
-        }
-
+        console.time("Find customer");
         const customer = await customerModel.findById(customerId).populate("userId");
-        if (!customer?.userId)              throw new AppError("Customer not found", 404);
+        console.timeEnd("Find customer");
+
+        if (!customer?.userId) throw new AppError("Customer not found", 404);
         if (customer.userId.authProvider === "local" && !customer.userId.confirmed) {
             throw new AppError("Customer must be confirmed", 401);
         }
 
         const appointmentDates = generateRecurringDates(slot.startTime, recurrence);
-        for (const appointmentStart of appointmentDates) {
 
+        for (const appointmentStart of appointmentDates) {
             const subAppointments = [];
             const busySlotStubs   = [];
 
             let mainAppointmentStart = new Date(appointmentStart);
-            let mainAppointmentEnd   = new Date(slot.endTime);   // same, just date-wrapped
-            const overlap   = await appointmentModel.findOne({
+            let mainAppointmentEnd   = new Date(slot.endTime);
+            console.time("Check customer overlap");
+            const overlap = await appointmentModel.findOne({
                 customerId,
                 status: "Booked",
-                $or: [
-                    { "subAppointments.startTime": { $lt: mainAppointmentEnd },
-                        "subAppointments.endTime":   { $gt: mainAppointmentStart } }
-                ]
+                $or: [{
+                    "subAppointments.startTime": { $lt: mainAppointmentEnd },
+                    "subAppointments.endTime":   { $gt: mainAppointmentStart }
+                }]
             }).session(session);
-
+            console.timeEnd("Check customer overlap");
 
             if (overlap) throw new AppError("customer already have an appointment in that slot.", 400);
+
             const { staffServices, startTime, endTime } = slot.subSlots[0];
+
             let adjustedStartTime = new Date(appointmentStart);
             adjustedStartTime.setHours(
-                    new Date(startTime).getHours(),
-                    new Date(startTime).getMinutes(),
-                    0, 0);
+                new Date(startTime).getHours(),
+                new Date(startTime).getMinutes(), 0, 0);
 
-                const adjustedEndTime = new Date(appointmentStart);
-                adjustedEndTime.setHours(
-                    new Date(endTime).getHours(),
-                    new Date(endTime).getMinutes(),
-                    0, 0);
+            const adjustedEndTime = new Date(appointmentStart);
+            adjustedEndTime.setHours(
+                new Date(endTime).getHours(),
+                new Date(endTime).getMinutes(), 0, 0);
 
-                if (adjustedStartTime >= adjustedEndTime) {
-                    throw new AppError("End time must be later than start time", 400);
+            for (const { staffId, services } of staffServices) {
+                console.time(`validateServices-${staffId}`);
+                await validateMultipleServices(clientId, services);
+                console.timeEnd(`validateServices-${staffId}`);
+
+                notificationServices = services;
+
+                console.time(`staffLookup-${staffId}`);
+                const staffData = await staffModel.findById(staffId)
+                    .populate({ path: "userId", ref: "User", select: "userName email" })
+                    .session(session);
+                console.timeEnd(`staffLookup-${staffId}`);
+
+                const endTimeCalculated = new Date(calculateEndTime(adjustedStartTime, services));
+
+                if (adjustedEndTime < endTimeCalculated) {
+                    throw new AppError("Slot too short for services", 400);
                 }
-                /* -- 3.c staffService loop (Google / event kept) -- */
-                for (const { staffId, services } of staffServices) {
-                    await validateMultipleServices(clientId, services);
-                    notificationServices = services;
 
-                    /* staffData lookup stays here */
-                    const staffData = await staffModel.findById(staffId)
-                        .populate({ path: "userId", ref: "User", select: "userName email" })
-                        .session(session);
-
-                    const endTimeCalculated = new Date(calculateEndTime(adjustedStartTime, services))
-
-                    if (adjustedEndTime < endTimeCalculated) {
-                        throw new AppError("Slot too short for services", 400);
-                    }
-
-
-                    try {
-                        let busyTicks = ticks(staffId, adjustedStartTime, endTimeCalculated, 1)
-                        busyTicks = busyTicks.slice(0, -1);
-                        const busyDocs = busyTicks.map(({ staffId, slotStart }) => ({
-                            clientId,
-                            staffId,
-                            slotStart,
-                            expiresAt: new Date(Date.now() + 60_000),
-                        }));
-
-                        await BusySlot.insertMany(busyDocs, { session });
-                        busySlotStubs.push(...busyDocs);
-                    } catch (err) {
-                        console.error(err)
-                        if (err.code === 11000) {
-                            throw new AppError(`Slot already booked: staff ${staffData.userId.userName} unavailable at ${adjustedStartTime.toISOString()}`, 409);
-                        }
-                        throw err;
-                    }
-
-
-                    /* ---- 3.C.2 Google Free/busy (unchanged) ---- */
-                    const free = await checkAvailability(authClient, staffId,
-                        adjustedStartTime, endTimeCalculated);
-                    if (!free) {
-                        throw new AppError(
-                            `Staff ${staffData.userId.userName} unavailable externally at ${adjustedStartTime}`,
-                            400);
-                    }
-
-                    /* ---- 3.C.3 Create Google event (unchanged) ---- */
-                    const event = await createEvent(req, authClient, {
-                        summary:       `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
-                        description:   services.map(s => s.serviceName).join(", "),
-                        customerName:  customer.userId.userName,
-                        staffName:     staffData.userId.userName,
-                        serviceNames:  services.map(s => s.serviceName),
-                        startTime:     adjustedStartTime,
-                        endTime:       endTimeCalculated,
-                        calendarId:    staffData.calendarId,
-                        attendees:     [{ email: customer.userId.email }],
-                        sendUpdates:   "all",
-                    });
-                    createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
-
-                    subAppointments.push({
+                try {
+                    const busyTicks = ticks(staffId, adjustedStartTime, endTimeCalculated, 1).slice(0, -1);
+                    const busyDocs = busyTicks.map(({ staffId, slotStart }) => ({
+                        clientId,
                         staffId,
-                        services,
-                        startTime: adjustedStartTime,
-                        endTime:   endTimeCalculated,
-                        eventId:   event.id
-                    });
-                    adjustedStartTime = endTimeCalculated
+                        slotStart,
+                        expiresAt: new Date(Date.now() + 60_000),
+                    }));
+                    console.time(`insertBusy-${staffId}`);
+                    await BusySlot.insertMany(busyDocs, { session });
+                    console.timeEnd(`insertBusy-${staffId}`);
+                    busySlotStubs.push(...busyDocs);
+                } catch (err) {
+                    console.error(err);
+                    if (err.code === 11000) {
+                        throw new AppError(`Slot already booked: staff ${staffData.userId.userName} unavailable at ${adjustedStartTime.toISOString()}`, 409);
+                    }
+                    throw err;
                 }
 
+                console.time(`checkGoogleFreeBusy-${staffId}`);
+                const free = await checkAvailability(authClient, staffId, adjustedStartTime, endTimeCalculated);
+                console.timeEnd(`checkGoogleFreeBusy-${staffId}`);
+                if (!free) {
+                    throw new AppError(`Staff ${staffData.userId.userName} unavailable externally at ${adjustedStartTime}`, 400);
+                }
 
-            /* ---------- 3.d save Appointment ONCE per date ---------- */
+                console.time(`createEvent-${staffId}`);
+                const event = await createEvent(req, authClient, {
+                    summary:       `Appointment with ${customer.userId.userName} and ${staffData.userId.userName}`,
+                    description:   services.map(s => s.serviceName).join(", "),
+                    customerName:  customer.userId.userName,
+                    staffName:     staffData.userId.userName,
+                    serviceNames:  services.map(s => s.serviceName),
+                    startTime:     adjustedStartTime,
+                    endTime:       endTimeCalculated,
+                    calendarId:    staffData.calendarId,
+                    attendees:     [{ email: customer.userId.email }],
+                    sendUpdates:   "all",
+                });
+                console.timeEnd(`createEvent-${staffId}`);
+
+                createdEvents.push({ eventId: event.id, calendarId: staffData.calendarId });
+
+                subAppointments.push({
+                    staffId,
+                    services,
+                    startTime: adjustedStartTime,
+                    endTime:   endTimeCalculated,
+                    eventId:   event.id
+                });
+
+                adjustedStartTime = endTimeCalculated;
+            }
+
+            console.time("Save appointment");
             const appointment = new appointmentModel({
                 clientId,
                 customerId,
@@ -168,60 +165,52 @@ export const createAppointment = async (req, res, next) => {
                 recurrence
             });
             await appointment.save({ session });
+            console.timeEnd("Save appointment");
+
             createdAppointments.push(appointment);
+        }
 
-        } // end date loop
-
-        /* ---------- 4. customer-client link (unchanged) ---------- */
+        console.time("Link customer-client");
         if (!await customerClientModel.findOne({ customerId, clientId })) {
             await new customerClientModel({ customerId, clientId }).save({ session });
         }
+        console.timeEnd("Link customer-client");
 
-        /* ---------- 5. commit & cleanup -------------------------- */
+        console.time("Commit transaction");
         await session.commitTransaction();
         session.endSession();
+        console.timeEnd("Commit transaction");
 
-        // fire-and-forget delete (TTL is backup)
-        setTimeout(() => {
-            BusySlot.deleteMany({
-                appointmentId: { $in: createdAppointments.map(a => a._id) }
-            });
-        }, 1_000);
-
-        /* ---------- 6. reminders + notifications (unchanged) ----- */
+        console.time("Schedule reminders + notifications");
         for (const appt of createdAppointments) {
-            if (appt.emailReminder) await scheduleReminders(appt._id);
+            if (appt.emailReminder)  scheduleReminders(appt._id);
         }
-        await sendAppointmentBookedNotifications({
+         sendAppointmentBookedNotifications({
             appointments: createdAppointments,
             customer,
             clientId,
             notificationServices,
             authUser: req.authUser
         });
+
         if(customer.userId.email){
-            await sendEmail(customer.userId.email,"Appointment Booked", await appointmentConfirmationEmail(
+             sendEmail(customer.userId.email,"Appointment Booked", await appointmentConfirmationEmail(
                 createdAppointments[0]._id
             ))
-            await sendEmail(customer.userId.email,"Appointment Booked", await appointmentFullDetailsEmail(
+             sendEmail(customer.userId.email,"Appointment Booked", await appointmentFullDetailsEmail(
                 createdAppointments[0]._id
             ))
         }
+        console.timeEnd("Schedule reminders + notifications");
+
+        console.timeEnd("Total createAppointment");
+
         return res.status(201).json({
             message: "Appointments and calendar events created successfully",
             appointments: createdAppointments
         });
 
     } catch (error) {
-        /* duplicate minute = slot already taken */
-        if (error.code === 112) {
-            if (session.inTransaction()) await session.abortTransaction();
-            session.endSession();
-            await eventCreateRollback(createdEvents, authClient);
-            return next(new AppError(
-                "Selected time has just been taken. Please pick another slot.",
-                409));
-        }
         if (session.inTransaction()) await session.abortTransaction();
         session.endSession();
         await eventCreateRollback(createdEvents, authClient);

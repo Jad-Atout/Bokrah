@@ -94,7 +94,6 @@ export const validateOnlineCancellation = async (clientId, userRole) => {
     if (userRole.client === true || userRole.staff === true) {
         return;
     }
-console.log("userRole",userRole)
     const settings = await getBookingSettingsForClient(clientId);
     if (!settings.bookingFlow.allowOnlineCancellations) {
         throw new AppError("Online cancellations are not allowed", 403);

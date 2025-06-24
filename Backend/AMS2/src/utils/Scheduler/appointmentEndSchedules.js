@@ -12,7 +12,6 @@ let auth;
  * @returns {object|null} - The populated appointment object or null if not found
  */
 const getAppointmentData = async (appointmentId) => {
-    console.log(`🔍 Fetching appointment data for ID: ${appointmentId}`);
     try {
         const appointment = await appointmentModel
             .findById(appointmentId)
@@ -27,7 +26,6 @@ const getAppointmentData = async (appointmentId) => {
             ])
             .exec();
         if (appointment) {
-            console.log(`✅ Appointment data fetched for ID: ${appointmentId}`);
         } else {
             console.warn(`⚠️ Appointment not found for ID: ${appointmentId}`);
         }
@@ -107,7 +105,6 @@ const deleteSubAppointmentEvent = async (subAppointmentId, appointment) => {
  * @param {string} appointmentId - The appointment ID
  */
 export async function scheduleSubAppointments(appointmentId) {
-    console.log(`⏰ Scheduling sub-appointments for appointment ID: ${appointmentId}`);
     const appointment = await getAppointmentData(appointmentId);
     if (!appointment) {
         console.warn(`⚠️ Appointment not found: ${appointmentId}. No sub-appointments scheduled.`);
@@ -115,9 +112,6 @@ export async function scheduleSubAppointments(appointmentId) {
     }
 
     for (const subAppointment of appointment.subAppointments) {
-        console.log(
-            `⏳ Scheduling job 'subAppointmentEnd' for subAppointment ${subAppointment._id} at ${subAppointment.endTime}`
-        );
         await scheduleJob(
             "subAppointmentEnd",
             subAppointment._id,
@@ -134,7 +128,6 @@ export async function scheduleSubAppointments(appointmentId) {
  * @returns {object|null} - The appointment object or null if not found
  */
 const getAppointmentBySubAppointmentId = async (subAppointmentId) => {
-    console.log(`🔍 Fetching appointment by sub-appointment ID: ${subAppointmentId}`);
     try {
         const appointment = await appointmentModel
             .findOne({ "subAppointments._id": subAppointmentId })
