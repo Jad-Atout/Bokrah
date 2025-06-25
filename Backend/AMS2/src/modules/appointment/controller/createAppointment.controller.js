@@ -152,13 +152,6 @@ export const createAppointment = async (req, res, next) => {
             createdAppointments.push(appointment);
         }
 
-        console.time("Link customer-client");
-        customerClientModel.updateOne(
-            {customerId, clientId},
-            {$setOnInsert: {customerId, clientId}},
-            {upsert: true}
-        );
-        console.timeEnd("Link customer-client");
 
         console.time("Commit transaction");
         await session.commitTransaction();
@@ -193,6 +186,7 @@ export const createAppointment = async (req, res, next) => {
 
         // ✅ Background calendar sync
         setImmediate(() => {
+            linkCustomer(customerId,clientId)
             for (const appointment of createdAppointments) {
                 syncAppointmentWithCalendar({appointment, customer, authClient, req})
                     .catch(console.error);
@@ -207,6 +201,15 @@ export const createAppointment = async (req, res, next) => {
         return next(new AppError(`Failed to create appointment(s): ${error.message}`, 500));
     }
 };
+
+
+async function linkCustomer(customerId,clientId){
+    await customerClientModel.updateOne(
+        {customerId, clientId},
+        {$setOnInsert: {customerId, clientId}},
+        {upsert: true}
+    );
+}
 
 
 async function syncAppointmentWithCalendar({appointment, customer, authClient, req}) {
