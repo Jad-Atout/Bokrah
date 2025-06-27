@@ -8,7 +8,8 @@ import {
     updateStaff,
     deleteStaff,
     deleteAllAppointmentsForStaff,
-    getStaffById
+    getStaffById,
+    checkStaffBookedAppointments
 } from "./staff.controller.js";
 import {auth,roles} from "../../middleware/auth.js"
 import prepareToken from "../../utils/Google/Services/refreshToken.js";
@@ -49,6 +50,11 @@ router.delete(
     auth(roles.Client),
     asyncHandler(verifyOwnership()),
     asyncHandler(deleteAllAppointmentsForStaff)
+);
+router.get('/:staffId/has-booked-appointments',
+    auth(roles.Client),
+    asyncHandler(verifyOwnership()),
+    asyncHandler(checkStaffBookedAppointments)
 );
 
 
