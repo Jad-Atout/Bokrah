@@ -168,47 +168,102 @@ export const deleteCustomer = async (req, res, next) => {
     }
     return res.status(200).json({message:"Successfully deleted", deletedCustomer,deletedUser});
 
+
 }
 
 export const toggleBlockCustomer = async (req, res, next) => {
-    const { customerId } = req.params
-    const {clientId} = req.authUser
-    const relation =  await clientCustomerModel.findOne({clientId,customerId})
-    if(!relation) return next(new AppError("Relation does not exists", 401));
-    relation.isActive = !relation.isActive
-    if(!relation.isActive){
-        const appointments = await appointment.find({customerId:customerId})
-        for (const appoint of appointments) {
-            await cancelBlockedCustomerAppointments(appoint._id,clientId)
+    try {
+        const { customerId } = req.params;
+        const { clientId } = req.authUser;
+
+        console.log(`[toggleBlockCustomer] clientId=${clientId}, customerId=${customerId}`);
+
+        const relation = await clientCustomerModel.findOne({ clientId, customerId });
+        if (!relation) return next(new AppError("Relation does not exist", 401));
+
+        relation.isActive = !relation.isActive;
+
+        if (!relation.isActive) {
+            console.log(`[toggleBlockCustomer] Customer blocked — cancelling appointments`);
+            cancelBlockedCustomerAppointments(customerId, req.authUser);
         }
+
+        await relation.save();
+
+        return res.status(200).json({ message: "success" });
+
+    } catch (err) {
+        next(err);
     }
-    await relation.save()
-    return res.status(200).json({message:"success"})
-}
-const cancelBlockedCustomerAppointments = async (appointmentId, clientId) => {
-    let auth;
-    const req = {
-        authUser: { clientId },
-        params: {clientId},
-        body: { appointmentId }
-    };
+};
 
-    const res = {
-        status: () => res,
-        json: (data) => console.log("Response JSON:", data)
-    };
+const cancelBlockedCustomerAppointments = async (customerId, authUser) => {
+    console.log(`[cancelBlockedCustomerAppointments] Start for customerId=${customerId}`);
 
-    const next = (err) => {
-        if (err) console.error("Error:", err);
-        auth = req.oauth2Client;
-    };
+    const { clientId } = authUser;
+
+    const appointments = await appointment.find({
+        customerId: customerId,
+        status: "Booked"
+    });
+    console.log(appointments)
+
+    console.log(`[cancelBlockedCustomerAppointments] Found ${appointments.length} booked appointments.`);
+
+    const requests = appointments.flatMap(appt =>
+        appt.subAppointments.map(sub => ({
+            authUser,
+            params: {
+                clientId,
+                appointmentId: appt._id.toString(),
+                subAppointmentId: sub._id.toString() // ensure it's a string!
+            }
+        }))
+    );
+
+
+    console.log(`[cancelBlockedCustomerAppointments] Built ${requests.length} sub-appointment requests.`);
 
     const middleware1 = prepareToken();
-    await middleware1(req, res, next);
 
-    await cancelAppointment(req, res, next);
+    // Fire-and-forget: run all in parallel
+    const tasks = requests.map(async (req, idx) => {
+        console.log(`[cancelBlockedCustomerAppointments] Processing sub-appointment ${idx + 1}/${requests.length}`);
+        const res = {
+            status: () => res,
+            json: (data) => console.log(`[Response JSON] ${JSON.stringify(data)}`)
+        };
+
+        const next = (err) => {
+            if (err) {
+                console.error(`[cancelBlockedCustomerAppointments] Middleware error:`, err);
+            } else {
+                console.log(`[cancelBlockedCustomerAppointments] Token prepared for sub-appointment`);
+            }
+        };
+
+        try {
+            await middleware1(req, res, next);
+            await cancelSubAppointment(req, res, next);
+            console.log(`[cancelBlockedCustomerAppointments] Sub-appointment cancelled:`, req.params.subAppointmentId);
+        } catch (err) {
+            console.error(`[cancelBlockedCustomerAppointments] Error cancelling sub-appointment:`, err);
+        }
+    });
+
+    // Do not await this — fire and forget
+    Promise.allSettled(tasks)
+        .then(results => {
+            console.log(`[cancelBlockedCustomerAppointments] All cancel tasks done:`);
+            results.forEach((result, i) => {
+                console.log(`  Task ${i + 1}:`, result.status, result.reason || "Success");
+            });
+        });
 };
+
+
 import websiteModel from '../../../DB/models/website.js';
+import {cancelSubAppointment} from "../appointment/controller/subappointments.controller.js";
 
 export const getCustomerAppointments = async (req, res, next) => {
     try {
