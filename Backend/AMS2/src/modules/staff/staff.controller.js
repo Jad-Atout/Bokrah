@@ -214,3 +214,22 @@ export const getStaffById = async (req, res, next) => {
     
     return res.json({ message: "success", staffs: filterStaffData([staff]) });
 };
+
+
+export const checkStaffBookedAppointments = async (req, res, next) => {
+    const { staffId } = req.params;
+
+    try {
+        const hasAppointment = await appointmentModel.exists({
+            "subAppointments": {
+                $elemMatch: {
+                    staffId: staffId,
+                    status: "Booked"  
+                }
+            }
+        });
+        return res.json({ hasAppointments: !!hasAppointment });
+    } catch (error) {
+        return next(new AppError("Error checking appointments: " + error.message, 500));
+    }
+};
