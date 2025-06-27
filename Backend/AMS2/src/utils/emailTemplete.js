@@ -12,7 +12,6 @@ export async function welcomeEmailTemplate( userName, token) {
                Confirm Your Email
             </a>
             <br><br>
-            <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" alt="Welcome Image" style="max-width: 100%; border-radius: 5px;">
             <p>If you did not sign up for this account, please ignore this email.</p>
             <p>Best Regards,<br><strong>Bokrah Team</strong></p>
 
@@ -59,9 +58,7 @@ export async function setPasswordEmailTemplate( userName, token) {
             </a>
 
             <br><br>
-            <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png" 
-                 alt="Bokrah Logo" 
-                 style="max-width: 100%; border-radius: 5px;">
+         
             
             <p>If you did not sign up for this account, please ignore this email.</p>
             
@@ -129,11 +126,7 @@ export async function appointmentConfirmationEmail(appointmentId) {
       <p>We look forward to seeing you! If you need to reschedule or cancel, please contact us in advance.</p>
 
       <br>
-      <img
-        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
-        alt="Bokrah Logo"
-        style="max-width: 100%; border-radius: 5px;"
-      />
+    
 
       <p>Best Regards,<br><strong>Bokrah Team</strong></p>
 
@@ -279,9 +272,7 @@ export async function appointmentFullDetailsEmail(appointmentId) {
       </p>
 
       <br/>
-      <img src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
-           alt="Bokrah Logo"
-           style="max-width:100%; border-radius:5px;" />
+      
 
       <p>Best Regards,<br/><strong>Bokrah Team</strong></p>
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
@@ -362,11 +353,7 @@ export async function appointmentCancellationEmail(appointmentId) {
       <p>If you have any questions or would like to schedule a new appointment, feel free to reach out.</p>
       
       <br/>
-      <img 
-        src="https://res.cloudinary.com/dfz3ebgmr/image/upload/v1740344135/Bookrah_cigw3k.png"
-        alt="Bokrah Logo"
-        style="max-width:100%; border-radius:5px;"
-      />
+    
       <p>Best Regards,<br/><strong>Bokrah Team</strong></p>
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;" />
       <footer style="text-align:center; font-size:12px; color:#888;">

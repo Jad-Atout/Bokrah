@@ -10,6 +10,7 @@ import {
     generateRecurringDates,
 } from "./utils/helpers.js";
 import staffModel from "../../../../DB/models/staff.js";
+import {cancelSubAppointmentTasks} from "../../../utils/Scheduler/appointmentEndSchedules.js";
 import mongoose from "mongoose";
 import { checkAvailability } from "../../../utils/Google/Services/checkAvailability.js";
 import {
