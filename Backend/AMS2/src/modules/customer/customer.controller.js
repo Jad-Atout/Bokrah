@@ -47,7 +47,7 @@ export const createCustomer = async (req, res, next) => {
         ...(phoneNumber ? { phoneNumber:phoneNumber} : {}),
     };
 
-    let { user: newUser, customer: newCustomer, appError } = await transCreateCustomer(payload);
+    const { newUser, customer: newCustomer, appError } = await transCreateCustomer(payload);
     if (appError) return next(appError);
 
     const clientId = req.authUser.clientId;
