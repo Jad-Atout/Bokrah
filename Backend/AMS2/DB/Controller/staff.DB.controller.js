@@ -96,6 +96,7 @@ export const transDeleteStaff = async (staff,oauth2Client) => {
         },{
             _id: 1
         }).session(session);
+        console.log(appointments)
 
         if(appointments.length > 0) return {appError:new AppError('Staff has appointments please cancel or edit them', 404),staff:null,appointmentIds:appointments}
 

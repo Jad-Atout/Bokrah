@@ -17,8 +17,8 @@ import {
 } from "./utils/helpers.js";
 import {validateMultipleServices} from "../../bookingSettings/utils/bookingSettingsUtils.js";
 
-import {ticks} from "../../../utils/ticks.js";          // minute-tick helper
-import BusySlot from "../../../../DB/models/busySlot.js";       // lock model
+import {ticks} from "../../../utils/ticks.js";
+import BusySlot from "../../../../DB/models/busySlot.js";
 import {checkAvailability} from "../../../utils/Google/Services/checkAvailability.js";
 import {sendEmail} from "../../../utils/email.js";
 import {appointmentConfirmationEmail, appointmentFullDetailsEmail} from "../../../utils/emailTemplete.js";
@@ -184,7 +184,6 @@ export const createAppointment = async (req, res, next) => {
             appointments: createdAppointments
         });
 
-        // ✅ Background calendar sync
         setImmediate(() => {
             linkCustomer(customerId,clientId)
             for (const appointment of createdAppointments) {
