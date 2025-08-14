@@ -63,10 +63,17 @@ export const generalLogin = (async (req, res) => {
     const token = jwt.sign(tokenData, process.env.JWT_SECRET, {
         expiresIn: "7d",
     });
+    const accessToken = jwt.sign(tokenData,process.env.ACCESS_TOKEN_SECRET,{
+        expiresIn: "3600s"
+    })
+    const refreshToken = jwt.sign('7d')
+
+    res.cookie('jwt',refreshToken,{httpOnly: true, maxAge:7 * (24 * 60 * 60 * 1000)})
 
     res.status(200).json({
         message: "Login successful",
         token,
         user: tokenData,
+        accessToken
     });
 });

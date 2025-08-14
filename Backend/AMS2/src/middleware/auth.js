@@ -20,11 +20,11 @@ export const auth = (...requiredRole) => {
         try {
             const authHeader = req.headers.authorization;
             if (!authHeader || !authHeader.startsWith(process.env.BEARERTOKEN)) {
-                return next(new AppError("No token provided", 400));
+                return next(new AppError("No token provided", 401));
             }
             const token = authHeader.split("__")[1];
             if (!token) {
-                return next(new AppError("Invalid token format", 400));
+                return next(new AppError("Invalid token format", 404));
             }
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             if (!decoded) {
